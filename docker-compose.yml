@@ -27,8 +27,8 @@ services:
     image: nginx:alpine
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_webserver
-    ports:
-      - "8080:80"
+    #ports:
+    #  - "8080:80"
     volumes:
       - .:/var/www/html
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
