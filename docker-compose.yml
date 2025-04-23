@@ -11,7 +11,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=8.0&charset=utf8mb4
+      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.6&charset=utf8mb4
     networks:
       - ticketumfrage_network
     build:
@@ -40,7 +40,7 @@ services:
       - ticketumfrage_network
     restart: unless-stopped
 
-  # MySQL Datenbank
+  # MariaDB Datenbank (ARM-kompatibel)
   database:
     build:
       context: ./docker/mysql
@@ -50,19 +50,18 @@ services:
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
+      # linuxserver/mariadb Umgebungsvariablen
       MYSQL_DATABASE: ticket_mailer_db
       MYSQL_USER: ticketuser
       MYSQL_PASSWORD: ticketpassword
       MYSQL_ROOT_PASSWORD: rootpassword
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
+      TZ: Europe/Berlin
     volumes:
-      - dbdata:/var/lib/mysql
+      - dbdata:/config
     networks:
       - ticketumfrage_network
     ports:
       - "3306:3306"
-    command: --default-authentication-plugin=mysql_native_password
 
   # Einfaches SMTP-Testing mit einfacherem Docker-Image
   mailserver:

@@ -1,8 +1,9 @@
 ARG DOCKER_PLATFORM=linux/amd64
-FROM --platform=${DOCKER_PLATFORM} mariadb:10.6
+FROM --platform=${DOCKER_PLATFORM} linuxserver/mariadb:latest
 
-# MariaDB wird als Alternative zu MySQL verwendet, da es bessere ARM-Unterstützung bietet
-# Für ARM-Plattformen wie Raspberry Pi ist MariaDB oft stabiler
+# linuxserver/mariadb bietet Multi-Arch-Unterstützung (inkl. ARM)
+# WICHTIG: linuxserver/mariadb verwendet andere Umgebungsvariablen, 
+# daher müssen die Variablen in der docker-compose.yml angepasst werden
 
 EXPOSE 3306
 
