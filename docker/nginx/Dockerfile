@@ -1,5 +1,4 @@
-ARG DOCKER_PLATFORM=linux/arm64v8
-FROM --platform=${DOCKER_PLATFORM} nginx:alpine
+FROM nginx:alpine
 
 # Kopiere die Nginx-Konfiguration
 COPY conf.d /etc/nginx/conf.d/
