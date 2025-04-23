@@ -1,22 +1,21 @@
 services:
   # PHP-FPM Service mit den nötigen PHP-Extensions
   php:
-    # Verwende nur die Build-Konfiguration
     container_name: ticketumfrage_php
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     volumes:
       - .:/var/www/html
     depends_on:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.5&charset=utf8mb4
+      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10&charset=utf8mb4
     networks:
       - ticketumfrage_network
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-      args:
-        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     restart: unless-stopped
 
   # Nginx Webserver
@@ -27,8 +26,6 @@ services:
       args:
         DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_webserver
-    #ports:
-    #  - "8080:80"
     volumes:
       - .:/var/www/html
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
@@ -38,26 +35,29 @@ services:
       - ticketumfrage_network
     restart: unless-stopped
 
-  # MariaDB 10.5 Datenbank (ARM-kompatibel)
+  # MariaDB Datenbank (ARM-kompatibel)
   database:
-    build:
-      context: ./docker/mysql
-      dockerfile: Dockerfile
+    image: mariadb
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
-      # Bitnami MariaDB Umgebungsvariablen
-      MARIADB_DATABASE: ticket_mailer_db
-      MARIADB_USER: ticketuser
-      MARIADB_PASSWORD: ticketpassword
-      MARIADB_ROOT_PASSWORD: rootpassword
-      ALLOW_EMPTY_PASSWORD: no
+      - MYSQL_DATABASE=ticket_mailer_db
+      - MYSQL_USER=ticketuser
+      - MYSQL_PASSWORD=ticketpassword
+      - MYSQL_ROOT_PASSWORD=rootpassword
     volumes:
-      - dbdata:/bitnami/mariadb
+      - dbdata:/var/lib/mysql
+    command: --bind-address=0.0.0.0
     networks:
       - ticketumfrage_network
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "pgrep", "mariadbd"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Einfaches SMTP-Testing mit einfacherem Docker-Image
   mailserver:
