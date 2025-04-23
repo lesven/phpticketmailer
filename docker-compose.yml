@@ -13,7 +13,7 @@ services:
       - APP_ENV=dev
       - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10&charset=utf8mb4
     networks:
-      - ticketumfrage_network
+      - proxy-tier
     restart: unless-stopped
 
   # Nginx Webserver
@@ -28,7 +28,7 @@ services:
     depends_on:
       - php
     networks:
-      - ticketumfrage_network
+      - proxy-tier
     restart: unless-stopped
 
   # MariaDB Datenbank (ARM-kompatibel)
@@ -51,7 +51,7 @@ services:
       --innodb-use-native-aio=0
       --innodb-flush-method=fsync
     networks:
-      - ticketumfrage_network
+      - proxy-tier
     ports:
       - "3306:3306"
     healthcheck:
@@ -70,13 +70,13 @@ services:
     ports:
       - "1025:25"  # SMTP Port
     networks:
-      - ticketumfrage_network
+      - proxy-tier
     restart: unless-stopped
 
 # Docker Networks
 networks:
-  ticketumfrage_network:
-    driver: bridge
+  proxy-tier:
+    external: true
 
 # Docker Volumes
 volumes:
