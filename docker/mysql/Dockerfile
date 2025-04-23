@@ -1,7 +1,8 @@
 ARG DOCKER_PLATFORM=linux/arm64v8
-FROM --platform=${DOCKER_PLATFORM} arm64v8/mariadb:10.5
+FROM --platform=${DOCKER_PLATFORM} yobasystems/alpine-mariadb:10.5.12
 
-# Spezielles arm64v8/mariadb Image für Raspberry Pi
+# Alpine-basiertes MariaDB-Image mit Multiarch-Support inkl. ARM
+# yobasystems bietet ARM-kompatible Images
 
 EXPOSE 3306
 
