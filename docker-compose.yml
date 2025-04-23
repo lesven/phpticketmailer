@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PHP-FPM Service mit den nötigen PHP-Extensions
   php:
-    image: php:8.1-fpm
+    # Kein Image definieren, nur Build verwenden
     platform: ${DOCKER_PLATFORM:-linux/amd64}  # Plattform-Auswahl: Standard ist amd64, kann mit Umgebungsvariable überschrieben werden
     container_name: ticketumfrage_php
     volumes:
@@ -24,7 +24,7 @@ services:
 
   # Nginx Webserver
   webserver:
-    image: nginx:alpine
+    image: arm64v8/nginx:alpine
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_webserver
     #ports:
@@ -40,7 +40,7 @@ services:
 
   # MySQL Datenbank
   database:
-    image: mysql:8.0
+    image: arm64v8/mysql:8.0
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_database
     restart: unless-stopped
@@ -59,9 +59,9 @@ services:
       - "3306:3306"
     command: --default-authentication-plugin=mysql_native_password
 
-  # phpMyAdmin für einfachere Datenbankverwaltung
+  # phpMyAdmin für einfachere Datenbankverwaltung - Alternative verwenden
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin
+    image: biarms/phpmyadmin
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_phpmyadmin
     environment:
@@ -77,9 +77,9 @@ services:
       - ticketumfrage_network
     restart: unless-stopped
 
-  # Mailhog für SMTP-Testing
+  # Alternative zu Mailhog (da es kein ARM-Image für Mailhog gibt)
   mailhog:
-    image: mailhog/mailhog
+    image: ixdotai/smtp:latest
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_mailhog
     ports:
