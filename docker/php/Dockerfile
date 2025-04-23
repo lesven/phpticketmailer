@@ -1,4 +1,4 @@
-ARG DOCKER_PLATFORM=linux/amd64
+ARG DOCKER_PLATFORM=linux/arm64v8
 FROM --platform=${DOCKER_PLATFORM} php:8.1-fpm-bullseye
 
 # Installiere Abhängigkeiten
