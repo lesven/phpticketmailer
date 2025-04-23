@@ -1,7 +1,7 @@
-ARG DOCKER_PLATFORM=linux/amd64
-FROM --platform=${DOCKER_PLATFORM} mariadb:10.5
+ARG DOCKER_PLATFORM=linux/arm64v8
+FROM --platform=${DOCKER_PLATFORM} arm64v8/mariadb:10.5
 
-# MariaDB 10.5 bietet gute ARM-Unterstützung für Raspberry Pi
+# Spezielles arm64v8/mariadb Image für Raspberry Pi
 
 EXPOSE 3306
 
