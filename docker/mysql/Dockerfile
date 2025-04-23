@@ -1,9 +1,7 @@
 ARG DOCKER_PLATFORM=linux/amd64
-FROM --platform=${DOCKER_PLATFORM} linuxserver/mariadb:latest
+FROM --platform=${DOCKER_PLATFORM} mariadb:10.5
 
-# linuxserver/mariadb bietet Multi-Arch-Unterstützung (inkl. ARM)
-# WICHTIG: linuxserver/mariadb verwendet andere Umgebungsvariablen, 
-# daher müssen die Variablen in der docker-compose.yml angepasst werden
+# MariaDB 10.5 bietet gute ARM-Unterstützung für Raspberry Pi
 
 EXPOSE 3306
 

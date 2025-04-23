@@ -11,7 +11,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.6&charset=utf8mb4
+      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.5&charset=utf8mb4
     networks:
       - ticketumfrage_network
     build:
@@ -40,7 +40,7 @@ services:
       - ticketumfrage_network
     restart: unless-stopped
 
-  # MariaDB Datenbank (ARM-kompatibel)
+  # MariaDB 10.5 Datenbank (ARM-kompatibel)
   database:
     build:
       context: ./docker/mysql
@@ -50,14 +50,12 @@ services:
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
-      # linuxserver/mariadb Umgebungsvariablen
       MYSQL_DATABASE: ticket_mailer_db
       MYSQL_USER: ticketuser
       MYSQL_PASSWORD: ticketpassword
       MYSQL_ROOT_PASSWORD: rootpassword
-      TZ: Europe/Berlin
     volumes:
-      - dbdata:/config
+      - dbdata:/var/lib/mysql
     networks:
       - ticketumfrage_network
     ports:
