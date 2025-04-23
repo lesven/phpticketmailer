@@ -1,8 +1,7 @@
 ARG DOCKER_PLATFORM=linux/arm64v8
-FROM --platform=${DOCKER_PLATFORM} yobasystems/alpine-mariadb:10.5.12
+FROM --platform=${DOCKER_PLATFORM} bitnami/mariadb:10.5
 
-# Alpine-basiertes MariaDB-Image mit Multiarch-Support inkl. ARM
-# yobasystems bietet ARM-kompatible Images
+# Bitnami MariaDB mit Multi-Architektur-Unterstützung (inkl. ARM64)
 
 EXPOSE 3306
 

@@ -38,7 +38,7 @@ services:
       - ticketumfrage_network
     restart: unless-stopped
 
-  # Alpine MariaDB 10.5 Datenbank (ARM-kompatibel)
+  # MariaDB 10.5 Datenbank (ARM-kompatibel)
   database:
     build:
       context: ./docker/mysql
@@ -46,13 +46,14 @@ services:
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
-      # Umgebungsvariablen für yobasystems/alpine-mariadb
-      MYSQL_DATABASE: ticket_mailer_db
-      MYSQL_USER: ticketuser
-      MYSQL_PASSWORD: ticketpassword
-      MYSQL_ROOT_PASSWORD: rootpassword
+      # Bitnami MariaDB Umgebungsvariablen
+      MARIADB_DATABASE: ticket_mailer_db
+      MARIADB_USER: ticketuser
+      MARIADB_PASSWORD: ticketpassword
+      MARIADB_ROOT_PASSWORD: rootpassword
+      ALLOW_EMPTY_PASSWORD: no
     volumes:
-      - dbdata:/var/lib/mysql
+      - dbdata:/bitnami/mariadb
     networks:
       - ticketumfrage_network
     ports:
