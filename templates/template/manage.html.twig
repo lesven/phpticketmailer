@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}E-Mail-Template - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">E-Mail-Template verwalten</h1>
+    
+    {% if message %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Hinweise zu Platzhaltern</h5>
+        </div>
+        <div class="card-body">
+            <p>Im E-Mail-Template können folgende Platzhalter verwendet werden:</p>
+            <ul>
+                <li><code>{{ticketId}}</code> - Die ID des Tickets</li>
+                <li><code>{{ticketName}}</code> - Der Name/Titel des Tickets</li>
+                <li><code>{{username}}</code> - Der Benutzername des Empfängers</li>
+                <li><code>{{ticketLink}}</code> - Ein Link zum Ticket im Ticketsystem</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Template hochladen</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="template_file" class="form-label">Template-Datei</label>
+                            <input type="file" id="template_file" name="template_file" class="form-control" required>
+                            <div class="form-text">Textdatei mit dem E-Mail-Template (.txt)</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Template hochladen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Aktuelles Template</h5>
+                </div>
+                <div class="card-body">
+                    {% if templateExists %}
+                        <p>Ein E-Mail-Template ist vorhanden.</p>
+                        <div class="d-grid">
+                            <a href="{{ path('template_download') }}" class="btn btn-success">Template herunterladen</a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>Es wurde noch kein E-Mail-Template hochgeladen. Das Standardtemplate wird verwendet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

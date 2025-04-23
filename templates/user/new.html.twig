@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Neuer Benutzer - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Neuen Benutzer anlegen</h1>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Benutzerinformationen eingeben</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.username) }}
+                    {{ form_widget(form.username) }}
+                    <div class="form-text">Benutzername, der in der CSV-Datei verwendet wird</div>
+                    <div class="text-danger">{{ form_errors(form.username) }}</div>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form_label(form.email) }}
+                    {{ form_widget(form.email) }}
+                    <div class="form-text">E-Mail-Adresse für den Versand</div>
+                    <div class="text-danger">{{ form_errors(form.email) }}</div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ path('user_index') }}" class="btn btn-secondary">Zurück zur Übersicht</a>
+                    <button type="submit" class="btn btn-primary">Benutzer anlegen</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

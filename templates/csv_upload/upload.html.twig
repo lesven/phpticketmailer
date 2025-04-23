@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CSV-Upload - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">CSV-Upload für E-Mail-Versand</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Hinweise zum CSV-Format</h5>
+        </div>
+        <div class="card-body">
+            <p>Die CSV-Datei muss folgende Spalten enthalten:</p>
+            <ul>
+                <li><strong>ticketId</strong> - Die ID des Tickets</li>
+                <li><strong>username</strong> - Der Benutzername, an den die E-Mail gesendet werden soll</li>
+                <li><strong>ticketName</strong> - (optional) Der Name/Titel des Tickets</li>
+            </ul>
+            <p>Beispiel:</p>
+            <pre>ticketId,username,ticketName
+123456,mustermann,Problem mit Anmeldung
+123457,schmidt,Fehler bei Dateiupload</pre>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">CSV-Datei hochladen</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.csvFile) }}
+                    {{ form_widget(form.csvFile) }}
+                    <div class="form-text">{{ form_help(form.csvFile) }}</div>
+                    <div class="text-danger">{{ form_errors(form.csvFile) }}</div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    {{ form_widget(form.testMode) }}
+                    {{ form_label(form.testMode) }}
+                    <div class="form-text">Im Testmodus werden alle E-Mails an eine Testadresse gesendet.</div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">CSV-Datei hochladen und verarbeiten</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

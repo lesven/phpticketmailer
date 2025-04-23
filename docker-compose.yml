@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # PHP-FPM Service mit den nötigen PHP-Extensions
+  php:
+    image: php:8.1-fpm
+    container_name: ticketumfrage_php
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - database
+    environment:
+      - APP_ENV=dev
+      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=8.0&charset=utf8mb4
+    networks:
+      - ticketumfrage_network
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: unless-stopped
+
+  # Nginx Webserver
+  webserver:
+    image: nginx:alpine
+    container_name: ticketumfrage_webserver
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - php
+    networks:
+      - ticketumfrage_network
+    restart: unless-stopped
+
+  # MySQL Datenbank
+  database:
+    image: mysql:8.0
+    container_name: ticketumfrage_database
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ticket_mailer_db
+      MYSQL_USER: ticketuser
+      MYSQL_PASSWORD: ticketpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - ticketumfrage_network
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+
+  # phpMyAdmin für einfachere Datenbankverwaltung
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ticketumfrage_phpmyadmin
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8081:80"
+    depends_on:
+      - database
+    networks:
+      - ticketumfrage_network
+    restart: unless-stopped
+
+  # Mailhog für SMTP-Testing
+  mailhog:
+    image: mailhog/mailhog
+    container_name: ticketumfrage_mailhog
+    ports:
+      - "1025:1025" # SMTP Server
+      - "8025:8025" # Web UI
+    networks:
+      - ticketumfrage_network
+    restart: unless-stopped
+
+# Docker Networks
+networks:
+  ticketumfrage_network:
+    driver: bridge
+
+# Docker Volumes
+volumes:
+  dbdata:
+    driver: local

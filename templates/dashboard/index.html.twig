@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Dashboard</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">E-Mail-Versand</h5>
+                    <p class="card-text">Laden Sie eine CSV-Datei hoch, um Zufriedenheits-E-Mails zu Tickets zu versenden.</p>
+                    <a href="{{ path('csv_upload') }}" class="btn btn-primary">Zum CSV-Upload</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Benutzerverwaltung</h5>
+                    <p class="card-text">Verwalten Sie die Benutzer und deren E-Mail-Adressen.</p>
+                    <a href="{{ path('user_index') }}" class="btn btn-primary">Zur Benutzerverwaltung</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">E-Mail-Template</h5>
+                    <p class="card-text">Bearbeiten Sie die Vorlage für die zu versendenden E-Mails.</p>
+                    <a href="{{ path('template_manage') }}" class="btn btn-primary">Zum E-Mail-Template</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h2 class="mb-3">Letzte E-Mail-Versandaktionen</h2>
+    
+    {% if recentEmails is empty %}
+        <div class="alert alert-info">
+            Es wurden noch keine E-Mails versendet.
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Ticket-ID</th>
+                        <th>Benutzer</th>
+                        <th>E-Mail</th>
+                        <th>Status</th>
+                        <th>Datum/Zeit</th>
+                        <th>Testmodus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for email in recentEmails %}
+                        <tr>
+                            <td>{{ email.ticketId }}</td>
+                            <td>{{ email.username }}</td>
+                            <td>{{ email.email }}</td>
+                            <td>
+                                {% if email.status starts with 'error' %}
+                                    <span class="badge bg-danger">{{ email.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ email.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ email.timestamp|date('d.m.Y H:i:s') }}</td>
+                            <td>
+                                {% if email.testMode %}
+                                    <span class="badge bg-warning text-dark">Test</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Live</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
