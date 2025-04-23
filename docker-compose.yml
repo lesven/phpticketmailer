@@ -3,8 +3,7 @@ version: '3.8'
 services:
   # PHP-FPM Service mit den nötigen PHP-Extensions
   php:
-    # Kein Image definieren, nur Build verwenden
-    platform: ${DOCKER_PLATFORM:-linux/amd64}  # Plattform-Auswahl: Standard ist amd64, kann mit Umgebungsvariable überschrieben werden
+    # Verwende nur die Build-Konfiguration
     container_name: ticketumfrage_php
     volumes:
       - .:/var/www/html
@@ -19,13 +18,16 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
-        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}  # Plattform-Info an Build-Prozess weitergeben
+        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     restart: unless-stopped
 
   # Nginx Webserver
   webserver:
-    image: arm64v8/nginx:alpine
-    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+      args:
+        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_webserver
     #ports:
     #  - "8080:80"
@@ -40,8 +42,11 @@ services:
 
   # MySQL Datenbank
   database:
-    image: arm64v8/mysql:8.0
-    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: ./docker/mysql
+      dockerfile: Dockerfile
+      args:
+        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
@@ -59,32 +64,12 @@ services:
       - "3306:3306"
     command: --default-authentication-plugin=mysql_native_password
 
-  # phpMyAdmin für einfachere Datenbankverwaltung - Alternative verwenden
-  phpmyadmin:
-    image: biarms/phpmyadmin
-    platform: ${DOCKER_PLATFORM:-linux/amd64}
-    container_name: ticketumfrage_phpmyadmin
-    environment:
-      PMA_HOST: database
-      PMA_USER: root
-      PMA_PASSWORD: rootpassword
-      UPLOAD_LIMIT: 64M
+  # Einfaches SMTP-Testing mit einfacherem Docker-Image
+  mailserver:
+    image: namshi/smtp
+    container_name: ticketumfrage_mailserver
     ports:
-      - "8081:80"
-    depends_on:
-      - database
-    networks:
-      - ticketumfrage_network
-    restart: unless-stopped
-
-  # Alternative zu Mailhog (da es kein ARM-Image für Mailhog gibt)
-  mailhog:
-    image: ixdotai/smtp:latest
-    platform: ${DOCKER_PLATFORM:-linux/amd64}
-    container_name: ticketumfrage_mailhog
-    ports:
-      - "1025:1025" # SMTP Server
-      - "8025:8025" # Web UI
+      - "1025:25"
     networks:
       - ticketumfrage_network
     restart: unless-stopped
