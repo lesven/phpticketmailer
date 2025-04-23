@@ -61,14 +61,14 @@ services:
       retries: 3
       start_period: 10s
 
-  # Universell kompatibles SMTP-Server Image
+  # Eigener SMTP-Server für ARM-Kompatibilität
   mailserver:
-    # Dieses Image ist für Multiple Architekturen gebaut, einschließlich ARM64
-    image: mailhog/mailhog:latest
+    build:
+      context: ./docker/smtp
+      dockerfile: Dockerfile
     container_name: ticketumfrage_mailserver
     ports:
-      - "1025:1025"  # SMTP Port
-      - "8025:8025"  # Web UI
+      - "1025:25"  # SMTP Port
     networks:
       - ticketumfrage_network
     restart: unless-stopped
