@@ -61,12 +61,14 @@ services:
       retries: 3
       start_period: 10s
 
-  # ARM-kompatibles SMTP-Server Image
+  # Universell kompatibles SMTP-Server Image
   mailserver:
-    image: bytemark/smtp
+    # Dieses Image ist für Multiple Architekturen gebaut, einschließlich ARM64
+    image: mailhog/mailhog:latest
     container_name: ticketumfrage_mailserver
     ports:
-      - "1025:25"
+      - "1025:1025"  # SMTP Port
+      - "8025:8025"  # Web UI
     networks:
       - ticketumfrage_network
     restart: unless-stopped
