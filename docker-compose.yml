@@ -41,9 +41,15 @@ services:
       - MYSQL_USER=ticketuser
       - MYSQL_PASSWORD=ticketpassword
       - MYSQL_ROOT_PASSWORD=rootpassword
+      # Füge zusätzliche Optionen für eine zuverlässigere Initialisierung hinzu
+      - MYSQL_INITDB_SKIP_TZINFO=1
     volumes:
+      # Verwende ein benanntes Volume für bessere Datenpersistenz
       - dbdata:/var/lib/mysql
-    command: --bind-address=0.0.0.0
+    command: >
+      --bind-address=0.0.0.0
+      --innodb-use-native-aio=0
+      --innodb-flush-method=fsync
     networks:
       - ticketumfrage_network
     ports:
