@@ -1,4 +1,5 @@
-FROM php:8.1-fpm
+ARG DOCKER_PLATFORM=linux/amd64
+FROM --platform=${DOCKER_PLATFORM} php:8.1-fpm-bullseye
 
 # Installiere Abhängigkeiten
 RUN apt-get update && apt-get install -y \

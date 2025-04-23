@@ -14,13 +14,50 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+/**
+ * Controller für das Hochladen und Verarbeiten von CSV-Dateien mit Ticketdaten
+ * 
+ * Dieser Controller verwaltet den gesamten Prozess vom Hochladen der CSV-Datei,
+ * über die Bearbeitung unbekannter Benutzer bis zum Versand der Ticket-E-Mails.
+ */
 class CsvUploadController extends AbstractController
 {
+    /**
+     * Doctrine Entity Manager für Datenbankoperationen
+     * 
+     * @var EntityManagerInterface
+     */
     private $entityManager;
+    
+    /**
+     * Repository für User-Entitäten
+     * 
+     * @var UserRepository
+     */
     private $userRepository;
+    
+    /**
+     * Service zur Verarbeitung von CSV-Dateien
+     * 
+     * @var CsvProcessor
+     */
     private $csvProcessor;
+    
+    /**
+     * Service zum Versenden von E-Mails
+     * 
+     * @var EmailService
+     */
     private $emailService;
     
+    /**
+     * Konstruktor zum Injection der benötigten Abhängigkeiten
+     * 
+     * @param EntityManagerInterface $entityManager Doctrine Entity Manager
+     * @param UserRepository $userRepository Repository für User-Entitäten
+     * @param CsvProcessor $csvProcessor Service zur CSV-Verarbeitung
+     * @param EmailService $emailService Service zum E-Mail-Versand
+     */
     public function __construct(
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
@@ -34,7 +71,11 @@ class CsvUploadController extends AbstractController
     }
     
     /**
+     * Zeigt das Formular zum Hochladen einer CSV-Datei an und verarbeitet die Übermittlung
+     * 
      * @Route("/upload", name="csv_upload")
+     * @param Request $request HTTP-Anfrage
+     * @return Response HTTP-Antwort
      */
     public function upload(Request $request): Response
     {
@@ -69,7 +110,14 @@ class CsvUploadController extends AbstractController
     }
     
     /**
+     * Verarbeitet unbekannte Benutzer aus der CSV-Datei
+     * 
+     * Zeigt eine Seite an, auf der E-Mail-Adressen für unbekannte Benutzernamen eingegeben werden können.
+     * Die eingegebenen E-Mail-Adressen werden neuen Benutzern zugeordnet und in der Datenbank gespeichert.
+     * 
      * @Route("/unknown-users", name="unknown_users")
+     * @param Request $request HTTP-Anfrage
+     * @return Response HTTP-Antwort
      */
     public function unknownUsers(Request $request): Response
     {
@@ -106,7 +154,14 @@ class CsvUploadController extends AbstractController
     }
     
     /**
+     * Sendet E-Mails mit Ticketinformationen an die Benutzer
+     * 
+     * Verwendet die in der Session gespeicherten Ticketdaten, um E-Mails zu versenden.
+     * Unterstützt einen Testmodus, in dem E-Mails nicht tatsächlich versendet werden.
+     * 
      * @Route("/send-emails", name="send_emails")
+     * @param Request $request HTTP-Anfrage
+     * @return Response HTTP-Antwort
      */
     public function sendEmails(Request $request): Response
     {

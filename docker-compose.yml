@@ -4,6 +4,7 @@ services:
   # PHP-FPM Service mit den nötigen PHP-Extensions
   php:
     image: php:8.1-fpm
+    platform: ${DOCKER_PLATFORM:-linux/amd64}  # Plattform-Auswahl: Standard ist amd64, kann mit Umgebungsvariable überschrieben werden
     container_name: ticketumfrage_php
     volumes:
       - .:/var/www/html
@@ -17,11 +18,14 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      args:
+        DOCKER_PLATFORM: ${DOCKER_PLATFORM:-linux/amd64}  # Plattform-Info an Build-Prozess weitergeben
     restart: unless-stopped
 
   # Nginx Webserver
   webserver:
     image: nginx:alpine
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_webserver
     ports:
       - "8080:80"
@@ -37,6 +41,7 @@ services:
   # MySQL Datenbank
   database:
     image: mysql:8.0
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_database
     restart: unless-stopped
     environment:
@@ -57,6 +62,7 @@ services:
   # phpMyAdmin für einfachere Datenbankverwaltung
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_phpmyadmin
     environment:
       PMA_HOST: database
@@ -74,6 +80,7 @@ services:
   # Mailhog für SMTP-Testing
   mailhog:
     image: mailhog/mailhog
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: ticketumfrage_mailhog
     ports:
       - "1025:1025" # SMTP Server

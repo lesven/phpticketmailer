@@ -34,8 +34,19 @@ cd ticketumfrage-tool
 
 #### 2. Docker-Container starten
 
+**Für Intel/AMD-Architekturen (Standard):**
 ```bash
 docker-compose up -d
+```
+
+**Für ARM-Architekturen (z.B. Raspberry Pi):**
+```bash
+DOCKER_PLATFORM=linux/arm64v8 docker-compose up -d
+```
+
+Oder für ältere Raspberry Pi Modelle:
+```bash
+DOCKER_PLATFORM=linux/arm/v7 docker-compose up -d
 ```
 
 Dies startet automatisch:
@@ -142,6 +153,37 @@ ticketId,username,ticketName
 3. **CSV-Datei hochladen**: Laden Sie unter "CSV-Upload" eine CSV-Datei mit Ticket-Informationen hoch.
 4. **E-Mails versenden**: Nach dem Upload werden E-Mails automatisch versendet oder Sie werden zur Eingabe fehlender E-Mail-Adressen aufgefordert.
 5. **Ergebnisse prüfen**: Auf dem Dashboard und der Ergebnisseite können Sie den Status aller Versandaktionen einsehen.
+
+## Multi-Architektur-Unterstützung
+
+Das Ticketumfrage-Tool ist für die Ausführung auf verschiedenen Hardware-Architekturen konfiguriert:
+
+### Unterstützte Architekturen
+
+- **x86/x64 (Intel/AMD)**: Standard-Konfiguration
+- **ARM64**: Für neuere Raspberry Pi Modelle (3/4/5) und andere ARM64-basierte Systeme
+- **ARMv7**: Für ältere Raspberry Pi Modelle und kompatible Geräte
+
+### Plattform-Konfiguration
+
+Die Docker-Compose-Konfiguration verwendet eine Umgebungsvariable `DOCKER_PLATFORM`, um die Zielplattform festzulegen:
+
+```bash
+# Standard (Intel/AMD)
+docker-compose up -d
+
+# ARM64 (z.B. Raspberry Pi 4)
+DOCKER_PLATFORM=linux/arm64v8 docker-compose up -d
+
+# ARMv7 (z.B. ältere Raspberry Pi Modelle)
+DOCKER_PLATFORM=linux/arm/v7 docker-compose up -d
+```
+
+### Hinweise zur Performance
+
+- Die Performance kann je nach Hardware-Architektur variieren
+- Auf ARM-basierten Systemen mit begrenztem RAM (wie Raspberry Pi) empfehlen wir eine Erhöhung des Swap-Speichers
+- Für produktiven Einsatz auf einem Raspberry Pi empfehlen wir mindestens ein Modell mit 4GB RAM
 
 ## Platzhalter im E-Mail-Template
 
