@@ -5,58 +5,38 @@ namespace App\Entity;
 use App\Repository\EmailSentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass=EmailSentRepository::class)
- * @ORM\Table(name="emails_sent")
- */
+#[ORM\Entity(repositoryClass: EmailSentRepository::class)]
+#[ORM\Table(name: 'emails_sent')]
 class EmailSent
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue
-     * @ORM\Column(type="integer")
-     */
-    private $id;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $ticketId;
+    #[ORM\Column(length: 255)]
+    private ?string $ticketId = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $username;
+    #[ORM\Column(length: 255)]
+    private ?string $username = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $email;
+    #[ORM\Column(length: 255)]
+    private ?string $email = null;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $subject;
+    #[ORM\Column(length: 255)]
+    private ?string $subject = null;
 
-    /**
-     * @ORM\Column(type="string", length=50)
-     */
-    private $status;
+    #[ORM\Column(length: 50)]
+    private ?string $status = null;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
-    private $timestamp;
+    #[ORM\Column]
+    private ?\DateTimeInterface $timestamp = null;
 
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $testMode;
+    #[ORM\Column]
+    private ?bool $testMode = null;
 
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
-    private $ticketName;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $ticketName = null;
 
     public function getId(): ?int
     {
