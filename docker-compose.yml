@@ -61,9 +61,9 @@ services:
       retries: 3
       start_period: 10s
 
-  # Einfaches SMTP-Testing mit einfacherem Docker-Image
+  # ARM-kompatibles SMTP-Server Image
   mailserver:
-    image: namshi/smtp
+    image: bytemark/smtp
     container_name: ticketumfrage_mailserver
     ports:
       - "1025:25"
