@@ -1,4 +1,13 @@
 <?php
+/**
+ * UserRepository.php
+ * 
+ * Diese Repository-Klasse stellt Methoden zum Zugriff auf User-Entitäten bereit.
+ * Sie erweitert den ServiceEntityRepository von Doctrine und bietet spezielle
+ * Suchmethoden und Abfragen für die Arbeit mit Benutzerdaten.
+ * 
+ * @package App\Repository
+ */
 
 namespace App\Repository;
 
@@ -7,20 +16,43 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository für die User-Entität
+ * 
  * @extends ServiceEntityRepository<User>
  */
 class UserRepository extends ServiceEntityRepository
 {
+    /**
+     * Konstruktor mit Doctrine ManagerRegistry als Dependency
+     * 
+     * @param ManagerRegistry $registry Die Doctrine ManagerRegistry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
     }
 
+    /**
+     * Findet einen Benutzer anhand seines Benutzernamens
+     * 
+     * @param string $username Der gesuchte Benutzername
+     * @return User|null Der gefundene Benutzer oder null, wenn kein passender Benutzer gefunden wurde
+     */
     public function findByUsername(string $username): ?User
     {
         return $this->findOneBy(['username' => $username]);
     }
     
+    /**
+     * Findet mehrere Benutzer anhand ihrer Benutzernamen
+     * 
+     * Diese Methode ist optimiert, um mehrere Benutzer gleichzeitig zu suchen,
+     * anstatt mehrere einzelne Datenbankabfragen durchzuführen. Dies ist besonders
+     * nützlich bei der Verarbeitung von CSV-Dateien mit vielen Benutzern.
+     * 
+     * @param array $usernames Array mit Benutzernamen
+     * @return User[] Array mit den gefundenen Benutzern
+     */
     public function findMultipleByUsernames(array $usernames): array
     {
         return $this->createQueryBuilder('u')
@@ -31,31 +63,33 @@ class UserRepository extends ServiceEntityRepository
     }
     
     /**
-     * Search users by username (case-insensitive partial match)
-     * with optional sorting
+     * Sucht Benutzer anhand des Benutzernamens mit optionalem Sortieren
      * 
-     * @param string|null $searchTerm Search term for username
-     * @param string|null $sortField Field to sort by (id, username, email)
-     * @param string|null $sortDirection Direction to sort (ASC or DESC)
-     * @return User[]
+     * Diese Methode erlaubt eine Teiltext-Suche (case-insensitive) nach dem Benutzernamen
+     * und unterstützt das Sortieren der Ergebnisse nach verschiedenen Feldern.
+     * 
+     * @param string|null $searchTerm Suchbegriff für den Benutzernamen (kann null sein für alle Benutzer)
+     * @param string|null $sortField Feld für die Sortierung (id, username, email)
+     * @param string|null $sortDirection Sortierrichtung (ASC oder DESC)
+     * @return User[] Array mit den gefundenen Benutzern
      */
     public function searchByUsername(?string $searchTerm, ?string $sortField = null, ?string $sortDirection = null): array
     {
-        // Validate and set default sort parameters
+        // Validieren und Standardwerte für Sortierparameter setzen
         $validSortFields = ['id', 'username', 'email'];
         $sortField = in_array($sortField, $validSortFields) ? $sortField : 'id';
         $sortDirection = ($sortDirection === 'DESC') ? 'DESC' : 'ASC';
         
         $queryBuilder = $this->createQueryBuilder('u');
         
-        // Apply search filter if a search term is provided
+        // Suchfilter anwenden, wenn ein Suchbegriff angegeben ist
         if ($searchTerm) {
             $queryBuilder
                 ->where('LOWER(u.username) LIKE LOWER(:searchTerm)')
                 ->setParameter('searchTerm', '%' . $searchTerm . '%');
         }
         
-        // Apply sorting
+        // Sortierung anwenden
         $queryBuilder->orderBy('u.' . $sortField, $sortDirection);
         
         return $queryBuilder->getQuery()->getResult();

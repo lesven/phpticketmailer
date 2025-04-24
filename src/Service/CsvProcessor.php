@@ -1,4 +1,13 @@
 <?php
+/**
+ * CsvProcessor.php
+ * 
+ * Diese Klasse ist verantwortlich für die Verarbeitung von CSV-Dateien
+ * mit Ticket-Daten. Sie validiert die Daten, identifiziert unbekannte Benutzer
+ * und bereitet die Daten für den E-Mail-Versand vor.
+ * 
+ * @package App\Service
+ */
 
 namespace App\Service;
 
@@ -10,10 +19,31 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class CsvProcessor
 {
+    /**
+     * Das User Repository zum Abrufen von Benutzerinformationen
+     * @var UserRepository
+     */
     private $userRepository;
+    
+    /**
+     * Der Request-Stack für Zugriff auf die Session
+     * @var RequestStack
+     */
     private $requestStack;
+    
+    /**
+     * Der Parameter-Bag für Zugriff auf Konfigurationswerte
+     * @var ParameterBagInterface
+     */
     private $params;
     
+    /**
+     * Konstruktor mit Dependency Injection aller benötigten Services
+     * 
+     * @param UserRepository $userRepository Das User Repository
+     * @param RequestStack $requestStack Der Request-Stack für Session-Zugriff
+     * @param ParameterBagInterface $params Der Parameter-Bag für Konfigurationswerte
+     */
     public function __construct(
         UserRepository $userRepository,
         RequestStack $requestStack,
@@ -24,6 +54,17 @@ class CsvProcessor
         $this->params = $params;
     }
     
+    /**
+     * Verarbeitet eine hochgeladene CSV-Datei mit Ticket-Daten
+     * 
+     * Diese Methode öffnet die CSV-Datei, validiert die Inhalte,
+     * identifiziert gültige Tickets und unbekannte Benutzer. Die
+     * gültigen Tickets werden in der Session für späteren Zugriff gespeichert.
+     * 
+     * @param UploadedFile $file Die hochgeladene CSV-Datei
+     * @return array Strukturierte Ergebnisse der Verarbeitung (gültige Tickets, ungültige Zeilen, unbekannte Benutzer)
+     * @throws \Exception Wenn die CSV-Datei nicht die erforderlichen Spalten enthält
+     */
     public function process(UploadedFile $file): array
     {
         $result = [
@@ -32,6 +73,7 @@ class CsvProcessor
             'unknownUsers' => []
         ];
         
+        // CSV-Datei öffnen
         $handle = fopen($file->getPathname(), 'r');
         
         // Erste Zeile für Header lesen
@@ -67,9 +109,11 @@ class CsvProcessor
                 continue;
             }
             
+            // Benutzernamen für spätere Überprüfung sammeln
             $username = $row[$usernameIndex];
             $uniqueUsernames[$username] = true;
             
+            // Gültiges Ticket speichern
             $result['validTickets'][] = [
                 'ticketId' => $row[$ticketIdIndex],
                 'username' => $username,
@@ -81,13 +125,16 @@ class CsvProcessor
         
         // Prüfen, welche Benutzer keine bekannten E-Mail-Adressen haben
         if (!empty($uniqueUsernames)) {
+            // Alle benötigten Benutzer auf einmal aus der Datenbank laden
             $users = $this->userRepository->findMultipleByUsernames(array_keys($uniqueUsernames));
             $knownUsernames = [];
             
+            // Liste der bekannten Benutzernamen erstellen
             foreach ($users as $user) {
                 $knownUsernames[$user->getUsername()] = true;
             }
             
+            // Unbekannte Benutzer identifizieren
             foreach (array_keys($uniqueUsernames) as $username) {
                 if (!isset($knownUsernames[$username])) {
                     $result['unknownUsers'][] = $username;
