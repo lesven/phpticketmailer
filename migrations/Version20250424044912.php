@@ -21,16 +21,12 @@ final class Version20250424044912 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
     
-        $this->addSql(<<<'SQL'
-            CREATE TABLE users (id INT AUTO_INCREMENT NOT NULL, username VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, UNIQUE INDEX UNIQ_1483A5E9F85E0677 (username), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
-        SQL);
+
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql(<<<'SQL'
-            DROP TABLE users
-        SQL);
+
     }
 }
