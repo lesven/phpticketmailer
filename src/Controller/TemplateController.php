@@ -34,6 +34,14 @@ class TemplateController extends AbstractController
         $templateExists = file_exists($templatePath);
         $message = null;
         
+        // Beispieldaten für die Vorschau
+        $previewData = [
+            'ticketId' => 'TICKET-12345',
+            'ticketName' => 'Beispiel Support-Anfrage',
+            'username' => 'max.mustermann',
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345'
+        ];
+        
         if ($request->isMethod('POST')) {
             $file = $request->files->get('template_file');
             
@@ -55,9 +63,25 @@ class TemplateController extends AbstractController
             }
         }
         
+        // Template-Inhalt laden für die Vorschau und standardmäßig erstellen, wenn nicht vorhanden
+        $templateContent = '';
+        if ($templateExists) {
+            $templateContent = file_get_contents($templatePath);
+        } else {
+            $templateContent = $this->getDefaultTemplate();
+            // Standard-Template speichern
+            file_put_contents($templatePath, $templateContent);
+            $templateExists = true;
+        }
+        
+        // Vorschau mit Beispieldaten generieren
+        $previewContent = $this->replacePlaceholders($templateContent, $previewData);
+        
         return $this->render('template/manage.html.twig', [
             'templateExists' => $templateExists,
             'message' => $message,
+            'previewContent' => $previewContent,
+            'previewData' => $previewData,
         ]);
     }
     
@@ -69,7 +93,9 @@ class TemplateController extends AbstractController
         $templatePath = $this->getTemplatePath();
         
         if (!file_exists($templatePath)) {
-            throw $this->createNotFoundException('E-Mail-Template nicht gefunden.');
+            // Falls kein Template existiert, erstellen wir ein Standard-Template
+            $defaultTemplate = $this->getDefaultTemplate();
+            file_put_contents($templatePath, $defaultTemplate);
         }
         
         $response = new BinaryFileResponse($templatePath);
@@ -79,6 +105,43 @@ class TemplateController extends AbstractController
         );
         
         return $response;
+    }
+    
+    /**
+     * Ersetzt Platzhalter im Template mit tatsächlichen Werten
+     */
+    private function replacePlaceholders(string $template, array $data): string
+    {
+        $placeholders = [
+            '{{ticketId}}' => $data['ticketId'] ?? 'TICKET-ID',
+            '{{ticketName}}' => $data['ticketName'] ?? 'Ticket-Name',
+            '{{username}}' => $data['username'] ?? 'Benutzername',
+            '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id'
+        ];
+        
+        return str_replace(array_keys($placeholders), array_values($placeholders), $template);
+    }
+    
+    /**
+     * Liefert ein Standard-Template zurück
+     */
+    private function getDefaultTemplate(): string
+    {
+        return <<<EOT
+Sehr geehrte(r) {{username}},
+
+wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:
+
+Ticket-Nr: {{ticketId}}
+Betreff: {{ticketName}}
+
+Um das Ticket anzusehen und Feedback zu geben, klicken Sie bitte hier: {{ticketLink}}
+
+Vielen Dank für Ihre Rückmeldung!
+
+Mit freundlichen Grüßen
+Ihr Support-Team
+EOT;
     }
     
     private function getTemplateDirectory(): string

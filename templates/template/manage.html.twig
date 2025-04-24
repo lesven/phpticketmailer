@@ -19,15 +19,17 @@
         <div class="card-body">
             <p>Im E-Mail-Template können folgende Platzhalter verwendet werden:</p>
             <ul>
+                {% verbatim %}
                 <li><code>{{ticketId}}</code> - Die ID des Tickets</li>
                 <li><code>{{ticketName}}</code> - Der Name/Titel des Tickets</li>
                 <li><code>{{username}}</code> - Der Benutzername des Empfängers</li>
                 <li><code>{{ticketLink}}</code> - Ein Link zum Ticket im Ticketsystem</li>
+                {% endverbatim %}
             </ul>
         </div>
     </div>
     
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -65,6 +67,32 @@
                             <p>Es wurde noch kein E-Mail-Template hochgeladen. Das Standardtemplate wird verwendet.</p>
                         </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vorschau des E-Mail-Templates -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">Template-Vorschau mit Beispieldaten</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Beispieldaten:</strong></p>
+                    <ul class="list-group">
+                        <li class="list-group-item">Ticket ID: {{ previewData.ticketId }}</li>
+                        <li class="list-group-item">Ticket Name: {{ previewData.ticketName }}</li>
+                        <li class="list-group-item">Benutzername: {{ previewData.username }}</li>
+                        <li class="list-group-item">Ticket Link: <a href="{{ previewData.ticketLink }}" target="_blank">{{ previewData.ticketLink }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-8">
+                    <p><strong>Vorschau:</strong></p>
+                    <div class="border p-3 bg-light">
+                        <pre>{{ previewContent }}</pre>
+                    </div>
                 </div>
             </div>
         </div>

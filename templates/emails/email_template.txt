@@ -1,0 +1,13 @@
+Sehr geehrte(r) {{username}},
+
+wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:
+
+Ticket-Nr: {{ticketId}}
+Betreff: {{ticketName}}
+
+Um das Ticket anzusehen und Feedback zu geben, klicken Sie bitte hier: {{ticketLink}}
+
+Vielen Dank für Ihre Rückmeldung!
+
+Mit freundlichen Grüßen
+Ihr Support-Team
