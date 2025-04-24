@@ -11,7 +11,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10&charset=utf8mb4
+      - DATABASE_URL=mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.11.2&charset=utf8mb4
     networks:
       - proxy-tier
     restart: unless-stopped
@@ -27,6 +27,8 @@ services:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - php
+    ports:
+      - "8090:80"   
     networks:
       - proxy-tier
     restart: unless-stopped
