@@ -13,8 +13,8 @@ Eine Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen pe
 
 ## Systemanforderungen
 
-- PHP 7.4 oder höher
-- MySQL 5.7 oder höher (oder MariaDB)
+- PHP 8.1 oder höher
+- MySQL 8.0 oder höher (oder MariaDB)
 - Composer
 - Symfony CLI (optional, für die lokale Entwicklung)
 - Docker und Docker Compose (optional, für die Docker-Installation)
@@ -25,75 +25,82 @@ Sie haben zwei Möglichkeiten, das Ticketumfrage-Tool zu installieren: direkt au
 
 ### A. Installation mit Docker (empfohlen)
 
+#### Voraussetzungen
+- Docker Engine (Version 20.10.0 oder höher)
+- Docker Compose (Version 2.0.0 oder höher)
+- Git
+
 #### 1. Projekt klonen
 
 ```bash
-git clone https://your-repository/ticketumfrage-tool.git
-cd ticketumfrage-tool
+git clone https://github.com/ihrsvcname/phpticketmailer.git
+cd phpticketmailer
 ```
 
-#### 2. Docker-Container starten
+#### 2. Umgebungsvariablen konfigurieren
 
-**Für Intel/AMD-Architekturen (Standard):**
-```bash
-docker-compose up -d
-```
-
-**Für ARM-Architekturen (z.B. Raspberry Pi):**
-```bash
-DOCKER_PLATFORM=linux/arm64v8 docker-compose up -d
-```
-
-Oder für ältere Raspberry Pi Modelle:
-```bash
-DOCKER_PLATFORM=linux/arm/v7 docker-compose up -d
-```
-
-Dies startet automatisch:
-- PHP-FPM Container (PHP 8.1)
-- Nginx Webserver
-- MySQL-Datenbank
-- phpMyAdmin für die Datenbankverwaltung
-- Mailhog für SMTP-Testing und E-Mail-Debugging
-
-#### 3. Abhängigkeiten installieren und Datenbank einrichten
+Kopieren Sie `.env.example` nach `.env.local` und passen Sie die Einstellungen an:
 
 ```bash
-# Composer-Abhängigkeiten installieren
-docker exec -it ticketumfrage_php bash -c "composer install"
-
-# Datenbank-Migration durchführen
-docker exec -it ticketumfrage_php bash -c "php bin/console doctrine:migrations:migrate --no-interaction"
-```
-
-#### 4. Konfiguration
-
-Kopieren Sie `.env.local.example` nach `.env.local` und passen Sie die Einstellungen an:
-
-```bash
-cp .env.local.example .env.local
+cp .env .env.local
 ```
 
 Für die Docker-Umgebung sollten Sie folgende Einstellungen verwenden:
 
 ```
-DATABASE_URL="mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=8.0&charset=utf8mb4"
-MAILER_DSN=smtp://mailhog:1025
+DATABASE_URL="mysql://app:!ChangeMe!@database:3306/app?serverVersion=8.0.32&charset=utf8mb4"
+MAILER_DSN=smtp://mailer:1025
 ```
+
+#### 3. Docker-Container starten
+
+**Für Intel/AMD-Architekturen (Standard):**
+```bash
+docker compose up -d
+```
+
+**Für ARM-Architekturen (z.B. Apple Silicon oder Raspberry Pi):**
+```bash
+DOCKER_PLATFORM=linux/arm64v8 docker compose up -d
+```
+
+Oder für ältere Raspberry Pi Modelle:
+```bash
+DOCKER_PLATFORM=linux/arm/v7 docker compose up -d
+```
+
+#### 4. Abhängigkeiten installieren und Datenbank einrichten
+
+```bash
+# Composer-Abhängigkeiten installieren
+docker exec -it phpticketmailer-php-1 composer install
+
+# Datenbank-Migration durchführen
+docker exec -it phpticketmailer-php-1 php bin/console doctrine:migrations:migrate --no-interaction
+```
+
+Hinweis: Der Container-Name kann je nach System variieren. Wenn der obige Befehl nicht funktioniert, überprüfen Sie den Namen mit `docker ps`.
 
 #### 5. Zugriff auf die Anwendung
 
 - Ticketumfrage-Tool: http://localhost:8080
-- phpMyAdmin: http://localhost:8081 (Benutzername: ticketuser, Passwort: ticketpassword)
-- Mailhog (E-Mail-Test): http://localhost:8025
+- MySQL-Datenbank: localhost:3306 (Zugangsdaten wie in der .env.local konfiguriert)
+- SMTP-Server (für E-Mail-Tests): http://localhost:1080
 
 ### B. Manuelle Installation
+
+#### Voraussetzungen
+- PHP 8.1 oder höher
+- MySQL 8.0 oder höher (oder MariaDB)
+- Composer
+- Git
+- Symfony CLI (empfohlen)
 
 #### 1. Projekt klonen
 
 ```bash
-git clone https://your-repository/ticketumfrage-tool.git
-cd ticketumfrage-tool
+git clone https://github.com/ihrsvcname/phpticketmailer.git
+cd phpticketmailer
 ```
 
 #### 2. Abhängigkeiten installieren
@@ -104,13 +111,18 @@ composer install
 
 #### 3. Konfiguration
 
-Kopieren Sie `.env.local.example` nach `.env.local` und passen Sie die Einstellungen an:
+Kopieren Sie `.env` nach `.env.local` und passen Sie die Einstellungen an:
 
 ```bash
-cp .env.local.example .env.local
+cp .env .env.local
 ```
 
-Bearbeiten Sie die `.env.local`-Datei und geben Sie Ihre Datenbank- und E-Mail-Konfiguration an.
+Bearbeiten Sie die `.env.local`-Datei und geben Sie Ihre Datenbank- und E-Mail-Konfiguration an, zum Beispiel:
+
+```
+DATABASE_URL="mysql://benutzername:passwort@127.0.0.1:3306/phpticketmailer?serverVersion=8.0.32&charset=utf8mb4"
+MAILER_DSN=smtp://benutzername:passwort@ihrmailserver:25
+```
 
 #### 4. Datenbank erstellen und Tabellen anlegen
 
@@ -122,12 +134,14 @@ php bin/console doctrine:migrations:migrate
 #### 5. Webserver starten
 
 ```bash
-# Mit dem Symfony CLI
+# Mit dem Symfony CLI (empfohlen)
 symfony server:start
 
 # Oder mit dem eingebauten PHP-Webserver
 php -S localhost:8000 -t public/
 ```
+
+Die Anwendung ist dann unter http://localhost:8000 verfügbar.
 
 ## Verwendung
 
