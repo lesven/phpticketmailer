@@ -38,13 +38,17 @@
                 </div>
                 
                 <div class="d-grid gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary">E-Mail-Adressen speichern und fortfahren</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> E-Mail-Adressen speichern und fortfahren
+                    </button>
                 </div>
             </form>
         </div>
     </div>
     
     <div class="mt-3">
-        <a href="{{ path('csv_upload') }}" class="btn btn-secondary">Zurück zum CSV-Upload</a>
+        <a href="{{ path('csv_upload') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Zurück zum CSV-Upload
+        </a>
     </div>
 {% endblock %}

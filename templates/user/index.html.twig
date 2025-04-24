@@ -29,7 +29,9 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Suchen</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Suchen
+                    </button>
                 </div>
                 
                 {# Hidden fields to maintain sort when searching #}
@@ -70,13 +72,19 @@
                                         'sort': 'id',
                                         'direction': (sortField == 'id' ? oppositeDirection : 'ASC'),
                                         'search': searchTerm
-                                    }) }}" class="text-decoration-none text-dark">
+                                    }) }}" class="text-decoration-none text-dark d-flex align-items-center">
                                         ID
-                                        {% if sortField == 'id' %}
-                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
-                                        {% else %}
-                                            <i class="fas fa-sort text-muted"></i>
-                                        {% endif %}
+                                        <span class="ms-1">
+                                            {% if sortField == 'id' %}
+                                                {% if sortDirection == 'ASC' %}
+                                                    <i class="fas fa-sort-up text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort-down text-primary"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted"></i>
+                                            {% endif %}
+                                        </span>
                                     </a>
                                 </th>
                                 <th>
@@ -84,13 +92,19 @@
                                         'sort': 'username',
                                         'direction': (sortField == 'username' ? oppositeDirection : 'ASC'),
                                         'search': searchTerm
-                                    }) }}" class="text-decoration-none text-dark">
+                                    }) }}" class="text-decoration-none text-dark d-flex align-items-center">
                                         Benutzername
-                                        {% if sortField == 'username' %}
-                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
-                                        {% else %}
-                                            <i class="fas fa-sort text-muted"></i>
-                                        {% endif %}
+                                        <span class="ms-1">
+                                            {% if sortField == 'username' %}
+                                                {% if sortDirection == 'ASC' %}
+                                                    <i class="fas fa-sort-up text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort-down text-primary"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted"></i>
+                                            {% endif %}
+                                        </span>
                                     </a>
                                 </th>
                                 <th>
@@ -98,13 +112,19 @@
                                         'sort': 'email',
                                         'direction': (sortField == 'email' ? oppositeDirection : 'ASC'),
                                         'search': searchTerm
-                                    }) }}" class="text-decoration-none text-dark">
+                                    }) }}" class="text-decoration-none text-dark d-flex align-items-center">
                                         E-Mail
-                                        {% if sortField == 'email' %}
-                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
-                                        {% else %}
-                                            <i class="fas fa-sort text-muted"></i>
-                                        {% endif %}
+                                        <span class="ms-1">
+                                            {% if sortField == 'email' %}
+                                                {% if sortDirection == 'ASC' %}
+                                                    <i class="fas fa-sort-up text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort-down text-primary"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted"></i>
+                                            {% endif %}
+                                        </span>
                                     </a>
                                 </th>
                                 <th>Aktionen</th>
@@ -118,10 +138,14 @@
                                     <td>{{ user.email }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-sm btn-primary">Bearbeiten</a>
+                                            <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Bearbeiten
+                                            </a>
                                             <form method="post" action="{{ path('user_delete', {'id': user.id}) }}" onsubmit="return confirm('Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?');" style="display: inline-block;">
                                                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
-                                                <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash-alt"></i> Löschen
+                                                </button>
                                             </form>
                                         </div>
                                     </td>

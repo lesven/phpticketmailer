@@ -119,6 +119,7 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 **Akzeptanzkriterien:**
 - auf und absteigend sortieren soll möglich sein
 - jede spalte soll sortierbar sein
+- ich will passende piktogramme für die sortierung an den spalten haben
 
 ### User Story 13: Die Seite soll mit einem Passwort geschützt sein
 *Als Administrator möchte ich dass die seite und ihre FUnktionalitäten nur zugänglich sind wenn man sich mit einem Passwort authentifiziert hat. Sobald man authentifiziert ist gibt es keinerlei unterschiede in den Berechtigungen*
