@@ -21,10 +21,27 @@ class UserController extends AbstractController
     /**
      * @Route("/", name="user_index", methods={"GET"})
      */
-    public function index(UserRepository $userRepository): Response
+    public function index(Request $request, UserRepository $userRepository): Response
     {
+        // Get search term from request query parameters
+        $searchTerm = $request->query->get('search');
+        
+        // Get sort parameters from request
+        $sortField = $request->query->get('sort', 'id');
+        $sortDirection = $request->query->get('direction', 'ASC');
+        
+        // Use searchByUsername method from repository with sorting parameters
+        $users = $userRepository->searchByUsername($searchTerm, $sortField, $sortDirection);
+        
+        // Determine the opposite direction for toggling sort order
+        $oppositeDirection = $sortDirection === 'ASC' ? 'DESC' : 'ASC';
+        
         return $this->render('user/index.html.twig', [
-            'users' => $userRepository->findAll(),
+            'users' => $users,
+            'searchTerm' => $searchTerm,
+            'sortField' => $sortField,
+            'sortDirection' => $sortDirection,
+            'oppositeDirection' => $oppositeDirection
         ]);
     }
 

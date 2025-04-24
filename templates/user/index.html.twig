@@ -17,24 +17,96 @@
             </a>
         </div>
     </div>
+    
+    {# Search Form #}
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ path('user_index') }}" method="get" class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Nach Benutzernamen suchen..." value="{{ searchTerm }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Suchen</button>
+                </div>
+                
+                {# Hidden fields to maintain sort when searching #}
+                {% if sortField is defined %}
+                    <input type="hidden" name="sort" value="{{ sortField }}">
+                    <input type="hidden" name="direction" value="{{ sortDirection }}">
+                {% endif %}
+            </form>
+        </div>
+    </div>
 
     {% if users is empty %}
         <div class="alert alert-info">
-            Es sind noch keine Benutzer angelegt. Klicken Sie auf "Neuen Benutzer anlegen", um zu beginnen.
+            {% if searchTerm %}
+                Es wurden keine Benutzer mit dem Suchbegriff "{{ searchTerm }}" gefunden.
+                <a href="{{ path('user_index') }}">Alle Benutzer anzeigen</a>
+            {% else %}
+                Es sind noch keine Benutzer angelegt. Klicken Sie auf "Neuen Benutzer anlegen", um zu beginnen.
+            {% endif %}
         </div>
     {% else %}
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Benutzer und E-Mail-Zuordnungen</h5>
+                <h5 class="card-title mb-0">
+                    Benutzer und E-Mail-Zuordnungen
+                    {% if searchTerm %}
+                        <small class="text-muted">(Suche nach: "{{ searchTerm }}")</small>
+                    {% endif %}
+                </h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Benutzername</th>
-                                <th>E-Mail</th>
+                                <th>
+                                    <a href="{{ path('user_index', {
+                                        'sort': 'id',
+                                        'direction': (sortField == 'id' ? oppositeDirection : 'ASC'),
+                                        'search': searchTerm
+                                    }) }}" class="text-decoration-none text-dark">
+                                        ID
+                                        {% if sortField == 'id' %}
+                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ path('user_index', {
+                                        'sort': 'username',
+                                        'direction': (sortField == 'username' ? oppositeDirection : 'ASC'),
+                                        'search': searchTerm
+                                    }) }}" class="text-decoration-none text-dark">
+                                        Benutzername
+                                        {% if sortField == 'username' %}
+                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ path('user_index', {
+                                        'sort': 'email',
+                                        'direction': (sortField == 'email' ? oppositeDirection : 'ASC'),
+                                        'search': searchTerm
+                                    }) }}" class="text-decoration-none text-dark">
+                                        E-Mail
+                                        {% if sortField == 'email' %}
+                                            <i class="fas fa-sort-{{ sortDirection == 'ASC' ? 'up' : 'down' }}"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
                                 <th>Aktionen</th>
                             </tr>
                         </thead>

@@ -106,3 +106,16 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - der Import soll innerhalb der Benutzerverwaltung möglich sein
 - es sollen ID, Name und Emailadresse importiert werden
 - checkbox oder Benutzerdatenbank vorher gelleert werden soll
+
+### User Story 11: Suche nach Benutzernamen in der Benutzerverwaltung
+*Als Webanwendung möchte ich dass ich nach dem benutzernamen suchen kann damit ich schneller die Nutzer finde*
+**Akzeptanzkriterien:**
+- Eingabefeld einzeilig für benutzernamen
+- es werden auch angefangen Nutzernamen gefunden, also wildcard dahinter *
+- groß und Kleinschreibung soll ignoriert werden
+
+### User Story 12: Benutzerverwaltung alle spalten sollen sortierbar sein
+*Als Webanwendung möchte ich dass ich die spalten in der benutzertabelle sortieren kann*
+**Akzeptanzkriterien:**
+- auf und absteigend sortieren soll möglich sein
+- jede spalte soll sortierbar sein
