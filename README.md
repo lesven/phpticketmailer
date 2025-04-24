@@ -10,12 +10,15 @@ Eine Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen pe
 - Anpassbares E-Mail-Template mit Platzhaltern
 - Test- und Live-Modus für den E-Mail-Versand
 - Protokollierung aller Versandaktionen
+- Passwortgeschützte Benutzeroberfläche
+- Import und Export von Benutzer-Daten als CSV
 
 ## Systemanforderungen
 
-- PHP 8.1 oder höher
-- MySQL 8.0 oder höher (oder MariaDB)
+- PHP 8.3 oder höher
+- MySQL 8.0 oder höher (oder MariaDB 10.11+)
 - Composer
+- Symfony 7.2
 - Symfony CLI (optional, für die lokale Entwicklung)
 - Docker und Docker Compose (optional, für die Docker-Installation)
 
@@ -39,7 +42,7 @@ cd phpticketmailer
 
 #### 2. Umgebungsvariablen konfigurieren
 
-Kopieren Sie `.env.example` nach `.env.local` und passen Sie die Einstellungen an:
+Kopieren Sie `.env` nach `.env.local` und passen Sie die Einstellungen an:
 
 ```bash
 cp .env .env.local
@@ -48,8 +51,8 @@ cp .env .env.local
 Für die Docker-Umgebung sollten Sie folgende Einstellungen verwenden:
 
 ```
-DATABASE_URL="mysql://app:!ChangeMe!@database:3306/app?serverVersion=8.0.32&charset=utf8mb4"
-MAILER_DSN=smtp://mailer:1025
+DATABASE_URL="mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.11.2&charset=utf8mb4"
+MAILER_DSN=smtp://mailhog:1025
 ```
 
 #### 3. Docker-Container starten
@@ -73,25 +76,25 @@ DOCKER_PLATFORM=linux/arm/v7 docker compose up -d
 
 ```bash
 # Composer-Abhängigkeiten installieren
-docker exec -it phpticketmailer-php-1 composer install
+docker exec -it ticketumfrage_php composer install
 
 # Datenbank-Migration durchführen
-docker exec -it phpticketmailer-php-1 php bin/console doctrine:migrations:migrate --no-interaction
+docker exec -it ticketumfrage_php php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
-Hinweis: Der Container-Name kann je nach System variieren. Wenn der obige Befehl nicht funktioniert, überprüfen Sie den Namen mit `docker ps`.
+Hinweis: Falls die Container-Namen anders sind, überprüfen Sie diese mit `docker ps`.
 
 #### 5. Zugriff auf die Anwendung
 
-- Ticketumfrage-Tool: http://localhost:8080
-- MySQL-Datenbank: localhost:3306 (Zugangsdaten wie in der .env.local konfiguriert)
-- SMTP-Server (für E-Mail-Tests): http://localhost:1080
+- Ticketumfrage-Tool: http://localhost:8090
+- MySQL/MariaDB-Datenbank: localhost:3306 (Zugangsdaten: ticketuser/ticketpassword)
+- MailHog (für E-Mail-Tests): http://localhost:8025
 
 ### B. Manuelle Installation
 
 #### Voraussetzungen
-- PHP 8.1 oder höher
-- MySQL 8.0 oder höher (oder MariaDB)
+- PHP 8.3 oder höher
+- MySQL 8.0 oder höher (oder MariaDB 10.11+)
 - Composer
 - Git
 - Symfony CLI (empfohlen)
@@ -121,6 +124,8 @@ Bearbeiten Sie die `.env.local`-Datei und geben Sie Ihre Datenbank- und E-Mail-K
 
 ```
 DATABASE_URL="mysql://benutzername:passwort@127.0.0.1:3306/phpticketmailer?serverVersion=8.0.32&charset=utf8mb4"
+# Oder für MariaDB:
+# DATABASE_URL="mysql://benutzername:passwort@127.0.0.1:3306/phpticketmailer?serverVersion=mariadb-10.11.2&charset=utf8mb4"
 MAILER_DSN=smtp://benutzername:passwort@ihrmailserver:25
 ```
 
@@ -162,11 +167,13 @@ ticketId,username,ticketName
 
 ### Workflow
 
-1. **Benutzer anlegen**: Fügen Sie unter "Benutzer" Benutzernamen und E-Mail-Adressen hinzu.
-2. **E-Mail-Template anpassen**: Optional können Sie unter "E-Mail-Template" die Vorlage für die E-Mails anpassen.
-3. **CSV-Datei hochladen**: Laden Sie unter "CSV-Upload" eine CSV-Datei mit Ticket-Informationen hoch.
-4. **E-Mails versenden**: Nach dem Upload werden E-Mails automatisch versendet oder Sie werden zur Eingabe fehlender E-Mail-Adressen aufgefordert.
-5. **Ergebnisse prüfen**: Auf dem Dashboard und der Ergebnisseite können Sie den Status aller Versandaktionen einsehen.
+1. **Login**: Bei der ersten Nutzung ist das Standard-Passwort "geheim". Es wird empfohlen, dieses sofort zu ändern.
+2. **Benutzer anlegen**: Fügen Sie unter "Benutzer" Benutzernamen und E-Mail-Adressen hinzu oder importieren Sie eine CSV-Datei mit Benutzern.
+3. **E-Mail-Template anpassen**: Optional können Sie unter "E-Mail-Template" die Vorlage für die E-Mails anpassen.
+4. **SMTP-Konfiguration prüfen**: Stellen Sie sicher, dass die SMTP-Einstellungen korrekt sind.
+5. **CSV-Datei hochladen**: Laden Sie unter "CSV-Upload" eine CSV-Datei mit Ticket-Informationen hoch.
+6. **E-Mails versenden**: Nach dem Upload werden E-Mails automatisch versendet oder Sie werden zur Eingabe fehlender E-Mail-Adressen aufgefordert.
+7. **Ergebnisse prüfen**: Auf dem Dashboard und der Ergebnisseite können Sie den Status aller Versandaktionen einsehen.
 
 ## Multi-Architektur-Unterstützung
 
@@ -184,13 +191,13 @@ Die Docker-Compose-Konfiguration verwendet eine Umgebungsvariable `DOCKER_PLATFO
 
 ```bash
 # Standard (Intel/AMD)
-docker-compose up -d
+docker compose up -d
 
 # ARM64 (z.B. Raspberry Pi 4)
-DOCKER_PLATFORM=linux/arm64v8 docker-compose up -d
+DOCKER_PLATFORM=linux/arm64v8 docker compose up -d
 
 # ARMv7 (z.B. ältere Raspberry Pi Modelle)
-DOCKER_PLATFORM=linux/arm/v7 docker-compose up -d
+DOCKER_PLATFORM=linux/arm/v7 docker compose up -d
 ```
 
 ### Hinweise zur Performance
@@ -211,6 +218,13 @@ Im E-Mail-Template können folgende Platzhalter verwendet werden:
 ## Testmodus
 
 Im Testmodus werden alle E-Mails an die in der Konfiguration angegebene Test-E-Mail-Adresse gesendet, anstatt an die tatsächlichen Empfänger. Dies ist nützlich, um den Versandprozess zu testen, ohne echte E-Mails zu versenden.
+
+## Sicherheit
+
+- Die Anwendung ist passwortgeschützt. Das Standard-Passwort lautet "geheim".
+- Ändern Sie das Passwort nach der ersten Anmeldung über den Menüpunkt "Passwort ändern".
+- Das Passwort wird verschlüsselt in der Datenbank gespeichert.
+- Es gibt kein Benutzermanagement mit unterschiedlichen Berechtigungen - jeder mit dem Passwort hat vollen Zugriff.
 
 ## Support und Kontakt
 
