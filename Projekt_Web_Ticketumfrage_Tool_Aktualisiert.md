@@ -119,3 +119,11 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 **Akzeptanzkriterien:**
 - auf und absteigend sortieren soll möglich sein
 - jede spalte soll sortierbar sein
+
+### User Story 13: Die Seite soll mit einem Passwort geschützt sein
+*Als Administrator möchte ich dass die seite und ihre FUnktionalitäten nur zugänglich sind wenn man sich mit einem Passwort authentifiziert hat. Sobald man authentifiziert ist gibt es keinerlei unterschiede in den Berechtigungen*
+**Akzeptanzkriterien:**
+- Passwort darf nicht leer sein und muss aus mindestens 8 Zeichen bestehen
+- Das Passwort wird verschlüsselt gespeichert
+- das Standardpasswort lautet "geheim" wenn kein anderes Passwort gesetzt wurde
+- es gibt einen Menüpunkt der Passwort ändern heißt
