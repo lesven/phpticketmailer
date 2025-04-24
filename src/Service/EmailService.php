@@ -3,17 +3,25 @@
 namespace App\Service;
 
 use App\Entity\EmailSent;
+use App\Entity\SMTPConfig;
+use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Address;
 
 class EmailService
 {
+    /**
+     * The mailer service for sending emails
+     */
     private $mailer;
     private $entityManager;
     private $userRepository;
+    private $smtpConfigRepository;
     private $params;
     private $projectDir;
     
@@ -21,12 +29,14 @@ class EmailService
         MailerInterface $mailer,
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
+        SMTPConfigRepository $smtpConfigRepository,
         ParameterBagInterface $params,
         string $projectDir
     ) {
         $this->mailer = $mailer;
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
+        $this->smtpConfigRepository = $smtpConfigRepository;
         $this->params = $params;
         $this->projectDir = $projectDir;
     }
@@ -36,9 +46,20 @@ class EmailService
         $sentEmails = [];
         $templateContent = $this->getEmailTemplate();
         $testEmailAddress = $this->params->get('app.test_email', 'test@example.com');
+        
+        // Versuche, die SMTP-Konfiguration aus der Datenbank zu laden
+        $config = $this->smtpConfigRepository->getConfig();
+        
+        // Wenn keine Konfiguration vorhanden ist, verwende die Standard-Parameter
+        if ($config) {
+            $senderEmail = $config->getSenderEmail();
+            $senderName = $config->getSenderName();
+        } else {
+            $senderEmail = $this->params->get('app.sender_email', 'noreply@example.com');
+            $senderName = $this->params->get('app.sender_name', 'Ticket-System');
+        }
+        
         $defaultSubject = $this->params->get('app.email_subject', 'Ihre Rückmeldung zu Ticket {{ticketId}}');
-        $senderEmail = $this->params->get('app.sender_email', 'noreply@example.com');
-        $senderName = $this->params->get('app.sender_name', 'Ticket-System');
         $ticketBaseUrl = $this->params->get('app.ticket_base_url', 'https://www.ticket.de');
         
         // Use current time for all email records
@@ -82,13 +103,19 @@ class EmailService
             
             // E-Mail erstellen und versenden
             $email = (new Email())
-                ->from(new \Symfony\Component\Mime\Address($senderEmail, $senderName))
+                ->from(new Address($senderEmail, $senderName))
                 ->to($recipientEmail)
                 ->subject($subject)
                 ->text($emailBody);
                 
             try {
-                $this->mailer->send($email);
+                // Wenn eine SMTP-Konfiguration vorhanden ist, verwende sie
+                if ($config) {
+                    $transport = Transport::fromDsn($config->getDSN());
+                    $transport->send($email);
+                } else {
+                    $this->mailer->send($email);
+                }
                 $status = 'sent';
             } catch (\Exception $e) {
                 $status = 'error: ' . substr($e->getMessage(), 0, 200);

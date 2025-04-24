@@ -6,7 +6,7 @@
     <h1 class="mb-4">Dashboard</h1>
     
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">E-Mail-Versand</h5>
@@ -15,7 +15,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Benutzerverwaltung</h5>
@@ -24,12 +24,21 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">E-Mail-Template</h5>
                     <p class="card-text">Bearbeiten Sie die Vorlage für die zu versendenden E-Mails.</p>
                     <a href="{{ path('template_manage') }}" class="btn btn-primary">Zum E-Mail-Template</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">SMTP-Konfiguration</h5>
+                    <p class="card-text">Konfigurieren Sie den SMTP-Server für den E-Mail-Versand.</p>
+                    <a href="{{ path('smtp_config_edit') }}" class="btn btn-primary">Zur SMTP-Konfiguration</a>
                 </div>
             </div>
         </div>

@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SMTP-Konfiguration{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>SMTP-Konfiguration</h1>
+    
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label == 'error' ? 'danger' : label }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+    
+    <div class="card">
+        <div class="card-header">
+            SMTP-Server Einstellungen
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form_row(form.host) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.port) }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        {{ form_row(form.username) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.password) }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            {{ form_row(form.useTLS) }}
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                <h4>Absender-Einstellungen</h4>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        {{ form_row(form.senderEmail) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.senderName) }}
+                    </div>
+                </div>
+                
+                <hr>
+                <h4>Konfiguration testen</h4>
+                <p>Geben Sie eine E-Mail-Adresse ein, um die SMTP-Konfiguration zu testen:</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="test_email">Test-E-Mail-Adresse</label>
+                            <input type="email" id="test_email" name="test_email" class="form-control" placeholder="E-Mail-Adresse für den Test">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Speichern & Testen</button>
+                    <a href="{{ path('dashboard') }}" class="btn btn-secondary ml-2">Zurück zum Dashboard</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

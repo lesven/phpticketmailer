@@ -85,3 +85,24 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 **Akzeptanzkriterien:**
 - Nur gültige Zeilen mit vollständigen Daten werden übernommen.
 - Ungültige Zeilen werden nach Upload angezeigt und nicht verarbeitet.
+### User Story 8: Konfiguration des SMTP Servers über das Frontend
+*Als Webanwendung möchte ich die Konfiguration des SMTP Servers im Browser anzeigen und bearbeiten können. Um die Konfiguration zu testen wird beim speichern eine Testemail mit dem BEtreff Test und dem Body Success an eine Email adresse gesendet die der User im Formular eingeben muss.*
+**Akzeptanzkriterien:**
+- nur gültige Werte werden übernommen
+- ungültige Werte werden angezeigt
+- Username und Passwort sind nicht Pflicht
+- TLS ist eine Checkbox
+- die aktuelle Konfigguration wird in den feldern angezeigt
+
+### User Story 9: Export aller Nutzer in eine CSV Datei
+*Als Webanwendung möchte ich alle ekanntenNutzer in eine CSV Datei exportieren können*
+**Akzeptanzkriterien:**
+- der Export soll innerhalb der Benutzerverwaltung möglich sein
+- es sollen ID, Name und Emailadresse exportiert werden
+
+### User Story 10: Import von Nutzern aus einer CSV Datei
+*Als Webanwendung möchte ich eine CSV Datei mit Usern importieren können. die CSV Datei hat die Spalten email, und benutzername. ICh will eentscheiden könne nob ich vorher alle Benutzer löschen möchte oder ob die User zusätzlich hinzugefügt werden sollen. ICh möcht das Duplikate herausgefiltert werden*
+**Akzeptanzkriterien:**
+- der Import soll innerhalb der Benutzerverwaltung möglich sein
+- es sollen ID, Name und Emailadresse importiert werden
+- checkbox oder Benutzerdatenbank vorher gelleert werden soll
