@@ -29,7 +29,7 @@ class EmailSent
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $timestamp = null;
 
     #[ORM\Column]
@@ -113,6 +113,14 @@ class EmailSent
         $this->timestamp = $timestamp;
 
         return $this;
+    }
+
+    /**
+     * Format timestamp as string when needed
+     */
+    public function getFormattedTimestamp(): string
+    {
+        return $this->timestamp ? $this->timestamp->format('Y-m-d H:i:s') : '';
     }
 
     public function getTestMode(): ?bool

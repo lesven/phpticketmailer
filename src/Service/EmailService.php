@@ -41,6 +41,9 @@ class EmailService
         $senderName = $this->params->get('app.sender_name', 'Ticket-System');
         $ticketBaseUrl = $this->params->get('app.ticket_base_url', 'https://www.ticket.de');
         
+        // Use current time for all email records
+        $currentTime = new \DateTime();
+        
         foreach ($ticketData as $ticket) {
             $user = $this->userRepository->findByUsername($ticket['username']);
             
@@ -52,7 +55,7 @@ class EmailService
                 $emailSent->setEmail('');
                 $emailSent->setSubject('');
                 $emailSent->setStatus('error: no email found');
-                $emailSent->setTimestamp(new \DateTime());
+                $emailSent->setTimestamp(clone $currentTime);
                 $emailSent->setTestMode($testMode);
                 $emailSent->setTicketName($ticket['ticketName']);
                 
@@ -98,7 +101,7 @@ class EmailService
             $emailSent->setEmail($testMode ? $testEmailAddress : $user->getEmail());
             $emailSent->setSubject($subject);
             $emailSent->setStatus($status);
-            $emailSent->setTimestamp(new \DateTime());
+            $emailSent->setTimestamp(clone $currentTime);
             $emailSent->setTestMode($testMode);
             $emailSent->setTicketName($ticket['ticketName']);
             
@@ -106,7 +109,12 @@ class EmailService
             $sentEmails[] = $emailSent;
         }
         
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (\Exception $e) {
+            // Log error for debugging
+            error_log('Error saving email records: ' . $e->getMessage());
+        }
         
         return $sentEmails;
     }
