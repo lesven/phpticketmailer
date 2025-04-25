@@ -1,4 +1,4 @@
-# Ticketumfrage-Tool
+# Ticketumfrage-Tool V2.x
 
 Eine Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen per E-Mail an Benutzer nach Ticketabschluss.
 
