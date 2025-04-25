@@ -228,4 +228,4 @@ Im Testmodus werden alle E-Mails an die in der Konfiguration angegebene Test-E-M
 
 ## Support und Kontakt
 
-Bei Fragen oder Problemen wenden Sie sich bitte an das Support-Team unter support@example.com.
+Bei Fragen oder Problemen wenden Sie sich bitte an das Support-Team unter sven.heising@gmail.com.
