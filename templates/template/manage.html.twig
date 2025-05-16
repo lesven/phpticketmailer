@@ -3,8 +3,8 @@
 {% block title %}E-Mail-Template - {{ parent() }}{% endblock %}
 
 {% block stylesheets %}
-<!-- TinyMCE wird nur auf dieser Seite geladen -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- Quill CSS -->
+<link href="https://cdn.quilljs.com/2.0.3/quill.snow.css" rel="stylesheet">
 {% endblock %}
 
 {% block body %}
@@ -41,9 +41,10 @@
             <h5 class="card-title mb-0">Template im Editor bearbeiten</h5>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ path('template_save_wysiwyg') }}">
+            <form method="post" action="{{ path('template_save_wysiwyg') }}" id="template-form">
                 <div class="mb-3">
-                    <textarea id="template_wysiwyg" name="template_content" class="form-control">{{ templateContent|raw }}</textarea>
+                    <div id="editor-container" style="height: 400px;"></div>
+                    <input type="hidden" id="template_content" name="template_content" value="{{ templateContent|e('html_attr') }}">
                 </div>
                 
                 <div class="d-grid">
@@ -131,16 +132,30 @@
 {% endblock %}
 
 {% block javascripts %}
+<!-- Quill JS -->
+<script src="https://cdn.quilljs.com/2.0.3/quill.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        tinymce.init({
-            selector: '#template_wysiwyg',
-            plugins: 'link lists code',
-            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code',
-            height: 400,
-            menubar: false,
-            branding: false,
-            statusbar: false
+        // Quill Editor initialisieren
+        const editor = new Quill('#editor-container', {
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    ['link'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    ['clean']
+                ]
+            },
+            theme: 'snow'
+        });
+        
+        // Editor mit bestehendem Inhalt befüllen
+        const initialContent = document.getElementById('template_content').value;
+        editor.root.innerHTML = initialContent;
+        
+        // Bei Formularabsendung den Inhalt des Editors ins versteckte Feld übertragen
+        document.getElementById('template-form').addEventListener('submit', function() {
+            document.getElementById('template_content').value = editor.root.innerHTML;
         });
     });
 </script>
