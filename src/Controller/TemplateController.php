@@ -52,8 +52,8 @@ class TemplateController extends AbstractController
             
             if ($file instanceof UploadedFile) {
                 $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = $this->slugger->slug($originalFilename);
-                $newFilename = 'email_template.txt';
+                $extension = $file->getClientOriginalExtension();
+                $newFilename = 'email_template.' . ($extension === 'html' ? 'html' : 'txt');
                 
                 try {
                     $file->move(
@@ -87,7 +87,25 @@ class TemplateController extends AbstractController
             'message' => $message,
             'previewContent' => $previewContent,
             'previewData' => $previewData,
+            'templateContent' => $templateContent,
         ]);
+    }
+    
+    #[Route('/save-wysiwyg', name: 'template_save_wysiwyg', methods: ['POST'])]
+    public function saveWysiwyg(Request $request): Response
+    {
+        $templateContent = $request->request->get('template_content');
+        
+        if (!empty($templateContent)) {
+            // Speichere das Template als HTML-Datei
+            file_put_contents($this->getTemplateDirectory() . '/email_template.html', $templateContent);
+            
+            $this->addFlash('success', 'Das Template wurde erfolgreich gespeichert.');
+        } else {
+            $this->addFlash('error', 'Der Template-Inhalt darf nicht leer sein.');
+        }
+        
+        return $this->redirectToRoute('template_manage');
     }
     
     #[Route('/download', name: 'template_download')]
@@ -101,10 +119,12 @@ class TemplateController extends AbstractController
             file_put_contents($templatePath, $defaultTemplate);
         }
         
+        $extension = pathinfo($templatePath, PATHINFO_EXTENSION);
+        
         $response = new BinaryFileResponse($templatePath);
         $response->setContentDisposition(
             ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            'email_template.txt'
+            'email_template.' . $extension
         );
         
         return $response;
@@ -141,19 +161,21 @@ class TemplateController extends AbstractController
     private function getDefaultTemplate(): string
     {
         return <<<EOT
-Sehr geehrte(r) {{username}},
+<p>Sehr geehrte(r) {{username}},</p>
 
-wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:
+<p>wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:</p>
 
-Ticket-Nr: {{ticketId}}
-Betreff: {{ticketName}}
+<p><strong>Ticket-Nr:</strong> {{ticketId}}<br>
+<strong>Betreff:</strong> {{ticketName}}</p>
 
-Um das Ticket anzusehen und Feedback zu geben, klicken Sie bitte hier: {{ticketLink}}
+<p>Um das Ticket anzusehen und Feedback zu geben, <a href="{{ticketLink}}">klicken Sie bitte hier</a>.</p>
 
-Vielen Dank für Ihre Rückmeldung!
+<p>Bitte beantworten Sie die Umfrage bis zum {{dueDate}}.</p>
 
-Mit freundlichen Grüßen
-Ihr Support-Team
+<p>Vielen Dank für Ihre Rückmeldung!</p>
+
+<p>Mit freundlichen Grüßen<br>
+Ihr Support-Team</p>
 EOT;
     }
     
@@ -170,6 +192,13 @@ EOT;
     
     private function getTemplatePath(): string
     {
+        // Prüfe zuerst, ob ein HTML-Template existiert
+        $htmlPath = $this->getTemplateDirectory() . '/email_template.html';
+        if (file_exists($htmlPath)) {
+            return $htmlPath;
+        }
+        
+        // Fallback auf das Text-Template
         return $this->getTemplateDirectory() . '/email_template.txt';
     }
 }

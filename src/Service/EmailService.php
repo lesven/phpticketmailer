@@ -262,8 +262,14 @@ class EmailService
         $email = (new Email())
             ->from(new Address($config['senderEmail'], $config['senderName']))
             ->to($recipient)
-            ->subject($subject)
-            ->text($content);
+            ->subject($subject);
+        
+        // Prüfen, ob der Inhalt HTML ist
+        if (strpos($content, '<html') !== false || strpos($content, '<p>') !== false || strpos($content, '<div>') !== false) {
+            $email->html($content);
+        } else {
+            $email->text($content);
+        }
             
         // Wenn eine SMTP-Konfiguration vorhanden ist, verwende sie
         if ($config['useCustomSMTP']) {
@@ -317,17 +323,32 @@ class EmailService
      */
     private function getEmailTemplate(): string
     {
+        // Prüfe zuerst, ob ein HTML-Template existiert
+        $htmlPath = $this->projectDir . '/templates/emails/email_template.html';
+        if (file_exists($htmlPath)) {
+            return file_get_contents($htmlPath);
+        }
+        
+        // Fallback auf Text-Template
         $templatePath = $this->projectDir . '/templates/emails/email_template.txt';
         
         if (!file_exists($templatePath)) {
             // Standardtemplate zurückgeben, wenn keine Datei vorhanden ist
-            return "Sehr geehrter Kunde,\n\n" .
-                   "wir bitten Sie um eine Rückmeldung zu Ihrem Ticket {{ticketId}}:\n" .
-                   "{{ticketName}}\n\n" .
-                   "Sie können Ihr Ticket über diesen Link aufrufen:\n" .
-                   "{{ticketLink}}\n\n" .
-                   "Mit freundlichen Grüßen,\n" .
-                   "Ihr Support-Team";
+            return "<p>Sehr geehrte(r) {{username}},</p>
+
+<p>wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:</p>
+
+<p><strong>Ticket-Nr:</strong> {{ticketId}}<br>
+<strong>Betreff:</strong> {{ticketName}}</p>
+
+<p>Um das Ticket anzusehen und Feedback zu geben, <a href=\"{{ticketLink}}\">klicken Sie bitte hier</a>.</p>
+
+<p>Bitte beantworten Sie die Umfrage bis zum {{dueDate}}.</p>
+
+<p>Vielen Dank für Ihre Rückmeldung!</p>
+
+<p>Mit freundlichen Grüßen<br>
+Ihr Support-Team</p>";
         }
         
         return file_get_contents($templatePath);

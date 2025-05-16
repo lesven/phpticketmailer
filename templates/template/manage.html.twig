@@ -2,6 +2,11 @@
 
 {% block title %}E-Mail-Template - {{ parent() }}{% endblock %}
 
+{% block stylesheets %}
+<!-- TinyMCE wird nur auf dieser Seite geladen -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+{% endblock %}
+
 {% block body %}
     <h1 class="mb-4">E-Mail-Template verwalten</h1>
     
@@ -30,6 +35,26 @@
         </div>
     </div>
     
+    <!-- Neuer WYSIWYG Editor für das Template -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="card-title mb-0">Template im Editor bearbeiten</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ path('template_save_wysiwyg') }}">
+                <div class="mb-3">
+                    <textarea id="template_wysiwyg" name="template_content" class="form-control">{{ templateContent|raw }}</textarea>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Template speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
@@ -41,7 +66,7 @@
                         <div class="mb-3">
                             <label for="template_file" class="form-label">Template-Datei</label>
                             <input type="file" id="template_file" name="template_file" class="form-control" required>
-                            <div class="form-text">Textdatei mit dem E-Mail-Template (.txt)</div>
+                            <div class="form-text">HTML oder Textdatei mit dem E-Mail-Template (.html, .txt)</div>
                         </div>
                         
                         <div class="d-grid">
@@ -97,10 +122,26 @@
                 <div class="col-md-8">
                     <p><strong>Vorschau:</strong></p>
                     <div class="border p-3 bg-light">
-                        <pre>{{ previewContent }}</pre>
+                        <div>{{ previewContent|raw }}</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        tinymce.init({
+            selector: '#template_wysiwyg',
+            plugins: 'link lists code',
+            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code',
+            height: 400,
+            menubar: false,
+            branding: false,
+            statusbar: false
+        });
+    });
+</script>
 {% endblock %}

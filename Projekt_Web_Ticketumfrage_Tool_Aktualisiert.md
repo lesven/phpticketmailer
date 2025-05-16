@@ -135,3 +135,10 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Das Datum soll im deutschen Format sein Tag, Monat und vierstelliges Jahr
 - Der Monat soll ausgeschrieben sein
 - Keine Uhrzeit
+
+### User Story 15: Ich möchte das E-Mail Temaplate in einem WYSIWYG Editor bearbeiten könne ###
+*Als Administrator mchte ich zusätzlich zum Import und Export das Template über einen eifnachen WYSIWYG Editor live direkt im Frontend bearbeiten können.*
+**Akzeptanzkriterien:**
+- Fett, kursiv und Unterstrichen sollen möglich sein
+- links zu webseiten sollen möglich sein
+- Das Tempalte soll passend als HTML Datei gespeichert werden und für den Import und Export genutzt werden
