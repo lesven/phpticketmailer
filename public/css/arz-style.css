@@ -1,0 +1,135 @@
+/* ARZ Haan AG Corporate Design */
+
+:root {
+  /* Hauptfarben basierend auf der arz.de Website */
+  --arz-blue: #0070b3;         /* Primärfarbe für Header und Aktionsbuttons */
+  --arz-dark-blue: #00487a;    /* Sekundärfarbe für Hover-Effekte */
+  --arz-light-blue: #e6f2f9;   /* Hintergrundfarbe für Panels */
+  --arz-grey: #57585a;         /* Textfarbe */
+  --arz-light-grey: #f5f5f5;   /* Hintergrundfarbe für Footer */
+  --arz-footer-text: #666666;  /* Footer Textfarbe */
+}
+
+/* Allgemeine Stile */
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: var(--arz-grey);
+  background-color: #ffffff;
+}
+
+/* Header und Navigation */
+.navbar-arz {
+  background-color: var(--arz-blue) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-arz .navbar-brand {
+  color: white;
+  font-weight: 600;
+}
+
+.navbar-arz .navbar-brand img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.navbar-arz .navbar-nav .nav-link {
+  color: white;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+}
+
+.navbar-arz .navbar-nav .nav-link:hover,
+.navbar-arz .navbar-nav .nav-link.active {
+  background-color: var(--arz-dark-blue);
+  border-radius: 4px;
+}
+
+/* Buttons im ARZ-Design */
+.btn-arz-primary {
+  background-color: var(--arz-blue);
+  border-color: var(--arz-blue);
+  color: white;
+}
+
+.btn-arz-primary:hover {
+  background-color: var(--arz-dark-blue);
+  border-color: var(--arz-dark-blue);
+  color: white;
+}
+
+.btn-arz-outline {
+  background-color: transparent;
+  border-color: var(--arz-blue);
+  color: var(--arz-blue);
+}
+
+.btn-arz-outline:hover {
+  background-color: var(--arz-blue);
+  color: white;
+}
+
+/* Karten und Container */
+.card-arz {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.card-arz .card-header {
+  background-color: var(--arz-blue);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+}
+
+.card-arz-light .card-header {
+  background-color: var(--arz-light-blue);
+  color: var(--arz-blue);
+}
+
+/* Formular-Elemente */
+.form-control:focus {
+  border-color: var(--arz-blue);
+  box-shadow: 0 0 0 0.2rem rgba(0, 112, 179, 0.25);
+}
+
+/* Footer */
+.footer-arz {
+  background-color: var(--arz-light-grey);
+  color: var(--arz-footer-text);
+  padding: 1.5rem 0;
+  margin-top: 3rem;
+}
+
+/* Tabellen */
+.table-arz thead {
+  background-color: var(--arz-light-blue);
+}
+
+.table-arz thead th {
+  color: var(--arz-blue);
+  font-weight: 600;
+  border-bottom: 2px solid var(--arz-blue);
+}
+
+/* Alerts und Meldungen */
+.alert-arz-success {
+  background-color: #e6f2e6;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-arz-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.alert-arz-info {
+  background-color: var(--arz-light-blue);
+  border-color: #bee5eb;
+  color: var(--arz-blue);
+}
