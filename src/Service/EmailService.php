@@ -224,6 +224,16 @@ class EmailService
         $emailBody = str_replace('{{ticketName}}', $ticket['ticketName'] ?? '', $emailBody);
         $emailBody = str_replace('{{username}}', $ticket['username'], $emailBody);
         
+        // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
+        $dueDate = new \DateTime();
+        $dueDate->modify('+7 days');
+        $germanMonths = [
+            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
+            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
+        ];
+        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
+        $emailBody = str_replace('{{dueDate}}', $formattedDueDate, $emailBody);
+        
         // Hinweis im Testmodus hinzufügen
         if ($testMode) {
             $emailBody = "*** TESTMODUS - E-Mail wäre an {$user->getEmail()} gegangen ***\n\n" . $emailBody;

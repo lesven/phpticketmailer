@@ -128,3 +128,10 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Das Passwort wird verschlüsselt gespeichert
 - das Standardpasswort lautet "geheim" wenn kein anderes Passwort gesetzt wurde
 - es gibt einen Menüpunkt der Passwort ändern heißt
+
+### User Story 14: Heutiges Datum +7 Tage in die Email als Variable mit einbauen
+*Als Administrator möchte ich als neue Variable das aktuelle Datum in der Email Vorlage als Variable nutzen können. Damit möchte ich dem User sagen wann ich ihm die Mail geschrieben und ich möchte ihn bitten dsas er die Umfrage bis zu diesem Datum beantwortet*
+**Akzeptanzkriterien:**
+- Das Datum soll im deutschen Format sein Tag, Monat und vierstelliges Jahr
+- Der Monat soll ausgeschrieben sein
+- Keine Uhrzeit

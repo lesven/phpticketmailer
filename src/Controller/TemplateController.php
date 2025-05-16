@@ -38,6 +38,15 @@ class TemplateController extends AbstractController
             'ticketLink' => 'https://www.ticket.de/TICKET-12345'
         ];
         
+        // Fälligkeitsdatum für die Vorschau hinzufügen
+        $dueDate = new \DateTime();
+        $dueDate->modify('+7 days');
+        $germanMonths = [
+            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
+            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
+        ];
+        $previewData['dueDate'] = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
+        
         if ($request->isMethod('POST')) {
             $file = $request->files->get('template_file');
             
@@ -106,11 +115,21 @@ class TemplateController extends AbstractController
      */
     private function replacePlaceholders(string $template, array $data): string
     {
+        // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
+        $dueDate = new \DateTime();
+        $dueDate->modify('+7 days');
+        $germanMonths = [
+            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
+            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
+        ];
+        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
+        
         $placeholders = [
             '{{ticketId}}' => $data['ticketId'] ?? 'TICKET-ID',
             '{{ticketName}}' => $data['ticketName'] ?? 'Ticket-Name',
             '{{username}}' => $data['username'] ?? 'Benutzername',
-            '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id'
+            '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id',
+            '{{dueDate}}' => $data['dueDate'] ?? $formattedDueDate
         ];
         
         return str_replace(array_keys($placeholders), array_values($placeholders), $template);
