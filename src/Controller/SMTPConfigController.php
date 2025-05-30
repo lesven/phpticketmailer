@@ -72,8 +72,7 @@ class SMTPConfigController extends AbstractController
     {
         // Aktuelle Konfiguration aus der Datenbank laden
         $config = $this->smtpConfigRepository->getConfig();
-        
-        // Falls keine Konfiguration existiert, erstelle eine neue mit Standardwerten
+          // Falls keine Konfiguration existiert, erstelle eine neue mit Standardwerten
         if (!$config) {
             $config = new SMTPConfig();
             // Standardwerte setzen
@@ -81,6 +80,7 @@ class SMTPConfigController extends AbstractController
             $config->setPort(25);
             $config->setSenderEmail('noreply@example.com');
             $config->setSenderName('Ticket-System');
+            $config->setTicketBaseUrl('https://www.ticket.de');
             $config->setUseTLS(false);
         }
         

@@ -391,11 +391,11 @@ class EmailService
             'testEmail' => $this->params->get('app.test_email', 'test@example.com'),
             'useCustomSMTP' => false,
         ];
-        
-        // Wenn eine Konfiguration vorhanden ist, verwende sie
+          // Wenn eine Konfiguration vorhanden ist, verwende sie
         if ($config) {
             $emailConfig['senderEmail'] = $config->getSenderEmail();
             $emailConfig['senderName'] = $config->getSenderName();
+            $emailConfig['ticketBaseUrl'] = $config->getTicketBaseUrl();
             $emailConfig['useCustomSMTP'] = true;
             $emailConfig['smtpDSN'] = $config->getDSN();
         } else {

@@ -77,6 +77,14 @@ class SMTPConfig
     private ?string $senderName = null;
 
     /**
+     * Basis-URL für Ticket-Links (z.B. https://www.ticket.de)
+     */
+    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Die Ticket-Basis-URL darf nicht leer sein')]
+    #[Assert\Url(message: 'Die URL {{ value }} ist ungültig')]
+    private ?string $ticketBaseUrl = null;
+
+    /**
      * Gibt die ID der SMTP-Konfiguration zurück
      * 
      * @return int|null Die ID der Konfiguration
@@ -243,6 +251,29 @@ class SMTPConfig
     public function setSenderName(string $senderName): self
     {
         $this->senderName = $senderName;
+
+        return $this;
+    }
+
+    /**
+     * Gibt die Basis-URL für Ticket-Links zurück
+     * 
+     * @return string|null Die Ticket-Basis-URL
+     */
+    public function getTicketBaseUrl(): ?string
+    {
+        return $this->ticketBaseUrl;
+    }
+
+    /**
+     * Setzt die Basis-URL für Ticket-Links
+     * 
+     * @param string $ticketBaseUrl Die Ticket-Basis-URL
+     * @return self Für Method-Chaining
+     */
+    public function setTicketBaseUrl(string $ticketBaseUrl): self
+    {
+        $this->ticketBaseUrl = $ticketBaseUrl;
 
         return $this;
     }

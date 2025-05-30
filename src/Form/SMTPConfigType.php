@@ -64,13 +64,20 @@ class SMTPConfigType extends AbstractType
                     'class' => 'form-control',
                     'placeholder' => 'z.B. noreply@example.com'
                 ]
-            ])
-            ->add('senderName', TextType::class, [
+            ])            ->add('senderName', TextType::class, [
                 'label' => 'Absendername',
                 'attr' => [
                     'class' => 'form-control',
                     'placeholder' => 'z.B. Ticket-System'
                 ]
+            ])
+            ->add('ticketBaseUrl', TextType::class, [
+                'label' => 'Ticket-Basis-URL',
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => 'z.B. https://www.ticket.de'
+                ],
+                'help' => 'Diese URL wird für die Generierung von Ticket-Links in E-Mails verwendet'
             ]);
     }
 
