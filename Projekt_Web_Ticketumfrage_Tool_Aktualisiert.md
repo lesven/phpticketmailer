@@ -171,3 +171,11 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Die Entscheidung gilt global pro Upload – keine Einzelfallsteuerung notwendig.
 
 
+### User Story 19: Paginierung der Benutzerliste
+*Als Benutzer der Anwendung möchte ich die Liste der bekannten Nutzer mit ihren E-Mail-Adressen seitenweise angezeigt bekommen, damit ich auch bei vielen Einträgen die Übersicht behalte und die Seite schnell geladen wird.*
+#### Akzeptanzkriterien:
+- Die Benutzerliste ist serverseitig paginiert.
+- Es werden maximal **15 Nutzer pro Seite** angezeigt.
+- Die Navigation erfolgt über **„Zurück“** und **„Weiter“**-Buttons.
+- Beim Öffnen der Benutzerliste wird immer **Seite 1** geladen.
+- Die Paginierung ist **nicht aktiv**, wenn eine **Suchanfrage** im Suchfeld eingegeben wurde – dann wird die komplette Treffermenge auf einmal angezeigt.
