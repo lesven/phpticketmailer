@@ -121,6 +121,7 @@ class CsvFileReader
         }
     }
     
+    
     /**
      * Schließt einen geöffneten Datei-Handle sicher
      * 

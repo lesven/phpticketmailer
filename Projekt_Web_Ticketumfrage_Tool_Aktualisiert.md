@@ -142,3 +142,9 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Fett, kursiv und Unterstrichen sollen möglich sein
 - links zu webseiten sollen möglich sein
 - Das Tempalte soll passend als HTML Datei gespeichert werden und für den Import und Export genutzt werden
+
+### Userstory 16: Das Ticketmail Tool soll CI Konform zur ARZHaan AG sein
+*Als Marketing Verantwortlicher möcht eich dass der Ticketmail CI Konform zu unserer Homepage arz.de ist* 
+** Akzeptanzkriterien:**
+- die Farben und die Schrifart soll übernommenen werden von arz.de
+- das Logo soll übernommen werden
