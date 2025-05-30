@@ -179,3 +179,11 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Die Navigation erfolgt über **„Zurück“** und **„Weiter“**-Buttons.
 - Beim Öffnen der Benutzerliste wird immer **Seite 1** geladen.
 - Die Paginierung ist **nicht aktiv**, wenn eine **Suchanfrage** im Suchfeld eingegeben wurde – dann wird die komplette Treffermenge auf einmal angezeigt.
+
+### Userstory 20: bereits versendete E-Mails suchen ###
+*Als Administrator möchte ich prüfen wann eine Email versendet wurde. die Suche soll über die Ticket Id erfolgen*
+** Akzeptanzkriterien: **
+- ein menüpunkt Versandprotokoll
+- dort initial eine liste mit den letzten 100 versendeten Mails
+- darüber ein suchfeld
+
