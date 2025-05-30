@@ -53,11 +53,16 @@
                     <div class="form-text">{{ form_help(form.csvFile) }}</div>
                     <div class="text-danger">{{ form_errors(form.csvFile) }}</div>
                 </div>
-                
-                <div class="mb-3 form-check">
+                  <div class="mb-3 form-check">
                     {{ form_widget(form.testMode) }}
                     {{ form_label(form.testMode) }}
                     <div class="form-text">Im Testmodus werden alle E-Mails an eine Testadresse gesendet.</div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    {{ form_widget(form.forceResend) }}
+                    {{ form_label(form.forceResend) }}
+                    <div class="form-text">{{ form_help(form.forceResend) }}</div>
                 </div>
                 
                 <div class="d-grid gap-2">

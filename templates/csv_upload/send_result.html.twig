@@ -18,20 +18,22 @@
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="card-title mb-0">Zusammenfassung</h5>
-        </div>
-        <div class="card-body">
+        </div>        <div class="card-body">
             {% set successCount = 0 %}
             {% set errorCount = 0 %}
+            {% set skippedCount = 0 %}
             {% for email in sentEmails %}
                 {% if email.status starts with 'error' %}
                     {% set errorCount = errorCount + 1 %}
+                {% elseif email.status starts with 'Nicht versendet' %}
+                    {% set skippedCount = skippedCount + 1 %}
                 {% else %}
                     {% set successCount = successCount + 1 %}
                 {% endif %}
             {% endfor %}
             
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-success text-white">
                         <div class="card-body">
                             <h5 class="card-title">Erfolgreich versendet</h5>
@@ -39,7 +41,15 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h5 class="card-title">Übersprungen</h5>
+                            <p class="card-text fs-1 text-center">{{ skippedCount }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
                     <div class="card bg-danger text-white">
                         <div class="card-body">
                             <h5 class="card-title">Fehler</h5>
@@ -47,7 +57,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-primary text-white">
                         <div class="card-body">
                             <h5 class="card-title">Gesamt</h5>
@@ -81,10 +91,11 @@
                                 <td>{{ email.ticketId }}</td>
                                 <td>{{ email.ticketName }}</td>
                                 <td>{{ email.username }}</td>
-                                <td>{{ email.email }}</td>
-                                <td>
+                                <td>{{ email.email }}</td>                                <td>
                                     {% if email.status starts with 'error' %}
                                         <span class="badge bg-danger">{{ email.status }}</span>
+                                    {% elseif email.status starts with 'Nicht versendet' %}
+                                        <span class="badge bg-warning text-dark">{{ email.status }}</span>
                                     {% else %}
                                         <span class="badge bg-success">{{ email.status }}</span>
                                     {% endif %}

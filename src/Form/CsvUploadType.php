@@ -70,6 +70,14 @@ class CsvUploadType extends AbstractType
                 'required' => false, // Checkbox ist optional
                 'data' => true, // Standardmäßig aktiviert, um versehentliches Versenden zu vermeiden
                 'attr' => ['class' => 'form-check-input'], // Bootstrap-Styling
+            ])
+            // Checkbox für Erneut-Versenden bei bereits verarbeiteten Tickets
+            ->add('forceResend', CheckboxType::class, [
+                'label' => 'Erneut versenden, wenn Ticket bereits verarbeitet wurde',
+                'required' => false, // Checkbox ist optional
+                'data' => false, // Standardmäßig deaktiviert, um Duplikate zu vermeiden
+                'attr' => ['class' => 'form-check-input'], // Bootstrap-Styling
+                'help' => 'Wenn deaktiviert, werden E-Mails für bereits verarbeitete Ticket-IDs nicht erneut versendet.',
             ]);
     }
 

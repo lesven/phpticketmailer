@@ -48,16 +48,16 @@ class CsvUploadController extends AbstractController
         $form = $this->createForm(CsvUploadType::class);
         $form->get('csvFieldConfig')->setData($csvFieldConfig);
         $form->handleRequest($request);
-        
-        if ($form->isSubmitted() && $form->isValid()) {
+          if ($form->isSubmitted() && $form->isValid()) {
             $csvFile = $form->get('csvFile')->getData();
             $testMode = $form->get('testMode')->getData();
+            $forceResend = $form->get('forceResend')->getData();
             $updatedConfig = $form->get('csvFieldConfig')->getData();
             
             // CSV-Konfiguration speichern
             $this->csvFieldConfigRepository->saveConfig($updatedConfig);
             
-            $result = $this->processCsvFile($csvFile, $testMode, $updatedConfig);
+            $result = $this->processCsvFile($csvFile, $testMode, $forceResend, $updatedConfig);
             
             return $result;
         }
@@ -80,13 +80,13 @@ class CsvUploadController extends AbstractController
             $this->addFlash('warning', 'Keine unbekannten Benutzer zu verarbeiten');
             return $this->redirectToRoute('csv_upload');
         }
-        
-        if ($request->isMethod('POST')) {
+          if ($request->isMethod('POST')) {
             $this->processUnknownUsers($request, $unknownUsers);
             
             $this->addFlash('success', 'Neue Benutzer wurden erfolgreich angelegt');
             return $this->redirectToRoute('send_emails', [
-                'testMode' => $request->query->get('testMode', 0)
+                'testMode' => $request->query->get('testMode', 0),
+                'forceResend' => $request->query->get('forceResend', 0)
             ]);
         }
         
@@ -94,14 +94,14 @@ class CsvUploadController extends AbstractController
             'unknownUsers' => $unknownUsers,
         ]);
     }
-    
-    /**
+      /**
      * Sendet E-Mails mit Ticketinformationen an die Benutzer
      */
     #[Route('/send-emails', name: 'send_emails')]
     public function sendEmails(Request $request): Response
     {
         $testMode = (bool)$request->query->get('testMode', 0);
+        $forceResend = (bool)$request->query->get('forceResend', 0);
         $ticketData = $this->getValidTicketsFromSession();
         
         if (empty($ticketData)) {
@@ -109,7 +109,7 @@ class CsvUploadController extends AbstractController
             return $this->redirectToRoute('csv_upload');
         }
         
-        $sentEmails = $this->emailService->sendTicketEmails($ticketData, $testMode);
+        $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend);
         
         $this->addFlash('success', sprintf(
             'Es wurden %d E-Mails %sversandt', 
@@ -121,11 +121,10 @@ class CsvUploadController extends AbstractController
             'sentEmails' => $sentEmails,
             'testMode' => $testMode
         ]);
-    }
-      /**
+    }    /**
      * Verarbeitet die CSV-Datei und leitet entsprechend weiter
      */
-    private function processCsvFile(mixed $csvFile, bool $testMode, CsvFieldConfig $csvFieldConfig): Response
+    private function processCsvFile(mixed $csvFile, bool $testMode, bool $forceResend, CsvFieldConfig $csvFieldConfig): Response
     {
         $result = $this->csvProcessor->process($csvFile, $csvFieldConfig);
         
@@ -139,13 +138,15 @@ class CsvUploadController extends AbstractController
                 count($result['unknownUsers'])
             ));
             return $this->redirectToRoute('unknown_users', [
-                'testMode' => $testMode ? 1 : 0
+                'testMode' => $testMode ? 1 : 0,
+                'forceResend' => $forceResend ? 1 : 0
             ]);
         }
         
         $this->addFlash('success', 'CSV-Datei erfolgreich verarbeitet');
         return $this->redirectToRoute('send_emails', [
-            'testMode' => $testMode ? 1 : 0
+            'testMode' => $testMode ? 1 : 0,
+            'forceResend' => $forceResend ? 1 : 0
         ]);
     }
     

@@ -15,6 +15,7 @@ use App\Entity\EmailSent;
 use App\Entity\SMTPConfig;
 use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
+use App\Repository\EmailSentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mailer\MailerInterface;
@@ -49,6 +50,12 @@ class EmailService
     private $smtpConfigRepository;
     
     /**
+     * Das EmailSent Repository zum Prüfen von bereits versendeten E-Mails
+     * @var EmailSentRepository
+     */
+    private $emailSentRepository;
+    
+    /**
      * Der Parameter-Bag für Zugriff auf Konfigurationswerte
      * @var ParameterBagInterface
      */
@@ -59,14 +66,14 @@ class EmailService
      * @var string
      */
     private $projectDir;
-    
-    /**
+      /**
      * Konstruktor mit Dependency Injection aller benötigten Services
      * 
      * @param MailerInterface $mailer Der Symfony Mailer Service
      * @param EntityManagerInterface $entityManager Der Doctrine Entity Manager
      * @param UserRepository $userRepository Das User Repository
      * @param SMTPConfigRepository $smtpConfigRepository Das SMTP Konfigurations-Repository
+     * @param EmailSentRepository $emailSentRepository Das EmailSent Repository
      * @param ParameterBagInterface $params Der Parameter-Bag für Konfigurationswerte
      * @param string $projectDir Der Pfad zum Projektverzeichnis
      */
@@ -75,6 +82,7 @@ class EmailService
         EntityManagerInterface $entityManager,
         UserRepository $userRepository,
         SMTPConfigRepository $smtpConfigRepository,
+        EmailSentRepository $emailSentRepository,
         ParameterBagInterface $params,
         string $projectDir
     ) {
@@ -82,6 +90,7 @@ class EmailService
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
         $this->smtpConfigRepository = $smtpConfigRepository;
+        $this->emailSentRepository = $emailSentRepository;
         $this->params = $params;
         $this->projectDir = $projectDir;
     }
@@ -99,12 +108,69 @@ class EmailService
      */
     public function sendTicketEmails(array $ticketData, bool $testMode = false): array
     {
+        return $this->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, true);
+    }
+
+    /**
+     * Sendet E-Mails für alle übergebenen Ticket-Datensätze mit Duplikatsprüfung
+     * 
+     * Diese Methode iteriert über alle Ticket-Datensätze und sendet
+     * für jeden eine E-Mail an den zugehörigen Benutzer. Optional wird geprüft,
+     * ob für eine Ticket-ID bereits eine E-Mail gesendet wurde.
+     * 
+     * @param array $ticketData Array mit Ticket-Daten (ticketId, username, ticketName)
+     * @param bool $testMode Gibt an, ob die E-Mails im Testmodus gesendet werden sollen
+     * @param bool $forceResend Gibt an, ob bereits verarbeitete Tickets erneut versendet werden sollen
+     * @return array Array mit allen erstellten EmailSent-Entitäten
+     */
+    public function sendTicketEmailsWithDuplicateCheck(array $ticketData, bool $testMode = false, bool $forceResend = false): array
+    {
         $sentEmails = [];
+        $processedTicketIds = []; // Für innerhalb der CSV-Datei
         $currentTime = new \DateTime();
         $emailConfig = $this->getEmailConfiguration();
         $templateContent = $this->getEmailTemplate();
+
+        // Prüfe bereits verarbeitete Tickets in der Datenbank, wenn forceResend deaktiviert ist
+        $existingTickets = [];
+        if (!$forceResend) {
+            $ticketIds = array_map(fn($ticket) => $ticket['ticketId'], $ticketData);
+            $existingTickets = $this->emailSentRepository->findExistingTickets($ticketIds);
+        }
         
         foreach ($ticketData as $ticket) {
+            $ticketId = $ticket['ticketId'];
+            
+            // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
+            if (isset($processedTicketIds[$ticketId])) {
+                $emailRecord = $this->createSkippedEmailRecord(
+                    $ticket, 
+                    $currentTime, 
+                    $testMode,
+                    'Nicht versendet – Mehrfaches Vorkommen in derselben CSV-Datei'
+                );
+                $this->entityManager->persist($emailRecord);
+                $sentEmails[] = $emailRecord;
+                continue;
+            }
+            
+            // Prüfe auf bereits verarbeitete Tickets in der Datenbank
+            if (!$forceResend && isset($existingTickets[$ticketId])) {
+                $existingEmail = $existingTickets[$ticketId];
+                $formattedDate = $existingEmail->getTimestamp()->format('d.m.Y');
+                $emailRecord = $this->createSkippedEmailRecord(
+                    $ticket, 
+                    $currentTime, 
+                    $testMode,
+                    'Nicht versendet – Ticket bereits verarbeitet am ' . $formattedDate
+                );
+                $this->entityManager->persist($emailRecord);
+                $sentEmails[] = $emailRecord;
+                $processedTicketIds[$ticketId] = true;
+                continue;
+            }
+            
+            // Normaler E-Mail-Versand
             $emailRecord = $this->processTicketEmail(
                 $ticket, 
                 $emailConfig, 
@@ -115,15 +181,42 @@ class EmailService
             
             $this->entityManager->persist($emailRecord);
             $sentEmails[] = $emailRecord;
+            $processedTicketIds[$ticketId] = true;
         }
-        
+
         try {
             $this->entityManager->flush();
         } catch (\Exception $e) {
             error_log('Error saving email records: ' . $e->getMessage());
         }
-        
+
         return $sentEmails;
+    }
+
+    /**
+     * Erstellt ein EmailSent-Record für übersprungene Tickets
+     * 
+     * @param array $ticket Der Ticket-Datensatz
+     * @param \DateTime $timestamp Der Zeitstempel
+     * @param bool $testMode Testmodus-Flag
+     * @param string $status Der Status-Text
+     * @return EmailSent Die erstellte EmailSent-Entität
+     */
+    private function createSkippedEmailRecord(array $ticket, \DateTime $timestamp, bool $testMode, string $status): EmailSent
+    {
+        $user = $this->userRepository->findByUsername($ticket['username']);
+        
+        $emailRecord = new EmailSent();
+        $emailRecord->setTicketId($ticket['ticketId']);
+        $emailRecord->setUsername($ticket['username']);
+        $emailRecord->setEmail($user ? $user->getEmail() : '');
+        $emailRecord->setSubject('');
+        $emailRecord->setStatus($status);
+        $emailRecord->setTimestamp(clone $timestamp);
+        $emailRecord->setTestMode($testMode);
+        $emailRecord->setTicketName($ticket['ticketName'] ?? '');
+        
+        return $emailRecord;
     }
     
     /**

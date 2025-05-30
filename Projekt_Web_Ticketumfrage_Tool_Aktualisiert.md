@@ -7,7 +7,7 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - **Programmiersprache:** PHP
 - **Framework:** Symfony
 - **Frontend:** Twig + HTML/CSS (optional JS für interaktive Komponenten)
-- **Datenbank:** SQLite oder MySQL (konfigurierbar)
+- **Datenbank:** MariaDb
 
 ## 3. Hauptfunktionen
 - **CSV-Upload:** Nutzer lädt täglich eine CSV-Datei mit Ticketinformationen hoch.
@@ -156,3 +156,18 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Default wert sollen die bereits bekannten Werte sein
 - Wenn nichts eingetragen ist, soll er die default werte nehmen
 - maximal länge sollen 50 Zeichen sein
+
+### User Story 18: Vermeidung doppelter Ticket-Versendungen ###
+*Als Administrator möchte ich verhindern, dass für dieselbe Ticket-ID mehrfach E-Mails verschickt werden, um versehentlichen Doppelversand zu vermeiden. Ich möchte jedoch beim Upload festlegen können, ob ich den Versand trotzdem erzwingen möchte.*
+** Akzeptanzkriterien: **
+- Beim CSV-Upload gibt es eine Checkbox „Erneut versenden, wenn Ticket bereits verarbeitet wurde“.
+- Ist die Checkbox nicht aktiviert, wird jede Zeile der CSV-Datei geprüft:
+- Wurde die Ticket-ID bereits in der Datenbank (emails_sent) gefunden, wird keine E-Mail verschickt.
+- Die betroffenen Einträge erscheinen in der Versandübersicht mit dem Status:
+„Nicht versendet – Ticket bereits verarbeitet am <Datum>“.
+-Ist die Checkbox aktiviert, wird der Versand für alle Zeilen durchgeführt, auch wenn die Ticket-ID schon bekannt ist.
+- die Prüfung erfolgt rein auf Basis der ticket_id.
+- Mehrfache Vorkommen derselben ticket_id innerhalb derselben CSV-Datei werden nicht blockiert – es wird jeweils nur die erste verschickt, die weiteren gelten als bereits verarbeitet (bei deaktiviertem Force-Flag).
+- Die Entscheidung gilt global pro Upload – keine Einzelfallsteuerung notwendig.
+
+
