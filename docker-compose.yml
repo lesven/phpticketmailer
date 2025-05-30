@@ -89,7 +89,7 @@ services:
 # Docker Networks
 networks:
   proxy-tier:
-    external: true
+    driver: bridge
 
 # Docker Volumes
 volumes:
