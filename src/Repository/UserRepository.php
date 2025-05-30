@@ -61,8 +61,7 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-    
-    /**
+      /**
      * Sucht Benutzer anhand des Benutzernamens mit optionalem Sortieren
      * 
      * Diese Methode erlaubt eine Teiltext-Suche (case-insensitive) nach dem Benutzernamen
@@ -93,5 +92,32 @@ class UserRepository extends ServiceEntityRepository
         $queryBuilder->orderBy('u.' . $sortField, $sortDirection);
         
         return $queryBuilder->getQuery()->getResult();
+    }
+    
+    /**
+     * Findet Benutzer mit Paginierung und Sortierung
+     * 
+     * Diese Methode unterstützt die serverseitige Paginierung der Benutzerliste
+     * mit optionaler Sortierung nach verschiedenen Feldern.
+     * 
+     * @param int $offset Anzahl der zu überspringenden Einträge
+     * @param int $limit Maximale Anzahl der zurückzugebenden Einträge
+     * @param string|null $sortField Feld für die Sortierung (id, username, email)
+     * @param string|null $sortDirection Sortierrichtung (ASC oder DESC)
+     * @return User[] Array mit den gefundenen Benutzern
+     */
+    public function findPaginated(int $offset, int $limit, ?string $sortField = null, ?string $sortDirection = null): array
+    {
+        // Validieren und Standardwerte für Sortierparameter setzen
+        $validSortFields = ['id', 'username', 'email'];
+        $sortField = in_array($sortField, $validSortFields) ? $sortField : 'id';
+        $sortDirection = ($sortDirection === 'DESC') ? 'DESC' : 'ASC';
+        
+        return $this->createQueryBuilder('u')
+            ->orderBy('u.' . $sortField, $sortDirection)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
     }
 }

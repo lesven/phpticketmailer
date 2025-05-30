@@ -15,8 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/user')]
 class UserController extends AbstractController
-{
-    #[Route('/', name: 'user_index', methods: ['GET'])]
+{    #[Route('/', name: 'user_index', methods: ['GET'])]
     public function index(Request $request, UserRepository $userRepository): Response
     {
         // Get search term from request query parameters
@@ -26,8 +25,24 @@ class UserController extends AbstractController
         $sortField = $request->query->get('sort', 'id');
         $sortDirection = $request->query->get('direction', 'ASC');
         
-        // Use searchByUsername method from repository with sorting parameters
-        $users = $userRepository->searchByUsername($searchTerm, $sortField, $sortDirection);
+        // Get page number from request (default to 1)
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = 15; // 15 users per page as per user story
+        
+        // If there's a search term, show all results without pagination
+        if ($searchTerm) {
+            $users = $userRepository->searchByUsername($searchTerm, $sortField, $sortDirection);
+            $totalUsers = count($users);
+            $totalPages = 1;
+            $currentPage = 1;
+        } else {
+            // Use pagination when no search term
+            $offset = ($page - 1) * $limit;
+            $users = $userRepository->findPaginated($offset, $limit, $sortField, $sortDirection);
+            $totalUsers = $userRepository->count([]);
+            $totalPages = max(1, ceil($totalUsers / $limit));
+            $currentPage = min($page, $totalPages);
+        }
         
         // Determine the opposite direction for toggling sort order
         $oppositeDirection = $sortDirection === 'ASC' ? 'DESC' : 'ASC';
@@ -37,7 +52,11 @@ class UserController extends AbstractController
             'searchTerm' => $searchTerm,
             'sortField' => $sortField,
             'sortDirection' => $sortDirection,
-            'oppositeDirection' => $oppositeDirection
+            'oppositeDirection' => $oppositeDirection,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
+            'totalUsers' => $totalUsers,
+            'hasSearch' => !empty($searchTerm)
         ]);
     }
 
