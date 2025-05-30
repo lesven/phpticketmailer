@@ -8,12 +8,11 @@
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="card-title mb-0">CSV-Datei hochladen</h5>
-        </div>
-        <div class="card-body">
-            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+        </div>        <div class="card-body">
+            {{ form_start(form, {'attr': {'id': 'csvUploadForm'}}) }}
                 <div class="mb-3">
                     {{ form_label(form.csvFile) }}
-                    {{ form_widget(form.csvFile) }}
+                    {{ form_widget(form.csvFile, {'attr': {'required': 'required'}}) }}
                     <div class="form-text">{{ form_help(form.csvFile) }}</div>
                     <div class="text-danger">{{ form_errors(form.csvFile) }}</div>
                 </div>
@@ -27,10 +26,9 @@
                     {{ form_widget(form.forceResend) }}
                     {{ form_label(form.forceResend) }}
                     <div class="form-text">{{ form_help(form.forceResend) }}</div>
-                </div>
-                
+                </div>                
                 <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
                         <i class="fas fa-file-upload"></i> CSV-Datei hochladen und verarbeiten
                     </button>
                 </div>
@@ -71,8 +69,39 @@
                     <div class="col-md-4">
                         {{ form_row(form.csvFieldConfig.ticketNameField) }}
                     </div>
-                </div>
-            {{ form_end(form) }}
+                </div>            {{ form_end(form) }}
         </div>
     </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('csvUploadForm');
+            const fileInput = form.querySelector('input[type="file"]');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            form.addEventListener('submit', function(e) {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('Bitte wählen Sie eine CSV-Datei aus.');
+                    fileInput.focus();
+                    return false;
+                }
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Datei wird verarbeitet...';
+            });
+            
+            // Re-enable submit button if file is selected
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-file-upload"></i> CSV-Datei hochladen und verarbeiten';
+                }
+            });
+        });
+    </script>
 {% endblock %}

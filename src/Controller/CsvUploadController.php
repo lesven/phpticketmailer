@@ -47,12 +47,20 @@ class CsvUploadController extends AbstractController
         
         $form = $this->createForm(CsvUploadType::class);
         $form->get('csvFieldConfig')->setData($csvFieldConfig);
-        $form->handleRequest($request);
-          if ($form->isSubmitted() && $form->isValid()) {
+        $form->handleRequest($request);        if ($form->isSubmitted() && $form->isValid()) {
             $csvFile = $form->get('csvFile')->getData();
             $testMode = $form->get('testMode')->getData();
             $forceResend = $form->get('forceResend')->getData();
             $updatedConfig = $form->get('csvFieldConfig')->getData();
+            
+            // Zusätzliche Validierung: CSV-Datei muss vorhanden sein
+            if ($csvFile === null) {
+                $this->addFlash('error', 'Bitte wählen Sie eine CSV-Datei aus.');
+                return $this->render('csv_upload/upload.html.twig', [
+                    'form' => $form->createView(),
+                    'currentConfig' => $csvFieldConfig,
+                ]);
+            }
             
             // CSV-Konfiguration speichern
             $this->csvFieldConfigRepository->saveConfig($updatedConfig);
