@@ -11,6 +11,8 @@
 
 namespace App\Form;
 
+use App\Entity\CsvFieldConfig;
+use App\Form\CsvFieldConfigType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -22,9 +24,7 @@ use Symfony\Component\Validator\Constraints\File;
  * Formular für den Upload von CSV-Dateien mit Ticket-Informationen
  */
 class CsvUploadType extends AbstractType
-{
-
-    /**
+{    /**
      * Baut das Formular mit seinen Feldern und Validierungsregeln auf
      *
      * Das Formular enthält ein Feld zum Hochladen einer CSV-Datei und
@@ -57,7 +57,12 @@ class CsvUploadType extends AbstractType
                     ])
                 ],
                 'attr' => ['class' => 'form-control'], // Bootstrap-Styling
-                'help' => 'Die CSV-Datei muss folgende Spalten enthalten: ticketId, username, ticketName',
+                'help' => 'Die CSV-Datei muss die konfigurierten Spalten enthalten',
+            ])
+            // Eingebettetes Formular für CSV-Feldkonfiguration
+            ->add('csvFieldConfig', CsvFieldConfigType::class, [
+                'label' => false,
+                'mapped' => false,
             ])
             // Checkbox für den Testmodus
             ->add('testMode', CheckboxType::class, [

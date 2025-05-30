@@ -148,3 +148,11 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 ** Akzeptanzkriterien:**
 - die Farben und die Schrifart soll übernommenen werden von arz.de
 - das Logo soll übernommen werden
+
+### Userstory 17: Die CSV Felder sollen konfigurierbar sein ###
+*Als Administrator möchte ich die Felder  ticketId, username und ticketName beliebig auf andere Namen mappen können um so einem veränderten Ticket System uund Exporten gewappnet zu sein*
+** Akzeptanzkriterien ** 
+- KOnfiguration soll auf der Seite des CSV Uploads sichtbar und konfigurierbar sein
+- Default wert sollen die bereits bekannten Werte sein
+- Wenn nichts eingetragen ist, soll er die default werte nehmen
+- maximal länge sollen 50 Zeichen sein

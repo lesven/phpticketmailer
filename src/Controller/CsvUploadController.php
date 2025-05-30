@@ -4,10 +4,12 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Entity\EmailSent;
+use App\Entity\CsvFieldConfig;
 use App\Form\CsvUploadType;
 use App\Service\CsvProcessor;
 use App\Service\EmailService;
 use App\Repository\UserRepository;
+use App\Repository\CsvFieldConfigRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,39 +24,47 @@ use Symfony\Component\Routing\Attribute\Route;
  * über die Bearbeitung unbekannter Benutzer bis zum Versand der Ticket-E-Mails.
  */
 class CsvUploadController extends AbstractController
-{
-    /**
+{    /**
      * Konstruktor zum Injection der benötigten Abhängigkeiten
      */
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
+        private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly CsvProcessor $csvProcessor,
         private readonly EmailService $emailService,
         private readonly RequestStack $requestStack
     ) {
     }
-    
-    /**
+      /**
      * Zeigt das Formular zum Hochladen einer CSV-Datei an und verarbeitet die Übermittlung
      */
     #[Route('/upload', name: 'csv_upload')]
     public function upload(Request $request): Response
     {
+        // Aktuelle CSV-Konfiguration laden
+        $csvFieldConfig = $this->csvFieldConfigRepository->getCurrentConfig();
+        
         $form = $this->createForm(CsvUploadType::class);
+        $form->get('csvFieldConfig')->setData($csvFieldConfig);
         $form->handleRequest($request);
         
         if ($form->isSubmitted() && $form->isValid()) {
             $csvFile = $form->get('csvFile')->getData();
             $testMode = $form->get('testMode')->getData();
+            $updatedConfig = $form->get('csvFieldConfig')->getData();
             
-            $result = $this->processCsvFile($csvFile, $testMode);
+            // CSV-Konfiguration speichern
+            $this->csvFieldConfigRepository->saveConfig($updatedConfig);
+            
+            $result = $this->processCsvFile($csvFile, $testMode, $updatedConfig);
             
             return $result;
         }
         
         return $this->render('csv_upload/upload.html.twig', [
             'form' => $form->createView(),
+            'currentConfig' => $csvFieldConfig,
         ]);
     }
     
@@ -112,13 +122,12 @@ class CsvUploadController extends AbstractController
             'testMode' => $testMode
         ]);
     }
-    
-    /**
+      /**
      * Verarbeitet die CSV-Datei und leitet entsprechend weiter
      */
-    private function processCsvFile(mixed $csvFile, bool $testMode): Response
+    private function processCsvFile(mixed $csvFile, bool $testMode, CsvFieldConfig $csvFieldConfig): Response
     {
-        $result = $this->csvProcessor->process($csvFile);
+        $result = $this->csvProcessor->process($csvFile, $csvFieldConfig);
         
         $session = $this->requestStack->getSession();
         $session->set('unknown_users', $result['unknownUsers'] ?? []);

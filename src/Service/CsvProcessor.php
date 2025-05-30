@@ -11,20 +11,12 @@
 
 namespace App\Service;
 
+use App\Entity\CsvFieldConfig;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class CsvProcessor
 {
-    /**
-     * @var array<string> Erforderliche CSV-Spalten
-     */
-    private const REQUIRED_COLUMNS = [
-        'ticketId',
-        'username',
-        'ticketName'
-    ];
-    
     /**
      * @var CsvFileReader
      */
@@ -52,30 +44,34 @@ class CsvProcessor
         $this->userValidator = $userValidator;
         $this->requestStack = $requestStack;
     }
-    
-    /**
+      /**
      * Verarbeitet eine hochgeladene CSV-Datei mit Ticket-Daten
      * 
      * Diese Methode koordiniert die CSV-Verarbeitung und gibt strukturierte Ergebnisse zurück.
      * 
      * @param UploadedFile $file Die hochgeladene CSV-Datei
+     * @param CsvFieldConfig $csvFieldConfig Konfiguration der CSV-Feldnamen
      * @return array{validTickets: array, invalidRows: array, unknownUsers: array} Ergebnisse der Verarbeitung
      * @throws \Exception Bei Fehlern während der Verarbeitung
      */
-    public function process(UploadedFile $file): array
+    public function process(UploadedFile $file, CsvFieldConfig $csvFieldConfig): array
     {
         $result = [
             'validTickets' => [],
             'invalidRows' => [],
             'unknownUsers' => []
         ];
+
+        // Konfigurierte Feldnamen holen
+        $fieldMapping = $csvFieldConfig->getFieldMapping();
+        $requiredColumns = array_values($fieldMapping);
         
         $handle = null;
         try {
             // CSV-Datei öffnen und Header lesen
             $handle = $this->csvFileReader->openCsvFile($file);
             $header = $this->csvFileReader->readHeader($handle);
-            $columnIndices = $this->csvFileReader->validateRequiredColumns($header, self::REQUIRED_COLUMNS);
+            $columnIndices = $this->csvFileReader->validateRequiredColumns($header, $requiredColumns);
             
             // Daten zur Ticketverarbeitung
             $validTickets = [];
@@ -87,9 +83,10 @@ class CsvProcessor
                 &$validTickets,
                 &$invalidRows,
                 &$uniqueUsernames,
-                $columnIndices
+                $columnIndices,
+                $fieldMapping
             ) {
-                if (!$this->isRowValid($row, $columnIndices)) {
+                if (!$this->isRowValid($row, $columnIndices, $fieldMapping)) {
                     $invalidRows[] = [
                         'rowNumber' => $rowNumber,
                         'data' => $row
@@ -97,10 +94,10 @@ class CsvProcessor
                     return;
                 }
                 
-                $username = $row[$columnIndices['username']];
+                $username = $row[$columnIndices[$fieldMapping['username']]];
                 $uniqueUsernames[$username] = true;
                 
-                $validTickets[] = $this->createTicketFromRow($row, $columnIndices);
+                $validTickets[] = $this->createTicketFromRow($row, $columnIndices, $fieldMapping);
             });
             
             $result['validTickets'] = $validTickets;
@@ -117,19 +114,19 @@ class CsvProcessor
         
         return $result;
     }
-    
-    /**
+      /**
      * Prüft, ob eine Zeile alle erforderlichen Werte enthält
      * 
      * @param array $row Die zu prüfende Zeile
      * @param array $columnIndices Die Indizes der benötigten Spalten
+     * @param array $fieldMapping Die Zuordnung der logischen zu physischen Feldnamen
      * @return bool True, wenn die Zeile gültig ist, sonst False
      */
-    private function isRowValid(array $row, array $columnIndices): bool
+    private function isRowValid(array $row, array $columnIndices, array $fieldMapping): bool
     {
-        return isset($row[$columnIndices['ticketId']]) && !empty($row[$columnIndices['ticketId']]) &&
-               isset($row[$columnIndices['username']]) && !empty($row[$columnIndices['username']]) &&
-               isset($row[$columnIndices['ticketName']]);
+        return isset($row[$columnIndices[$fieldMapping['ticketId']]]) && !empty($row[$columnIndices[$fieldMapping['ticketId']]]) &&
+               isset($row[$columnIndices[$fieldMapping['username']]]) && !empty($row[$columnIndices[$fieldMapping['username']]]) &&
+               isset($row[$columnIndices[$fieldMapping['ticketName']]]);
     }
     
     /**
@@ -137,14 +134,15 @@ class CsvProcessor
      * 
      * @param array $row Die CSV-Zeile
      * @param array $columnIndices Die Indizes der benötigten Spalten
+     * @param array $fieldMapping Die Zuordnung der logischen zu physischen Feldnamen
      * @return array Das Ticket als assoziatives Array
      */
-    private function createTicketFromRow(array $row, array $columnIndices): array
+    private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): array
     {
         return [
-            'ticketId' => $row[$columnIndices['ticketId']],
-            'username' => $row[$columnIndices['username']],
-            'ticketName' => $row[$columnIndices['ticketName']] ?: null,
+            'ticketId' => $row[$columnIndices[$fieldMapping['ticketId']]],
+            'username' => $row[$columnIndices[$fieldMapping['username']]],
+            'ticketName' => $row[$columnIndices[$fieldMapping['ticketName']]] ?: null,
         ];
     }
     
