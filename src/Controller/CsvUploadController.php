@@ -126,6 +126,12 @@ class CsvUploadController extends AbstractController
      */
     private function processCsvFile(mixed $csvFile, bool $testMode, bool $forceResend, CsvFieldConfig $csvFieldConfig): Response
     {
+        // Validierung: CSV-Datei muss vorhanden sein
+        if ($csvFile === null) {
+            $this->addFlash('error', 'Bitte wählen Sie eine CSV-Datei aus.');
+            return $this->redirectToRoute('csv_upload');
+        }
+        
         $result = $this->csvProcessor->process($csvFile, $csvFieldConfig);
         
         $session = $this->requestStack->getSession();
