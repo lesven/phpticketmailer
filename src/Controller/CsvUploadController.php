@@ -2,19 +2,18 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
-use App\Entity\EmailSent;
 use App\Entity\CsvFieldConfig;
 use App\Form\CsvUploadType;
-use App\Service\CsvProcessor;
-use App\Service\EmailService;
-use App\Repository\UserRepository;
 use App\Repository\CsvFieldConfigRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\CsvUploadOrchestrator;
+use App\Service\SessionManager;
+use App\Service\UploadResult;
+use App\Service\UnknownUsersResult;
+use App\Service\EmailService;
+use App\Exception\TicketMailerException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -28,12 +27,10 @@ class CsvUploadController extends AbstractController
      * Konstruktor zum Injection der benötigten Abhängigkeiten
      */
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
-        private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
-        private readonly CsvProcessor $csvProcessor,
+        private readonly CsvUploadOrchestrator $csvUploadOrchestrator,
+        private readonly SessionManager $sessionManager,
         private readonly EmailService $emailService,
-        private readonly RequestStack $requestStack
+        private readonly CsvFieldConfigRepository $csvFieldConfigRepository
     ) {
     }
       /**
@@ -53,21 +50,26 @@ class CsvUploadController extends AbstractController
             $forceResend = $form->get('forceResend')->getData();
             $updatedConfig = $form->get('csvFieldConfig')->getData();
             
-            // Zusätzliche Validierung: CSV-Datei muss vorhanden sein
-            if ($csvFile === null) {
-                $this->addFlash('error', 'Bitte wählen Sie eine CSV-Datei aus.');
+            try {
+                $result = $this->csvUploadOrchestrator->processUpload(
+                    $csvFile, 
+                    $testMode, 
+                    $forceResend, 
+                    $updatedConfig
+                );
+                
+                $this->addFlash($result->flashType, $result->flashMessage);
+                
+                return $this->redirectToRoute($result->redirectRoute, $result->routeParameters);
+                
+            } catch (TicketMailerException $e) {
+                $this->addFlash('error', $e->getUserMessage());
+                
                 return $this->render('csv_upload/upload.html.twig', [
                     'form' => $form->createView(),
                     'currentConfig' => $csvFieldConfig,
                 ]);
             }
-            
-            // CSV-Konfiguration speichern
-            $this->csvFieldConfigRepository->saveConfig($updatedConfig);
-            
-            $result = $this->processCsvFile($csvFile, $testMode, $forceResend, $updatedConfig);
-            
-            return $result;
         }
         
         return $this->render('csv_upload/upload.html.twig', [
@@ -75,34 +77,40 @@ class CsvUploadController extends AbstractController
             'currentConfig' => $csvFieldConfig,
         ]);
     }
-    
-    /**
+      /**
      * Verarbeitet unbekannte Benutzer aus der CSV-Datei
      */
     #[Route('/unknown-users', name: 'unknown_users')]
     public function unknownUsers(Request $request): Response
     {
-        $unknownUsers = $this->getUnknownUsersFromSession();
+        $unknownUsers = $this->sessionManager->getUnknownUsers();
         
         if (empty($unknownUsers)) {
             $this->addFlash('warning', 'Keine unbekannten Benutzer zu verarbeiten');
             return $this->redirectToRoute('csv_upload');
         }
-          if ($request->isMethod('POST')) {
-            $this->processUnknownUsers($request, $unknownUsers);
-            
-            $this->addFlash('success', 'Neue Benutzer wurden erfolgreich angelegt');
-            return $this->redirectToRoute('send_emails', [
-                'testMode' => $request->query->get('testMode', 0),
-                'forceResend' => $request->query->get('forceResend', 0)
-            ]);
+        
+        if ($request->isMethod('POST')) {
+            try {
+                $emailMappings = $this->extractEmailMappingsFromRequest($request, $unknownUsers);
+                $result = $this->csvUploadOrchestrator->processUnknownUsers($emailMappings);
+                
+                $this->addFlash($result->flashType, $result->message);
+                
+                return $this->redirectToRoute('send_emails', [
+                    'testMode' => $request->query->get('testMode', 0),
+                    'forceResend' => $request->query->get('forceResend', 0)
+                ]);
+                
+            } catch (TicketMailerException $e) {
+                $this->addFlash('error', $e->getUserMessage());
+            }
         }
         
         return $this->render('csv_upload/unknown_users.html.twig', [
             'unknownUsers' => $unknownUsers,
         ]);
-    }
-      /**
+    }    /**
      * Sendet E-Mails mit Ticketinformationen an die Benutzer
      */
     #[Route('/send-emails', name: 'send_emails')]
@@ -110,99 +118,53 @@ class CsvUploadController extends AbstractController
     {
         $testMode = (bool)$request->query->get('testMode', 0);
         $forceResend = (bool)$request->query->get('forceResend', 0);
-        $ticketData = $this->getValidTicketsFromSession();
+        $ticketData = $this->sessionManager->getValidTickets();
         
         if (empty($ticketData)) {
             $this->addFlash('error', 'Keine gültigen Tickets zum Versenden gefunden');
             return $this->redirectToRoute('csv_upload');
         }
         
-        $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend);
-        
-        $this->addFlash('success', sprintf(
-            'Es wurden %d E-Mails %sversandt', 
-            count($sentEmails), 
-            $testMode ? 'im Testmodus ' : ''
-        ));
+        try {
+            $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend);
+            
+            $this->addFlash('success', sprintf(
+                'Es wurden %d E-Mails %sversandt', 
+                count($sentEmails), 
+                $testMode ? 'im Testmodus ' : ''
+            ));
+            
+            // Session-Daten nach erfolgreichem Versand löschen
+            $this->sessionManager->clearUploadData();
+            
+        } catch (TicketMailerException $e) {
+            $this->addFlash('error', $e->getUserMessage());
+            $sentEmails = [];
+        }
         
         return $this->render('csv_upload/send_result.html.twig', [
-            'sentEmails' => $sentEmails,
+            'sentEmails' => $sentEmails ?? [],
             'testMode' => $testMode
         ]);
     }    /**
-     * Verarbeitet die CSV-Datei und leitet entsprechend weiter
+     * Extrahiert E-Mail-Zuordnungen aus dem Request für unbekannte Benutzer
+     * 
+     * @param Request $request HTTP-Request mit Form-Daten
+     * @param array $unknownUsers Liste der unbekannten Benutzernamen
+     * @return array Mapping von Benutzername zu E-Mail-Adresse
      */
-    private function processCsvFile(mixed $csvFile, bool $testMode, bool $forceResend, CsvFieldConfig $csvFieldConfig): Response
+    private function extractEmailMappingsFromRequest(Request $request, array $unknownUsers): array
     {
-        // Validierung: CSV-Datei muss vorhanden sein
-        if ($csvFile === null) {
-            $this->addFlash('error', 'Bitte wählen Sie eine CSV-Datei aus.');
-            return $this->redirectToRoute('csv_upload');
-        }
-        
-        $result = $this->csvProcessor->process($csvFile, $csvFieldConfig);
-        
-        $session = $this->requestStack->getSession();
-        $session->set('unknown_users', $result['unknownUsers'] ?? []);
-        $session->set('valid_tickets', $result['validTickets'] ?? []);
-        
-        if (!empty($result['unknownUsers'])) {
-            $this->addFlash('info', sprintf(
-                'Es wurden %d unbekannte Benutzer gefunden', 
-                count($result['unknownUsers'])
-            ));
-            return $this->redirectToRoute('unknown_users', [
-                'testMode' => $testMode ? 1 : 0,
-                'forceResend' => $forceResend ? 1 : 0
-            ]);
-        }
-        
-        $this->addFlash('success', 'CSV-Datei erfolgreich verarbeitet');
-        return $this->redirectToRoute('send_emails', [
-            'testMode' => $testMode ? 1 : 0,
-            'forceResend' => $forceResend ? 1 : 0
-        ]);
-    }
-    
-    /**
-     * Erstellt neue Benutzer aus unbekannten Benutzernamen und E-Mails
-     */
-    private function processUnknownUsers(Request $request, array $unknownUsers): void
-    {
-        $newUsers = [];
+        $emailMappings = [];
         
         foreach ($unknownUsers as $username) {
             $email = $request->request->get('email_' . $username);
-            if (!$email) {
-                continue;
+            if (!empty($email)) {
+                $emailMappings[$username] = $email;
             }
-            
-            $user = new User();
-            $user->setUsername($username);
-            $user->setEmail($email);
-            
-            $this->entityManager->persist($user);
-            $newUsers[] = $user;
         }
         
-        if (!empty($newUsers)) {
-            $this->entityManager->flush();
-        }
+        return $emailMappings;
     }
-    
-    /**
-     * Holt unbekannte Benutzer aus der Session
-     */
-    private function getUnknownUsersFromSession(): array
-    {
-        return $this->requestStack->getSession()->get('unknown_users', []);
-    }
-    
-    /**
-     * Holt die gültigen Tickets aus der Session
-     */
-    private function getValidTicketsFromSession(): array
-    {
-        return $this->requestStack->getSession()->get('valid_tickets', []);
-    }
+}
 }

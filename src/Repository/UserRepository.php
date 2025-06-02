@@ -120,4 +120,29 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    
+    /**
+     * Erstellt einen QueryBuilder mit Sortierung für Paginierung
+     * 
+     * @param string $sortField Das Feld nach dem sortiert werden soll
+     * @param string $sortDirection Die Sortierrichtung (ASC oder DESC)
+     * @return \Doctrine\ORM\QueryBuilder QueryBuilder für die Paginierung
+     */
+    public function createSortedQueryBuilder(string $sortField = 'id', string $sortDirection = 'ASC'): \Doctrine\ORM\QueryBuilder
+    {
+        // Erlaubte Sortierfelder validieren
+        $allowedFields = ['id', 'username', 'email'];
+        if (!in_array($sortField, $allowedFields)) {
+            $sortField = 'id';
+        }
+        
+        // Sortierrichtung validieren
+        $sortDirection = strtoupper($sortDirection);
+        if (!in_array($sortDirection, ['ASC', 'DESC'])) {
+            $sortDirection = 'ASC';
+        }
+        
+        return $this->createQueryBuilder('u')
+            ->orderBy('u.' . $sortField, $sortDirection);
+    }
 }

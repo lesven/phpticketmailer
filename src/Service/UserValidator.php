@@ -95,4 +95,52 @@ class UserValidator
         
         return [$knownUsers, $unknownUsers];
     }
+    
+    /**
+     * Validiert einen Benutzernamen nach definierten Regeln
+     * 
+     * @param string $username Der zu validierende Benutzername
+     * @return bool True, wenn der Benutzername gültig ist
+     */
+    public function isValidUsername(string $username): bool
+    {
+        // Benutzername darf nicht leer sein
+        if (empty(trim($username))) {
+            return false;
+        }
+        
+        // Länge zwischen 2 und 50 Zeichen
+        $length = strlen($username);
+        if ($length < 2 || $length > 50) {
+            return false;
+        }
+        
+        // Nur alphanumerische Zeichen, Punkt, Unterstrich und Bindestrich erlaubt
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Validiert eine E-Mail-Adresse
+     * 
+     * @param string $email Die zu validierende E-Mail-Adresse
+     * @return bool True, wenn die E-Mail-Adresse gültig ist
+     */
+    public function isValidEmail(string $email): bool
+    {
+        // Grundlegende PHP-Filter-Validierung
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        
+        // Maximallänge prüfen
+        if (strlen($email) > 254) {
+            return false;
+        }
+        
+        return true;
+    }
 }

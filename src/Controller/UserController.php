@@ -12,67 +12,56 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\PaginationService;
+use App\Service\UserImportService;
 
 #[Route('/user')]
 class UserController extends AbstractController
-{    #[Route('/', name: 'user_index', methods: ['GET'])]
-    public function index(Request $request, UserRepository $userRepository): Response
+{
+    /**
+     * Zeigt die Benutzerliste mit Paginierung, Suche und Sortierung
+     */
+    #[Route('/', name: 'user_index', methods: ['GET'])]
+    public function index(Request $request, UserRepository $userRepository, PaginationService $paginationService): Response
     {
-        // Get search term from request query parameters
+        // Parameter aus Request extrahieren
         $searchTerm = $request->query->get('search');
-        
-        // Get sort parameters from request
         $sortField = $request->query->get('sort', 'id');
         $sortDirection = $request->query->get('direction', 'ASC');
-        
-        // Get page number from request (default to 1)
         $page = max(1, (int) $request->query->get('page', 1));
-        $limit = 15; // 15 users per page as per user story
         
-        // If there's a search term, show all results without pagination
+        // Bei Suchanfrage: alle Ergebnisse ohne Paginierung anzeigen
         if ($searchTerm) {
             $users = $userRepository->searchByUsername($searchTerm, $sortField, $sortDirection);
-            $totalUsers = count($users);
-            $totalPages = 1;
-            $currentPage = 1;
+            $paginationResult = null;
         } else {
-            // Use pagination when no search term
-            $offset = ($page - 1) * $limit;
-            $users = $userRepository->findPaginated($offset, $limit, $sortField, $sortDirection);
-            $totalUsers = $userRepository->count([]);
-            $totalPages = max(1, ceil($totalUsers / $limit));
-            $currentPage = min($page, $totalPages);
+            // Paginierung verwenden wenn keine Suche aktiv
+            $queryBuilder = $userRepository->createSortedQueryBuilder($sortField, $sortDirection);
+            $paginationResult = $paginationService->paginate($queryBuilder, $page);
+            $users = $paginationResult->results;
         }
-        
-        // Determine the opposite direction for toggling sort order
-        $oppositeDirection = $sortDirection === 'ASC' ? 'DESC' : 'ASC';
-        
-        return $this->render('user/index.html.twig', [
+          return $this->render('user/index.html.twig', [
             'users' => $users,
             'searchTerm' => $searchTerm,
             'sortField' => $sortField,
             'sortDirection' => $sortDirection,
-            'oppositeDirection' => $oppositeDirection,
-            'currentPage' => $currentPage,
-            'totalPages' => $totalPages,
-            'totalUsers' => $totalUsers,
-            'hasSearch' => !empty($searchTerm)
+            'oppositeDirection' => $sortDirection === 'ASC' ? 'DESC' : 'ASC',
+            'pagination' => $paginationResult,
+            'hasSearch' => !empty($searchTerm),
+            // Template compatibility variables
+            'currentPage' => $paginationResult ? $paginationResult->currentPage : 1,
+            'totalPages' => $paginationResult ? $paginationResult->totalPages : 1,
+            'totalUsers' => $paginationResult ? $paginationResult->totalItems : count($users)
         ]);
     }
 
+    /**
+     * Exportiert alle Benutzer als CSV-Datei
+     */
     #[Route('/export', name: 'user_export', methods: ['GET'])]
-    public function export(UserRepository $userRepository): Response
+    public function export(UserImportService $userImportService): Response
     {
-        $users = $userRepository->findAll();
-        
-        // Create CSV content
-        $csvContent = "ID,Username,Email\n";
-        
-        foreach ($users as $user) {
-            $csvContent .= $user->getId() . ',' . 
-                          '"' . str_replace('"', '""', $user->getUsername()) . '"' . ',' . 
-                          '"' . str_replace('"', '""', $user->getEmail()) . '"' . "\n";
-        }
+        $csvContent = $userImportService->exportUsersToCsv();
         
         // Create the response with the CSV content
         $response = new Response($csvContent);
@@ -85,12 +74,14 @@ class UserController extends AbstractController
         
         $response->headers->set('Content-Type', 'text/csv');
         $response->headers->set('Content-Disposition', $disposition);
-        
-        return $response;
+          return $response;
     }
-    
+
+    /**
+     * Importiert Benutzer aus einer CSV-Datei
+     */
     #[Route('/import', name: 'user_import', methods: ['GET', 'POST'])]
-    public function import(Request $request, EntityManagerInterface $entityManager): Response
+    public function import(Request $request, UserImportService $userImportService): Response
     {
         $form = $this->createForm(UserImportType::class);
         $form->handleRequest($request);
@@ -99,131 +90,24 @@ class UserController extends AbstractController
             $csvFile = $form->get('csvFile')->getData();
             $clearExisting = $form->get('clearExisting')->getData();
             
-            // Bestehende Benutzer bei Bedarf löschen
-            if ($clearExisting) {
-                $this->clearExistingUsers($entityManager);
-            }
-            
-            // CSV-Datei verarbeiten
             if ($csvFile) {
-                $importResult = $this->processCsvFile($csvFile, $entityManager);
-                if ($importResult === false) {
-                    return $this->redirectToRoute('user_import');
-                }
+                $result = $userImportService->importUsersFromCsv($csvFile, $clearExisting);
                 
-                list($imported, $skipped) = $importResult;
-                $this->addFlash('success', "$imported Benutzer erfolgreich importiert. $skipped Einträge übersprungen.");
-                return $this->redirectToRoute('user_index');
+                $this->addFlash($result->getFlashType(), $result->message);
+                
+                if ($result->success) {
+                    return $this->redirectToRoute('user_index');
+                }
             }
         }
         
         return $this->render('user/import.html.twig', [
-            'form' => $form->createView(),
-        ]);
-    }
-    
-    /**
-     * Löscht alle bestehenden Benutzer aus der Datenbank
-     */
-    private function clearExistingUsers(EntityManagerInterface $entityManager): void
-    {
-        $users = $entityManager->getRepository(User::class)->findAll();
-        foreach ($users as $user) {
-            $entityManager->remove($user);
-        }
-        $entityManager->flush();
-        $this->addFlash('info', 'Alle bestehenden Benutzer wurden gelöscht.');
-    }
-    
-    /**
-     * Verarbeitet die hochgeladene CSV-Datei
-     * 
-     * @return array|false [Anzahl importierter, Anzahl übersprungener] oder false bei Fehler
-     */
-    private function processCsvFile($csvFile, EntityManagerInterface $entityManager)
-    {
-        $handle = fopen($csvFile->getPathname(), 'r');
-        
-        // Erste Zeile für Header lesen
-        $header = fgetcsv($handle, 1000, ',');
-        
-        if ($header === false) {
-            $this->addFlash('error', 'Die CSV-Datei ist leer oder fehlerhaft.');
-            fclose($handle);
-            return false;
-        }
-        
-        // Indizes für die benötigten Spalten finden
-        $emailIndex = array_search('email', array_map('strtolower', $header));
-        $usernameIndex = array_search('benutzername', array_map('strtolower', $header));
-        
-        // Wenn die erforderlichen Spalten nicht gefunden wurden
-        if ($emailIndex === false || $usernameIndex === false) {
-            $this->addFlash('error', 'Die CSV-Datei hat nicht die erforderlichen Spalten "email" und "benutzername".');
-            fclose($handle);
-            return false;
-        }
-        
-        $importStats = $this->importUsersFromCsv($handle, $emailIndex, $usernameIndex, $entityManager);
-        fclose($handle);
-        
-        return $importStats;
-    }
-    
-    /**
-     * Importiert Benutzer aus dem geöffneten CSV-Handle
-     * 
-     * @return array [Anzahl importierter, Anzahl übersprungener]
-     */
-    private function importUsersFromCsv($handle, $emailIndex, $usernameIndex, EntityManagerInterface $entityManager): array
-    {
-        $imported = 0;
-        $skipped = 0;
-        $existingUsernames = [];
-        
-        // Sammle alle existierenden Benutzernamen
-        $existingUsers = $entityManager->getRepository(User::class)->findAll();
-        foreach ($existingUsers as $user) {
-            $existingUsernames[$user->getUsername()] = $user;
-        }
-        
-        // CSV-Zeilen verarbeiten
-        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-            if (count($row) <= max($emailIndex, $usernameIndex)) {
-                $skipped++;
-                continue;
-            }
-            
-            $username = trim($row[$usernameIndex]);
-            $email = trim($row[$emailIndex]);
-            
-            // Prüfe, ob Benutzername und E-Mail vorhanden sind
-            if (empty($username) || empty($email)) {
-                $skipped++;
-                continue;
-            }
-            
-            // Prüfe, ob ein Benutzer mit diesem Benutzernamen bereits existiert
-            if (isset($existingUsernames[$username])) {
-                // Aktualisiere die E-Mail-Adresse des bestehenden Benutzers
-                $user = $existingUsernames[$username];
-                $user->setEmail($email);
-            } else {
-                // Erstelle neuen Benutzer
-                $user = new User();
-                $user->setUsername($username);
-                $user->setEmail($email);
-                $entityManager->persist($user);
-                $existingUsernames[$username] = $user; // Füge zur Liste der bekannten Benutzer hinzu
-            }
-            
-            $imported++;
-        }
-        
-        $entityManager->flush();
-        return [$imported, $skipped];
+            'form' => $form->createView(),        ]);
     }
 
+    /**
+     * Erstellt einen neuen Benutzer
+     */
     #[Route('/new', name: 'user_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
@@ -245,6 +129,9 @@ class UserController extends AbstractController
         ]);
     }
 
+    /**
+     * Bearbeitet einen bestehenden Benutzer
+     */
     #[Route('/{id}/edit', name: 'user_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
@@ -264,6 +151,9 @@ class UserController extends AbstractController
         ]);
     }
 
+    /**
+     * Löscht einen Benutzer
+     */
     #[Route('/{id}', name: 'user_delete', methods: ['POST'])]
     public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
@@ -272,8 +162,6 @@ class UserController extends AbstractController
             $entityManager->flush();
             
             $this->addFlash('success', 'Benutzer erfolgreich gelöscht!');
-        }
-
-        return $this->redirectToRoute('user_index');
+        }        return $this->redirectToRoute('user_index');
     }
 }

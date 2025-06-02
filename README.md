@@ -23,7 +23,7 @@ Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen per E-M
 ### Docker (empfohlen)
 
 ```bash
-git clone https://github.com/ihrsvcname/phpticketmailer.git
+git clone https://github.com/lesven/phpticketmailer.git
 cd phpticketmailer
 cp .env .env.local
 ```
