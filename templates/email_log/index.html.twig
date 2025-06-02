@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Versandprotokoll - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Versandprotokoll</h1>
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Ticket-ID suchen..." value="{{ search|default('') }}">
+            <button class="btn btn-primary" type="submit">Suchen</button>
+        </div>
+    </form>
+    {% if emails is empty %}
+        <div class="alert alert-info">Keine E-Mails gefunden.</div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Ticket-ID</th>
+                        <th>Benutzer</th>
+                        <th>E-Mail</th>
+                        <th>Status</th>
+                        <th>Datum/Zeit</th>
+                        <th>Testmodus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for email in emails %}
+                        <tr>
+                            <td>{{ email.ticketId }}</td>
+                            <td>{{ email.username }}</td>
+                            <td>{{ email.email }}</td>
+                            <td>
+                                {% if email.status starts with 'error' %}
+                                    <span class="badge bg-danger">{{ email.status }}</span>
+                                {% elseif email.status starts with 'Nicht versendet' %}
+                                    <span class="badge bg-warning text-dark">{{ email.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ email.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ email.timestamp|date('d.m.Y H:i:s') }}</td>
+                            <td>
+                                {% if email.testMode %}
+                                    <span class="badge bg-warning text-dark">Test</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Live</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
