@@ -25,11 +25,9 @@
             <p>Letzte Aktualisierung: <span id="last-updated">-</span></p>
             <button id="refresh-status" class="btn btn-primary">Status aktualisieren</button>
         </div>
-    </div>
-
-    <div class="row">
+    </div>    <div class="row">
         <!-- Datenbankstatus -->
-        <div class="col-md-4">
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header">
                     <h3 class="h5 m-0">Datenbank</h3>
@@ -45,56 +43,16 @@
                 </div>
             </div>
         </div>
-
-        <!-- Webserverstatus -->
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 m-0">Webserver</h3>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div id="web-status-indicator" class="status-indicator"></div>
-                        <span id="web-status-text" class="ml-2">Wird geprüft...</span>
-                    </div>
-                    <div id="web-details" class="mt-3 small">
-                        <p>URL: <span id="web-url">-</span></p>
-                        <p>Antwortzeit: <span id="web-response-time">-</span></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Container-Status -->
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="h5 m-0">Docker Container</h3>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div id="container-status-indicator" class="status-indicator"></div>
-                        <span id="container-status-text" class="ml-2">Wird geprüft...</span>
-                    </div>
-                    <div id="container-details" class="mt-3 small">
-                        <p>Container werden geprüft...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="h5 m-0">Zabbix-Integration</h2>
         </div>
-        <div class="card-body">
-            <p>Die folgenden Endpunkte können für Zabbix-Monitoring verwendet werden:</p>
+        <div class="card-body">            <p>Die folgenden Endpunkte können für Zabbix-Monitoring verwendet werden:</p>
             <ul>
                 <li><code>/monitoring/health</code> - Gesamter Systemstatus (JSON)</li>
                 <li><code>/monitoring/database</code> - Datenbankstatus (JSON)</li>
-                <li><code>/monitoring/webserver</code> - Webserverstatus (JSON)</li>
-                <li><code>/monitoring/containers</code> - Containerstatus (JSON)</li>
             </ul>
             <p>
                 <strong>Beispiel:</strong> 
@@ -116,13 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('refresh-status').addEventListener('click', function() {
         checkSystemStatus();
     });
-    
-    function checkSystemStatus() {
+      function checkSystemStatus() {
         // Status-Indikatoren zurücksetzen
         setLoading('system');
         setLoading('db');
-        setLoading('web');
-        setLoading('container');
         
         // Systemstatus abfragen
         fetch('/monitoring/health')
@@ -156,39 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     dbDetailsHtml += '</ul>';
                 }
                 document.getElementById('db-details').innerHTML = dbDetailsHtml;
-                
-                // Webserver-Status
-                const webCheck = data.checks.webserver;
-                updateStatus('web', webCheck.status);
-                document.getElementById('web-url').textContent = webCheck.url;
-                document.getElementById('web-response-time').textContent = 
-                    webCheck.responseTime ? `${webCheck.responseTime} ms` : 'N/A';
-                
-                if (webCheck.error) {
-                    document.getElementById('web-details').innerHTML += `<p class="text-danger">${webCheck.error}</p>`;
-                }
-                
-                // Container-Status
-                const containerCheck = data.checks.containers;
-                updateStatus('container', containerCheck.status);
-                
-                let containersHtml = '<ul class="list-unstyled mb-0">';
-                for (const [container, info] of Object.entries(containerCheck.containers)) {
-                    const statusClass = info.status === 'ok' ? 'text-success' : 'text-danger';
-                    containersHtml += `
-                        <li>
-                            <i class="fas fa-${info.status === 'ok' ? 'check' : 'times'} ${statusClass}"></i>
-                            ${container}: ${info.running ? 'Running' : 'Stopped'}, Health: ${info.health}
-                        </li>
-                    `;
-                }
-                containersHtml += '</ul>';
-                
-                if (containerCheck.error) {
-                    containersHtml += `<p class="text-danger">${containerCheck.error}</p>`;
-                }
-                
-                document.getElementById('container-details').innerHTML = containersHtml;
             })
             .catch(error => {
                 console.error('Fehler beim Abrufen des Systemstatus:', error);

@@ -4,23 +4,17 @@ Diese Dokumentation beschreibt die Integration des Ticketumfrage-Tools mit dem Z
 
 ## Übersicht
 
-Das Ticketumfrage-Tool stellt mehrere JSON-Endpunkte bereit, die zur Überwachung des Systemzustands verwendet werden können. Diese Endpunkte können direkt in Zabbix eingebunden werden, um automatisierte Prüfungen durchzuführen und im Fehlerfall Alarme auszulösen.
+Das Ticketumfrage-Tool stellt JSON-Endpunkte bereit, die zur Überwachung des Datenbankzustands verwendet werden können. Diese Endpunkte können direkt in Zabbix eingebunden werden, um automatisierte Prüfungen durchzuführen und im Fehlerfall Alarme auszulösen.
 
 ## Verfügbare Endpunkte
 
 Alle Monitoring-Endpunkte befinden sich unter dem Pfad `/monitoring/` und geben JSON-Antworten zurück.
 
 1. **Gesamtstatus**: `/monitoring/health`
-   - Prüft alle Systemkomponenten und gibt einen konsolidierten Status zurück
+   - Prüft die Datenbankverbindung und gibt einen konsolidierten Status zurück
    
 2. **Datenbankstatus**: `/monitoring/database`
    - Prüft die Erreichbarkeit der Datenbank und den Lesezugriff auf wichtige Tabellen
-   
-3. **Webserverstatus**: `/monitoring/webserver`
-   - Prüft die externe Erreichbarkeit des Webservers
-   
-4. **Container-Status**: `/monitoring/containers`
-   - Prüft den Status aller Docker-Container, die für das System benötigt werden
 
 ## Zabbix-Einrichtung
 
@@ -61,22 +55,6 @@ Für jeden Endpunkt sollte ein separates Item erstellt werden:
    - URL: `http://{HOST.CONN}:{$PORT}/monitoring/database`
    - (Rest wie oben)
 
-#### Webserver-Status-Item
-
-1. Erstellen Sie ein ähnliches Item:
-   - Name: `Webserver Status`
-   - Key: `ticketumfrage.web`
-   - URL: `http://{HOST.CONN}:{$PORT}/monitoring/webserver`
-   - (Rest wie oben)
-
-#### Container-Status-Item
-
-1. Erstellen Sie ein ähnliches Item:
-   - Name: `Container Status`
-   - Key: `ticketumfrage.containers`
-   - URL: `http://{HOST.CONN}:{$PORT}/monitoring/containers`
-   - (Rest wie oben)
-
 ### 3. Trigger einrichten
 
 Für jedes Item sollten Trigger erstellt werden, die Alarme auslösen, wenn der Status nicht "ok" ist:
@@ -99,22 +77,6 @@ Für jedes Item sollten Trigger erstellt werden, die Alarme auslösen, wenn der 
    - (Rest wie oben)
    - Description: `Probleme mit der Datenbank des Ticketumfrage-Tools`
 
-#### Webserver-Trigger
-
-1. Erstellen Sie einen ähnlichen Trigger:
-   - Name: `Ticketumfrage Webserver Problem`
-   - Expression: `{ticketumfrage-tool:ticketumfrage.web.regexp(".*\"status\":\"ok\".*")}=0`
-   - (Rest wie oben)
-   - Description: `Der Webserver des Ticketumfrage-Tools ist nicht erreichbar`
-
-#### Container-Trigger
-
-1. Erstellen Sie einen ähnlichen Trigger:
-   - Name: `Ticketumfrage Container Problem`
-   - Expression: `{ticketumfrage-tool:ticketumfrage.containers.regexp(".*\"status\":\"ok\".*")}=0`
-   - (Rest wie oben)
-   - Description: `Probleme mit Docker-Containern des Ticketumfrage-Tools`
-
 ### 4. Benachrichtigungen einrichten
 
 Richten Sie Aktionen und Benachrichtigungen ein, um bei ausgelösten Triggern automatisch E-Mails oder andere Benachrichtigungen zu senden.
@@ -128,9 +90,7 @@ Richten Sie Aktionen und Benachrichtigungen ein, um bei ausgelösten Triggern au
   "status": "ok", // oder "error"
   "timestamp": "2025-06-04T15:30:45+02:00",
   "checks": {
-    "database": { /* siehe database-Endpunkt */ },
-    "webserver": { /* siehe webserver-Endpunkt */ },
-    "containers": { /* siehe containers-Endpunkt */ }
+    "database": { /* siehe database-Endpunkt */ }
   }
 }
 ```
@@ -158,59 +118,6 @@ Richten Sie Aktionen und Benachrichtigungen ein, um bei ausgelösten Triggern au
 }
 ```
 
-### Webserver-Endpunkt
-
-```json
-{
-  "status": "ok", // oder "error"
-  "url": "http://localhost:8090",
-  "error": null, // Fehlermeldung falls vorhanden
-  "responseTime": 45, // in Millisekunden
-  "statusCode": 200
-}
-```
-
-### Container-Endpunkt
-
-```json
-{
-  "status": "ok", // oder "error"
-  "containers": {
-    "ticketumfrage_php": {
-      "status": "ok",
-      "running": true,
-      "health": "healthy",
-      "fullStatus": "Up 2 days"
-    },
-    "ticketumfrage_webserver": {
-      "status": "ok",
-      "running": true,
-      "health": "healthy",
-      "fullStatus": "Up 2 days"
-    },
-    "ticketumfrage_database": {
-      "status": "ok",
-      "running": true,
-      "health": "healthy",
-      "fullStatus": "Up 2 days"
-    },
-    "ticketumfrage_mailhog": {
-      "status": "ok",
-      "running": true,
-      "health": "N/A",
-      "fullStatus": "Up 2 days"
-    },
-    "ticketumfrage_mailserver": {
-      "status": "ok",
-      "running": true,
-      "health": "N/A",
-      "fullStatus": "Up 2 days"
-    }
-  },
-  "error": null // Fehlermeldung falls vorhanden
-}
-```
-
 ## Fehlerbehebung
 
 ### Datenbankfehler
@@ -219,17 +126,4 @@ Wenn die Datenbank nicht erreichbar ist:
 1. Überprüfen Sie den Status des Datenbankcontainers: `docker ps -a | grep ticketumfrage_database`
 2. Falls der Container nicht läuft, starten Sie ihn neu: `docker start ticketumfrage_database`
 3. Überprüfen Sie die Datenbankverbindungsparameter in der `.env`-Datei
-
-### Webserverfehler
-
-Wenn der Webserver nicht erreichbar ist:
-1. Überprüfen Sie den Status des Webservercontainers: `docker ps -a | grep ticketumfrage_webserver`
-2. Falls der Container nicht läuft, starten Sie ihn neu: `docker start ticketumfrage_webserver`
-3. Überprüfen Sie die Netzwerkkonfiguration und Port-Weiterleitungen
-
-### Container-Fehler
-
-Wenn Container nicht ordnungsgemäß laufen:
-1. Überprüfen Sie alle Container: `docker ps -a`
-2. Prüfen Sie die Logs des problematischen Containers: `docker logs ticketumfrage_container_name`
-3. Starten Sie den Docker-Stack neu: `docker-compose down && docker-compose up -d`
+4. Überprüfen Sie die MySQL-Logs: `docker logs ticketumfrage_database`

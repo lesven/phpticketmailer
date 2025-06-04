@@ -191,5 +191,4 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 *Als Systemadministrator möchte ich automatisiert prüfen dass alle notwendigen Docker Dienste laufen und das System erreichbar ist*
 ** Akzeptanzkriterien: **
 - Die Datenbank soll geprüft werden ob sie erreichbar ist und die notwendigen Tabellen lesend zugreifbar sind
-- Der Webserver soll geprüft werden ob er von extern erreichbar ist
-- laufen alle container und sind sie healthy
+- der Health Check muss uneingeloggt erreichbar sein

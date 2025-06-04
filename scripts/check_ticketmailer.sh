@@ -53,29 +53,17 @@ if command -v jq &> /dev/null; then
     status=$(echo "$json_response" | jq -r '.status')
     
     if [ "$status" = "ok" ]; then
-        send_notification "OK" "All systems operational"
+        send_notification "OK" "Database connectivity check passed"
         exit 0
     else
         # Extract detailed error information
         db_status=$(echo "$json_response" | jq -r '.checks.database.status')
-        web_status=$(echo "$json_response" | jq -r '.checks.webserver.status')
-        container_status=$(echo "$json_response" | jq -r '.checks.containers.status')
         
         error_msg="System health check failed. "
         
         if [ "$db_status" != "ok" ]; then
             db_error=$(echo "$json_response" | jq -r '.checks.database.error // "Unknown database error"')
             error_msg+="Database: $db_error. "
-        fi
-        
-        if [ "$web_status" != "ok" ]; then
-            web_error=$(echo "$json_response" | jq -r '.checks.webserver.error // "Unknown webserver error"')
-            error_msg+="Webserver: $web_error. "
-        fi
-        
-        if [ "$container_status" != "ok" ]; then
-            container_error=$(echo "$json_response" | jq -r '.checks.containers.error // "Unknown container error"')
-            error_msg+="Containers: $container_error"
         fi
         
         send_notification "ERROR" "$error_msg"

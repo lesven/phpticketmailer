@@ -3,7 +3,7 @@
  * MonitoringController.php
  * 
  * Dieser Controller stellt Endpunkte für das Zabbix-Monitoring bereit.
- * Er prüft den Zustand der Datenbank, des Webservers und der Docker-Container.
+ * Er prüft den Zustand der Datenbank und den Lesezugriff auf wichtige Tabellen.
  * 
  * @package App\Controller
  */
@@ -62,9 +62,7 @@ class MonitoringController extends AbstractController
         
         // Standardmäßig wird JSON zurückgegeben für einfache Zabbix-Integration
         return $this->json($result);
-    }
-
-    /**
+    }    /**
      * Überprüft speziell die Datenbankverbindung und den Tabellenzugriff
      * 
      * @return Response
@@ -73,30 +71,6 @@ class MonitoringController extends AbstractController
     public function database(): Response
     {
         $result = $this->monitoringService->checkDatabase();
-        return $this->json($result);
-    }
-
-    /**
-     * Überprüft die externe Erreichbarkeit des Webservers
-     * 
-     * @return Response
-     */
-    #[Route('/webserver', name: 'app_monitoring_webserver', methods: ['GET'])]
-    public function webserver(): Response
-    {
-        $result = $this->monitoringService->checkWebserver();
-        return $this->json($result);
-    }
-
-    /**
-     * Überprüft den Status der Docker-Container
-     * 
-     * @return Response
-     */
-    #[Route('/containers', name: 'app_monitoring_containers', methods: ['GET'])]
-    public function containers(): Response
-    {
-        $result = $this->monitoringService->checkContainers();
         return $this->json($result);
     }
 }

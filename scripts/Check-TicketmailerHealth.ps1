@@ -44,9 +44,8 @@ Write-Host "Checking system health at $BaseUrl$HealthEndpoint..."
 
 try {
     $Response = Invoke-RestMethod -Uri "$BaseUrl$HealthEndpoint" -Method Get
-    
-    if ($Response.status -eq "ok") {
-        Send-Notification -Status "OK" -Message "All systems operational"
+      if ($Response.status -eq "ok") {
+        Send-Notification -Status "OK" -Message "Database connectivity check passed"
         exit 0
     } else {
         # Build error message from components
@@ -55,25 +54,6 @@ try {
         if ($Response.checks.database.status -ne "ok") {
             $DbError = if ($Response.checks.database.error) { $Response.checks.database.error } else { "Unknown database error" }
             $ErrorMsg += "Database: $DbError. "
-        }
-        
-        if ($Response.checks.webserver.status -ne "ok") {
-            $WebError = if ($Response.checks.webserver.error) { $Response.checks.webserver.error } else { "Unknown webserver error" }
-            $ErrorMsg += "Webserver: $WebError. "
-        }
-        
-        if ($Response.checks.containers.status -ne "ok") {
-            $ContainerError = if ($Response.checks.containers.error) { $Response.checks.containers.error } else { "Unknown container error" }
-            $ErrorMsg += "Containers: $ContainerError"
-            
-            # List problematic containers
-            $ProblemContainers = $Response.checks.containers.containers.PSObject.Properties | 
-                Where-Object { $_.Value.status -ne "ok" } |
-                ForEach-Object { $_.Name }
-            
-            if ($ProblemContainers) {
-                $ErrorMsg += " Problem containers: $($ProblemContainers -join ', ')"
-            }
         }
         
         Send-Notification -Status "ERROR" -Message $ErrorMsg

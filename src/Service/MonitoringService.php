@@ -3,8 +3,7 @@
  * MonitoringService.php
  * 
  * Dieser Service stellt Methoden zur Überprüfung der Systemgesundheit bereit.
- * Insbesondere prüft er die Erreichbarkeit der Datenbank, des Webservers
- * und den Status der Docker-Container.
+ * Insbesondere prüft er die Erreichbarkeit der Datenbank für das Zabbix-Monitoring.
  * 
  * @package App\Service
  */
@@ -16,7 +15,6 @@ use App\Repository\EmailSentRepository;
 use App\Repository\CsvFieldConfigRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
-use Symfony\Component\Process\Process;
 
 /**
  * Service für die Überprüfung der Systemgesundheit
@@ -69,30 +67,22 @@ class MonitoringService
         
         // Standardmäßig die aktuelle Host-Umgebung verwenden, falls keine URL angegeben ist
         $this->baseUrl = $baseUrl ?? 'http://localhost:8090';
-    }
-
-    /**
+    }    /**
      * Führt einen vollständigen Systemgesundheitscheck durch
+     * Der Health-Check prüft nur die Datenbank, da dies die einzige
+     * relevante Überprüfung gemäß den aktualisierten Anforderungen ist
      * 
      * @return array
      */
     public function checkSystemHealth(): array
     {
         $dbCheck = $this->checkDatabase();
-        $webCheck = $this->checkWebserver();
-        $containerCheck = $this->checkContainers();
-        
-        $isHealthy = $dbCheck['status'] === 'ok' && 
-                     $webCheck['status'] === 'ok' && 
-                     $containerCheck['status'] === 'ok';
         
         return [
-            'status' => $isHealthy ? 'ok' : 'error',
+            'status' => $dbCheck['status'],
             'timestamp' => new \DateTime(),
             'checks' => [
-                'database' => $dbCheck,
-                'webserver' => $webCheck,
-                'containers' => $containerCheck
+                'database' => $dbCheck
             ]
         ];
     }
@@ -144,140 +134,6 @@ class MonitoringService
         } catch (DBALException $e) {
             $result['status'] = 'error';
             $result['error'] = 'Datenbankverbindung fehlgeschlagen: ' . $e->getMessage();
-        }
-        
-        return $result;
-    }
-
-    /**
-     * Überprüft die externe Erreichbarkeit des Webservers
-     * 
-     * @return array
-     */
-    public function checkWebserver(): array
-    {
-        $result = [
-            'status' => 'ok',
-            'url' => $this->baseUrl,
-            'error' => null,
-            'responseTime' => null
-        ];
-        
-        try {
-            $startTime = microtime(true);
-            
-            // Konfigurieren des Kontexts für die Anfrage
-            $opts = [
-                'http' => [
-                    'method' => 'GET',
-                    'timeout' => 5.0,
-                    'ignore_errors' => true
-                ]
-            ];
-            $context = stream_context_create($opts);
-            
-            // Anfrage durchführen
-            $response = @file_get_contents($this->baseUrl, false, $context);
-            $responseTime = round((microtime(true) - $startTime) * 1000); // in ms
-            $result['responseTime'] = $responseTime;
-            
-            // HTTP-Status-Code aus den Header-Informationen extrahieren
-            if (isset($http_response_header) && is_array($http_response_header) && count($http_response_header) > 0) {
-                preg_match('/^HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
-                $statusCode = isset($matches[1]) ? (int) $matches[1] : 0;
-                $result['statusCode'] = $statusCode;
-                
-                if ($statusCode < 200 || $statusCode >= 400) {
-                    $result['status'] = 'error';
-                    $result['error'] = 'Webserver erreichbar, aber unerwarteter Status-Code: ' . $statusCode;
-                }
-            } else {
-                // Keine HTTP-Header gefunden, was auf einen Fehler hinweist
-                $result['status'] = 'error';
-                $result['error'] = 'Keine gültige HTTP-Antwort erhalten';
-            }
-        } catch (\Exception $e) {
-            $result['status'] = 'error';
-            $result['error'] = 'Webserver nicht erreichbar: ' . $e->getMessage();
-        }
-        
-        return $result;
-    }
-
-    /**
-     * Überprüft den Status der Docker-Container
-     * 
-     * @return array
-     */
-    public function checkContainers(): array
-    {
-        $result = [
-            'status' => 'ok',
-            'containers' => [],
-            'error' => null
-        ];
-        
-        // Container, die wir überwachen möchten
-        $containersToCheck = [
-            'ticketumfrage_php',
-            'ticketumfrage_webserver',
-            'ticketumfrage_database',
-            'ticketumfrage_mailhog',
-            'ticketumfrage_mailserver'
-        ];
-        
-        try {
-            // Docker-Befehle ausführen, um den Status der Container zu überprüfen
-            $process = new Process(['docker', 'ps', '--format', '{{.Names}}|{{.Status}}|{{.Health}}']);
-            $process->run();
-            
-            if (!$process->isSuccessful()) {
-                throw new \RuntimeException($process->getErrorOutput());
-            }
-            
-            $output = $process->getOutput();
-            $containerData = [];
-            
-            foreach (explode("\n", trim($output)) as $line) {
-                if (empty($line)) continue;
-                
-                list($name, $status, $health) = explode('|', $line . '||');
-                $containerData[$name] = [
-                    'status' => $status,
-                    'health' => $health ?: 'N/A'
-                ];
-            }
-            
-            // Überprüfe jeden Container
-            foreach ($containersToCheck as $containerName) {
-                if (isset($containerData[$containerName])) {
-                    $container = $containerData[$containerName];
-                    $isRunning = strpos($container['status'], 'Up') === 0;
-                    $isHealthy = $container['health'] === 'healthy' || $container['health'] === 'N/A';
-                    
-                    $result['containers'][$containerName] = [
-                        'status' => $isRunning && $isHealthy ? 'ok' : 'error',
-                        'running' => $isRunning,
-                        'health' => $container['health'],
-                        'fullStatus' => $container['status']
-                    ];
-                    
-                    if (!$isRunning || !$isHealthy) {
-                        $result['status'] = 'error';
-                    }
-                } else {
-                    $result['containers'][$containerName] = [
-                        'status' => 'error',
-                        'running' => false,
-                        'health' => 'N/A',
-                        'fullStatus' => 'Container nicht gefunden'
-                    ];
-                    $result['status'] = 'error';
-                }
-            }
-        } catch (\Exception $e) {
-            $result['status'] = 'error';
-            $result['error'] = 'Fehler bei der Überprüfung der Docker-Container: ' . $e->getMessage();
         }
         
         return $result;
