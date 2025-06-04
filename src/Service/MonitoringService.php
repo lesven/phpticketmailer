@@ -16,9 +16,7 @@ use App\Repository\EmailSentRepository;
 use App\Repository\CsvFieldConfigRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\Process;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
  * Service für die Überprüfung der Systemgesundheit
@@ -166,22 +164,39 @@ class MonitoringService
         ];
         
         try {
-            $client = HttpClient::create();
             $startTime = microtime(true);
-            $response = $client->request('GET', $this->baseUrl, [
-                'timeout' => 5, // 5 Sekunden Timeout
-                'max_duration' => 5, // Maximale Dauer
-            ]);
             
-            $statusCode = $response->getStatusCode();
-            $result['statusCode'] = $statusCode;
-            $result['responseTime'] = round((microtime(true) - $startTime) * 1000); // in ms
+            // Konfigurieren des Kontexts für die Anfrage
+            $opts = [
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => 5.0,
+                    'ignore_errors' => true
+                ]
+            ];
+            $context = stream_context_create($opts);
             
-            if ($statusCode < 200 || $statusCode >= 400) {
+            // Anfrage durchführen
+            $response = @file_get_contents($this->baseUrl, false, $context);
+            $responseTime = round((microtime(true) - $startTime) * 1000); // in ms
+            $result['responseTime'] = $responseTime;
+            
+            // HTTP-Status-Code aus den Header-Informationen extrahieren
+            if (isset($http_response_header) && is_array($http_response_header) && count($http_response_header) > 0) {
+                preg_match('/^HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
+                $statusCode = isset($matches[1]) ? (int) $matches[1] : 0;
+                $result['statusCode'] = $statusCode;
+                
+                if ($statusCode < 200 || $statusCode >= 400) {
+                    $result['status'] = 'error';
+                    $result['error'] = 'Webserver erreichbar, aber unerwarteter Status-Code: ' . $statusCode;
+                }
+            } else {
+                // Keine HTTP-Header gefunden, was auf einen Fehler hinweist
                 $result['status'] = 'error';
-                $result['error'] = 'Webserver erreichbar, aber unerwarteter Status-Code: ' . $statusCode;
+                $result['error'] = 'Keine gültige HTTP-Antwort erhalten';
             }
-        } catch (TransportExceptionInterface $e) {
+        } catch (\Exception $e) {
             $result['status'] = 'error';
             $result['error'] = 'Webserver nicht erreichbar: ' . $e->getMessage();
         }
