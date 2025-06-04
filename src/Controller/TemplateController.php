@@ -46,18 +46,23 @@ class TemplateController extends AbstractController
             7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
         ];
         $previewData['dueDate'] = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
-        
-        if ($request->isMethod('POST')) {
+          if ($request->isMethod('POST')) {
             $file = $request->files->get('template_file');
             
             if ($file instanceof UploadedFile) {
                 $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $extension = $file->getClientOriginalExtension();
                 $newFilename = 'email_template.' . ($extension === 'html' ? 'html' : 'txt');
+                $templateDirectory = $this->getTemplateDirectory();
                 
                 try {
+                    // Stellen wir sicher, dass das Verzeichnis existiert
+                    if (!is_dir($templateDirectory)) {
+                        mkdir($templateDirectory, 0777, true);
+                    }
+                    
                     $file->move(
-                        $this->getTemplateDirectory(),
+                        $templateDirectory,
                         $newFilename
                     );
                     $message = 'Template wurde erfolgreich hochgeladen.';
@@ -90,15 +95,21 @@ class TemplateController extends AbstractController
             'templateContent' => $templateContent,
         ]);
     }
-    
-    #[Route('/save-wysiwyg', name: 'template_save_wysiwyg', methods: ['POST'])]
+      #[Route('/save-wysiwyg', name: 'template_save_wysiwyg', methods: ['POST'])]
     public function saveWysiwyg(Request $request): Response
     {
         $templateContent = $request->request->get('template_content');
         
         if (!empty($templateContent)) {
+            $templateDirectory = $this->getTemplateDirectory();
+            
+            // Stellen wir sicher, dass das Verzeichnis existiert
+            if (!is_dir($templateDirectory)) {
+                mkdir($templateDirectory, 0777, true);
+            }
+            
             // Speichere das Template als HTML-Datei
-            file_put_contents($this->getTemplateDirectory() . '/email_template.html', $templateContent);
+            file_put_contents($templateDirectory . '/email_template.html', $templateContent);
             
             $this->addFlash('success', 'Das Template wurde erfolgreich gespeichert.');
         } else {
@@ -107,11 +118,16 @@ class TemplateController extends AbstractController
         
         return $this->redirectToRoute('template_manage');
     }
-    
-    #[Route('/download', name: 'template_download')]
+      #[Route('/download', name: 'template_download')]
     public function download(): Response
     {
         $templatePath = $this->getTemplatePath();
+        $templateDirectory = $this->getTemplateDirectory();
+        
+        // Stellen wir sicher, dass das Verzeichnis existiert
+        if (!is_dir($templateDirectory)) {
+            mkdir($templateDirectory, 0777, true);
+        }
         
         if (!file_exists($templatePath)) {
             // Falls kein Template existiert, erstellen wir ein Standard-Template
@@ -178,19 +194,21 @@ class TemplateController extends AbstractController
 Ihr Support-Team</p>
 EOT;
     }
-    
-    private function getTemplateDirectory(): string
+      private function getTemplateDirectory(): string
     {
         $dir = $this->projectDir . '/templates/emails';
         
+        // Stellen wir sicher, dass das Verzeichnis existiert
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            // Versuche das Verzeichnis zu erstellen mit vollem Pfad
+            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Das Verzeichnis "%s" konnte nicht erstellt werden', $dir));
+            }
         }
         
         return $dir;
     }
-    
-    private function getTemplatePath(): string
+      private function getTemplatePath(): string
     {
         // Prüfe zuerst, ob ein HTML-Template existiert
         $htmlPath = $this->getTemplateDirectory() . '/email_template.html';
@@ -199,6 +217,13 @@ EOT;
         }
         
         // Fallback auf das Text-Template
-        return $this->getTemplateDirectory() . '/email_template.txt';
+        $txtPath = $this->getTemplateDirectory() . '/email_template.txt';
+        
+        // Stellen wir sicher, dass das Verzeichnis existiert
+        if (!is_dir(dirname($txtPath))) {
+            mkdir(dirname($txtPath), 0777, true);
+        }
+        
+        return $txtPath;
     }
 }
