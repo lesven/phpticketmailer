@@ -11,6 +11,7 @@ Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen per E-M
 - Test- und Live-Modus
 - Versandprotokollierung
 - Passwortschutz
+- Systemüberwachung mit Zabbix-Integration
 
 ## Voraussetzungen
 
@@ -103,6 +104,23 @@ ticketId,username,ticketName
 ### Zusätzliche Services (Docker)
 - **MailHog** (E-Mail-Test): http://localhost:8025
 - **Datenbank**: localhost:3306 (ticketuser/ticketpassword)
+
+## Systemüberwachung
+
+Die Anwendung stellt eine Überwachungsschnittstelle bereit, die in Zabbix oder andere Monitoring-Systeme integriert werden kann.
+
+### Monitoring-Endpunkte
+
+- **/monitoring/health**: Gesamtstatus des Systems
+- **/monitoring/database**: Datenbankstatus
+- **/monitoring/webserver**: Webserverstatus
+- **/monitoring/containers**: Docker-Container-Status
+
+Alle Endpunkte liefern JSON-Daten zurück.
+
+### Zabbix-Integration
+
+Details zur Zabbix-Integration finden Sie in der [Zabbix-Dokumentation](ZABBIX_MONITORING.md).
 
 ## Support
 

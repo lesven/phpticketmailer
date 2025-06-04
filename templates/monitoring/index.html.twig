@@ -1,0 +1,240 @@
+{# filepath: templates/monitoring/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Systemüberwachung{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="/css/monitoring.css" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Systemüberwachung</h1>
+    <p class="lead">Hier können Sie den Status des Systems überprüfen.</p>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 m-0">Systemstatus</h2>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <div id="system-status-indicator" class="status-indicator"></div>
+                <span id="system-status-text" class="ml-2">Wird geprüft...</span>
+            </div>
+            <p>Letzte Aktualisierung: <span id="last-updated">-</span></p>
+            <button id="refresh-status" class="btn btn-primary">Status aktualisieren</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Datenbankstatus -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="h5 m-0">Datenbank</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div id="db-status-indicator" class="status-indicator"></div>
+                        <span id="db-status-text" class="ml-2">Wird geprüft...</span>
+                    </div>
+                    <div id="db-details" class="mt-3 small">
+                        <p>Tabellen werden geprüft...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webserverstatus -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="h5 m-0">Webserver</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div id="web-status-indicator" class="status-indicator"></div>
+                        <span id="web-status-text" class="ml-2">Wird geprüft...</span>
+                    </div>
+                    <div id="web-details" class="mt-3 small">
+                        <p>URL: <span id="web-url">-</span></p>
+                        <p>Antwortzeit: <span id="web-response-time">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container-Status -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="h5 m-0">Docker Container</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div id="container-status-indicator" class="status-indicator"></div>
+                        <span id="container-status-text" class="ml-2">Wird geprüft...</span>
+                    </div>
+                    <div id="container-details" class="mt-3 small">
+                        <p>Container werden geprüft...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 m-0">Zabbix-Integration</h2>
+        </div>
+        <div class="card-body">
+            <p>Die folgenden Endpunkte können für Zabbix-Monitoring verwendet werden:</p>
+            <ul>
+                <li><code>/monitoring/health</code> - Gesamter Systemstatus (JSON)</li>
+                <li><code>/monitoring/database</code> - Datenbankstatus (JSON)</li>
+                <li><code>/monitoring/webserver</code> - Webserverstatus (JSON)</li>
+                <li><code>/monitoring/containers</code> - Containerstatus (JSON)</li>
+            </ul>
+            <p>
+                <strong>Beispiel:</strong> 
+                <code>curl http://{hostname}:{port}/monitoring/health</code>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialer Status-Check
+    checkSystemStatus();
+    
+    // Event-Listener für den Aktualisieren-Button
+    document.getElementById('refresh-status').addEventListener('click', function() {
+        checkSystemStatus();
+    });
+    
+    function checkSystemStatus() {
+        // Status-Indikatoren zurücksetzen
+        setLoading('system');
+        setLoading('db');
+        setLoading('web');
+        setLoading('container');
+        
+        // Systemstatus abfragen
+        fetch('/monitoring/health')
+            .then(response => response.json())
+            .then(data => {
+                // Zeitstempel aktualisieren
+                const now = new Date();
+                document.getElementById('last-updated').textContent = now.toLocaleString();
+                
+                // Gesamtstatus aktualisieren
+                updateStatus('system', data.status);
+                
+                // Datenbank-Status
+                const dbCheck = data.checks.database;
+                updateStatus('db', dbCheck.status);
+                
+                let dbDetailsHtml = '';
+                if (dbCheck.error) {
+                    dbDetailsHtml = `<p class="text-danger">${dbCheck.error}</p>`;
+                } else {
+                    dbDetailsHtml = '<ul class="list-unstyled mb-0">';
+                    for (const [table, info] of Object.entries(dbCheck.tables)) {
+                        const statusClass = info.status === 'ok' ? 'text-success' : 'text-danger';
+                        dbDetailsHtml += `
+                            <li>
+                                <i class="fas fa-${info.status === 'ok' ? 'check' : 'times'} ${statusClass}"></i>
+                                ${table}: ${info.status === 'ok' ? `${info.recordCount} Einträge` : info.error}
+                            </li>
+                        `;
+                    }
+                    dbDetailsHtml += '</ul>';
+                }
+                document.getElementById('db-details').innerHTML = dbDetailsHtml;
+                
+                // Webserver-Status
+                const webCheck = data.checks.webserver;
+                updateStatus('web', webCheck.status);
+                document.getElementById('web-url').textContent = webCheck.url;
+                document.getElementById('web-response-time').textContent = 
+                    webCheck.responseTime ? `${webCheck.responseTime} ms` : 'N/A';
+                
+                if (webCheck.error) {
+                    document.getElementById('web-details').innerHTML += `<p class="text-danger">${webCheck.error}</p>`;
+                }
+                
+                // Container-Status
+                const containerCheck = data.checks.containers;
+                updateStatus('container', containerCheck.status);
+                
+                let containersHtml = '<ul class="list-unstyled mb-0">';
+                for (const [container, info] of Object.entries(containerCheck.containers)) {
+                    const statusClass = info.status === 'ok' ? 'text-success' : 'text-danger';
+                    containersHtml += `
+                        <li>
+                            <i class="fas fa-${info.status === 'ok' ? 'check' : 'times'} ${statusClass}"></i>
+                            ${container}: ${info.running ? 'Running' : 'Stopped'}, Health: ${info.health}
+                        </li>
+                    `;
+                }
+                containersHtml += '</ul>';
+                
+                if (containerCheck.error) {
+                    containersHtml += `<p class="text-danger">${containerCheck.error}</p>`;
+                }
+                
+                document.getElementById('container-details').innerHTML = containersHtml;
+            })
+            .catch(error => {
+                console.error('Fehler beim Abrufen des Systemstatus:', error);
+                // Fehler anzeigen
+                updateStatus('system', 'error');
+                document.getElementById('system-status-text').textContent = 'Fehler bei der Statusabfrage';
+            });
+    }
+    
+    function setLoading(type) {
+        document.getElementById(`${type}-status-indicator`).className = 'status-indicator loading';
+        document.getElementById(`${type}-status-text`).textContent = 'Wird geprüft...';
+    }
+    
+    function updateStatus(type, status) {
+        const indicator = document.getElementById(`${type}-status-indicator`);
+        const text = document.getElementById(`${type}-status-text`);
+        
+        indicator.className = `status-indicator ${status}`;
+        if (status === 'ok') {
+            text.textContent = 'OK';
+        } else {
+            text.textContent = 'Fehler';
+        }
+    }
+});
+</script>
+
+<style>
+.status-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.status-indicator.ok {
+    background-color: #28a745;
+}
+
+.status-indicator.error {
+    background-color: #dc3545;
+}
+
+.status-indicator.loading {
+    background-color: #ffc107;
+}
+</style>
+{% endblock %}

@@ -43,9 +43,11 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if app.request.get('_route') == 'change_password' %}active{% endif %}" href="{{ path('change_password') }}">Passwort ändern</a>
+                        </li>                        <li class="nav-item">
+                            <a class="nav-link {% if app.request.get('_route') == 'email_log' %}active{% endif %}" href="{{ path('email_log') }}">Versandprotokoll</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if app.request.get('_route') == 'email_log' %}active{% endif %}" href="{{ path('email_log') }}">Versandprotokoll</a>
+                            <a class="nav-link {% if app.request.get('_route') starts with 'app_monitoring' %}active{% endif %}" href="{{ path('app_monitoring') }}">Systemüberwachung</a>
                         </li>
                     </ul>
                     <ul class="navbar-nav ms-auto">

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2025-06-04T12:00:00Z</date>
+    <groups>
+        <group>
+            <name>Ticketumfrage</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template Ticketumfrage Tool</template>
+            <name>Template Ticketumfrage Tool</name>
+            <groups>
+                <group>
+                    <name>Ticketumfrage</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Ticketumfrage</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>System Health Status</name>
+                    <type>HTTP_AGENT</type>
+                    <key>ticketumfrage.health</key>
+                    <history>90d</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>NONE</authtype>
+                    <url>{$TICKETUMFRAGE_URL}/monitoring/health</url>
+                    <retrieve_mode>BODY</retrieve_mode>
+                    <request_method>GET</request_method>
+                    <output_format>JSON</output_format>
+                    <timeout>10s</timeout>
+                    <verify_peer>NO</verify_peer>
+                    <verify_host>NO</verify_host>
+                    <applications>
+                        <application>
+                            <name>Ticketumfrage</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Database Status</name>
+                    <type>HTTP_AGENT</type>
+                    <key>ticketumfrage.db</key>
+                    <history>90d</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>NONE</authtype>
+                    <url>{$TICKETUMFRAGE_URL}/monitoring/database</url>
+                    <retrieve_mode>BODY</retrieve_mode>
+                    <request_method>GET</request_method>
+                    <output_format>JSON</output_format>
+                    <timeout>10s</timeout>
+                    <verify_peer>NO</verify_peer>
+                    <verify_host>NO</verify_host>
+                    <applications>
+                        <application>
+                            <name>Ticketumfrage</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Webserver Status</name>
+                    <type>HTTP_AGENT</type>
+                    <key>ticketumfrage.web</key>
+                    <history>90d</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>NONE</authtype>
+                    <url>{$TICKETUMFRAGE_URL}/monitoring/webserver</url>
+                    <retrieve_mode>BODY</retrieve_mode>
+                    <request_method>GET</request_method>
+                    <output_format>JSON</output_format>
+                    <timeout>10s</timeout>
+                    <verify_peer>NO</verify_peer>
+                    <verify_host>NO</verify_host>
+                    <applications>
+                        <application>
+                            <name>Ticketumfrage</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
+                    <name>Container Status</name>
+                    <type>HTTP_AGENT</type>
+                    <key>ticketumfrage.containers</key>
+                    <history>90d</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <authtype>NONE</authtype>
+                    <url>{$TICKETUMFRAGE_URL}/monitoring/containers</url>
+                    <retrieve_mode>BODY</retrieve_mode>
+                    <request_method>GET</request_method>
+                    <output_format>JSON</output_format>
+                    <timeout>10s</timeout>
+                    <verify_peer>NO</verify_peer>
+                    <verify_host>NO</verify_host>
+                    <applications>
+                        <application>
+                            <name>Ticketumfrage</name>
+                        </application>
+                    </applications>
+                </item>
+            </items>
+            <triggers>
+                <trigger>
+                    <expression>{Template Ticketumfrage Tool:ticketumfrage.health.regexp(".*\"status\":\"ok\".*")}=0</expression>
+                    <name>Ticketumfrage System Health Problem</name>
+                    <priority>HIGH</priority>
+                    <description>Das Ticketumfrage-System meldet Probleme mit dem Gesamtstatus</description>
+                </trigger>
+                <trigger>
+                    <expression>{Template Ticketumfrage Tool:ticketumfrage.db.regexp(".*\"status\":\"ok\".*")}=0</expression>
+                    <name>Ticketumfrage Database Problem</name>
+                    <priority>HIGH</priority>
+                    <description>Probleme mit der Datenbank des Ticketumfrage-Tools</description>
+                </trigger>
+                <trigger>
+                    <expression>{Template Ticketumfrage Tool:ticketumfrage.web.regexp(".*\"status\":\"ok\".*")}=0</expression>
+                    <name>Ticketumfrage Webserver Problem</name>
+                    <priority>HIGH</priority>
+                    <description>Der Webserver des Ticketumfrage-Tools ist nicht erreichbar</description>
+                </trigger>
+                <trigger>
+                    <expression>{Template Ticketumfrage Tool:ticketumfrage.containers.regexp(".*\"status\":\"ok\".*")}=0</expression>
+                    <name>Ticketumfrage Container Problem</name>
+                    <priority>HIGH</priority>
+                    <description>Probleme mit Docker-Containern des Ticketumfrage-Tools</description>
+                </trigger>
+            </triggers>
+        </template>
+    </templates>
+    <macros>
+        <macro>
+            <macro>{$TICKETUMFRAGE_URL}</macro>
+            <value>http://localhost:8090</value>
+            <description>Base URL of the Ticketumfrage tool</description>
+        </macro>
+    </macros>
+</zabbix_export>

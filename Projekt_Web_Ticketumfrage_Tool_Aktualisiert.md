@@ -187,3 +187,9 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - dort initial eine liste mit den letzten 100 versendeten Mails
 - darüber ein suchfeld
 
+### Userstory 21: Das Tool soll in das Zabbix Monitoring es Konzern eingebunden werden, damitw ir zuverlässig die E-Mail senden können ###
+*Als Systemadministrator möchte ich automatisiert prüfen dass alle notwendigen Docker Dienste laufen und das System erreichbar ist*
+** Akzeptanzkriterien: **
+- Die Datenbank soll geprüft werden ob sie erreichbar ist und die notwendigen Tabellen lesend zugreifbar sind
+- Der Webserver soll geprüft werden ob er von extern erreichbar ist
+- laufen alle container und sind sie healthy
