@@ -52,8 +52,7 @@ class SMTPConfigType extends AbstractType
                 'label' => 'TLS-Verschlüsselung verwenden',
                 'required' => false,
                 'attr' => [
-                    'class' => 'form-check-input'
-                ],
+                    'class' => 'form-check-input'                ],
                 'label_attr' => [
                     'class' => 'form-check-label'
                 ]
@@ -64,7 +63,8 @@ class SMTPConfigType extends AbstractType
                     'class' => 'form-control',
                     'placeholder' => 'z.B. noreply@example.com'
                 ]
-            ])            ->add('senderName', TextType::class, [
+            ])
+            ->add('senderName', TextType::class, [
                 'label' => 'Absendername',
                 'attr' => [
                     'class' => 'form-control',

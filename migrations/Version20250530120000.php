@@ -11,11 +11,12 @@ use Doctrine\Migrations\AbstractMigration;
  * Migration für User Story 17: CSV-Feldkonfiguration
  */
 final class Version20250530120000 extends AbstractMigration
-{
-    public function getDescription(): string
+{    public function getDescription(): string
     {
         return 'Erstellt die Tabelle csv_field_config für konfigurierbare CSV-Spalten';
-    }    public function up(Schema $schema): void
+    }
+    
+    public function up(Schema $schema): void
     {
         // Tabelle für CSV-Feldkonfiguration erstellen (MariaDB/MySQL)
         $this->addSql('CREATE TABLE csv_field_config (

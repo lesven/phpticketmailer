@@ -22,9 +22,9 @@ class CsvFileReader
     
     /**
      * @var int Die maximale Länge einer CSV-Zeile
-     */
-    private int $maxLineLength;
-      /**
+     */    private int $maxLineLength;
+    
+    /**
      * Konstruktor zum Konfigurieren des CSV-Readers
      * 
      * @param string $delimiter Das CSV-Trennzeichen
