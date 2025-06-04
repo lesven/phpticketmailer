@@ -16,7 +16,7 @@ use App\Repository\EmailSentRepository;
 use App\Repository\CsvFieldConfigRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\Process;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
@@ -47,11 +47,6 @@ class MonitoringService
      * @var string 
      */
     private $baseUrl;
-    
-    /**
-     * @var HttpClientInterface
-     */
-    private $httpClient;
 
     /**
      * Konstruktor
@@ -60,7 +55,6 @@ class MonitoringService
      * @param UserRepository $userRepository
      * @param EmailSentRepository $emailSentRepository
      * @param CsvFieldConfigRepository $csvFieldConfigRepository
-     * @param HttpClientInterface $httpClient
      * @param string $baseUrl
      */
     public function __construct(
@@ -68,14 +62,12 @@ class MonitoringService
         UserRepository $userRepository,
         EmailSentRepository $emailSentRepository,
         CsvFieldConfigRepository $csvFieldConfigRepository,
-        HttpClientInterface $httpClient,
         string $baseUrl = null
     ) {
         $this->connection = $connection;
         $this->userRepository = $userRepository;
         $this->emailSentRepository = $emailSentRepository;
         $this->csvFieldConfigRepository = $csvFieldConfigRepository;
-        $this->httpClient = $httpClient;
         
         // Standardmäßig die aktuelle Host-Umgebung verwenden, falls keine URL angegeben ist
         $this->baseUrl = $baseUrl ?? 'http://localhost:8090';
@@ -174,8 +166,9 @@ class MonitoringService
         ];
         
         try {
+            $client = HttpClient::create();
             $startTime = microtime(true);
-            $response = $this->httpClient->request('GET', $this->baseUrl, [
+            $response = $client->request('GET', $this->baseUrl, [
                 'timeout' => 5, // 5 Sekunden Timeout
                 'max_duration' => 5, // Maximale Dauer
             ]);
