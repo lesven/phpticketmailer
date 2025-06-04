@@ -22,12 +22,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
-            
-    # Explizite Konfiguration für den MonitoringService
+              # Explizite Konfiguration für den MonitoringService
     App\Service\MonitoringService:
         arguments:
             $connection: '@doctrine.dbal.default_connection'
             $userRepository: '@App\Repository\UserRepository'
             $emailSentRepository: '@App\Repository\EmailSentRepository'
             $csvFieldConfigRepository: '@App\Repository\CsvFieldConfigRepository'
+            $httpClient: '@Symfony\Contracts\HttpClient\HttpClientInterface'
             $baseUrl: '%app.monitoring.base_url%'

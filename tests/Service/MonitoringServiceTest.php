@@ -8,6 +8,7 @@ use App\Service\MonitoringService;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class MonitoringServiceTest extends TestCase
 {
@@ -15,6 +16,7 @@ class MonitoringServiceTest extends TestCase
     private $userRepository;
     private $emailSentRepository;
     private $csvFieldConfigRepository;
+    private $httpClient;
     private $monitoringService;
 
     protected function setUp(): void
@@ -23,12 +25,14 @@ class MonitoringServiceTest extends TestCase
         $this->userRepository = $this->createMock(UserRepository::class);
         $this->emailSentRepository = $this->createMock(EmailSentRepository::class);
         $this->csvFieldConfigRepository = $this->createMock(CsvFieldConfigRepository::class);
+        $this->httpClient = $this->createMock(HttpClientInterface::class);
 
         $this->monitoringService = new MonitoringService(
             $this->connection,
             $this->userRepository,
             $this->emailSentRepository,
             $this->csvFieldConfigRepository,
+            $this->httpClient,
             'http://test.local'
         );
     }
@@ -86,9 +90,7 @@ class MonitoringServiceTest extends TestCase
         // Assert
         $this->assertEquals('error', $result['status']);
         $this->assertStringContainsString('Datenbankverbindung fehlgeschlagen', $result['error']);
-    }
-
-    public function testCheckSystemHealth()
+    }    public function testCheckSystemHealth()
     {
         // Mock the component check methods
         $monitoringService = $this->getMockBuilder(MonitoringService::class)
@@ -97,6 +99,7 @@ class MonitoringServiceTest extends TestCase
                 $this->userRepository,
                 $this->emailSentRepository,
                 $this->csvFieldConfigRepository,
+                $this->httpClient,
                 'http://test.local'
             ])
             ->onlyMethods(['checkDatabase', 'checkWebserver', 'checkContainers'])
@@ -122,9 +125,7 @@ class MonitoringServiceTest extends TestCase
         $this->assertArrayHasKey('timestamp', $result);
         $this->assertArrayHasKey('checks', $result);
         $this->assertCount(3, $result['checks']);
-    }
-
-    public function testCheckSystemHealthWhenComponentFails()
+    }    public function testCheckSystemHealthWhenComponentFails()
     {
         // Mock the component check methods
         $monitoringService = $this->getMockBuilder(MonitoringService::class)
@@ -133,6 +134,7 @@ class MonitoringServiceTest extends TestCase
                 $this->userRepository,
                 $this->emailSentRepository,
                 $this->csvFieldConfigRepository,
+                $this->httpClient,
                 'http://test.local'
             ])
             ->onlyMethods(['checkDatabase', 'checkWebserver', 'checkContainers'])
