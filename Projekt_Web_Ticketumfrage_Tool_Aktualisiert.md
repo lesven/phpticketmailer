@@ -192,3 +192,10 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 ** Akzeptanzkriterien: **
 - Die Datenbank soll geprüft werden ob sie erreichbar ist und die notwendigen Tabellen lesend zugreifbar sind
 - der Health Check muss uneingeloggt erreichbar sein
+
+### Userstory 22: Die Version der Software soll direkt erkennbar sein damit man sieht ob ein Update durchgeführt wurde ###
+*Als Systemadministrator möchte ich sehen welche Version der Software auf dem Server läuft und wann das letzte Update durchgeführt wurde.*
+** Akzeptanzkriterien: **
+- Nach einem Updat esol lautomatisch eine Versionsnummer angezeigt werden
+- Die Versionsnummer soll im Footer angezeigt werden
+- Die Versionsnummer soll den Zeitpunkt des Updates enthalten, also menschenlesbar sein

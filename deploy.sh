@@ -70,6 +70,31 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 log_info "Aktualisiere Datenbankschema..."
 docker compose exec php bin/console doctrine:schema:update --force --complete
 
+# Versionsinformationen aktualisieren
+if [ -f "VERSION" ]; then
+    log_info "Aktualisiere Versionsinformationen..."
+    
+    # Aktuelle Version aus der Datei lesen und Patch-Version erhöhen
+    CURRENT_VERSION=$(head -n1 VERSION | cut -d'|' -f1)
+    if [[ $CURRENT_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        MAJOR="${BASH_REMATCH[1]}"
+        MINOR="${BASH_REMATCH[2]}"
+        PATCH="${BASH_REMATCH[3]}"
+        # Patch-Version erhöhen
+        PATCH=$((PATCH + 1))
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+    else
+        # Wenn keine gültige Version gefunden wurde, Standardwert setzen
+        NEW_VERSION="1.0.0"
+    fi
+    
+    # Neue Version und Update-Zeitstempel setzen
+    log_info "Setze neue Version auf $NEW_VERSION..."
+    docker compose exec php bin/console app:update-version --version="$NEW_VERSION"
+    
+    log_success "Versionsinformationen wurden aktualisiert auf $NEW_VERSION."
+fi
+
 # Berechtigungen für Cache- und Log-Verzeichnisse setzen
 log_info "Setze Berechtigungen für Cache- und Log-Verzeichnisse..."
 docker compose exec php chmod -R 777 var/cache var/log
@@ -80,3 +105,7 @@ docker compose ps
 
 log_success "Deployment abgeschlossen! Die Anwendung sollte jetzt aktualisiert und bereit sein."
 log_info "Falls Probleme auftreten, überprüfen Sie die Logs mit: docker compose logs -f"
+if [ -f "VERSION" ]; then
+    VERSION_INFO=$(cat VERSION)
+    log_info "Aktuelle Version: $VERSION_INFO"
+fi
