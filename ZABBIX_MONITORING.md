@@ -8,13 +8,15 @@ Das Ticketumfrage-Tool stellt JSON-Endpunkte bereit, die zur Überwachung des Da
 
 ## Verfügbare Endpunkte
 
-Alle Monitoring-Endpunkte befinden sich unter dem Pfad `/monitoring/` und geben JSON-Antworten zurück.
+Alle Monitoring-Endpunkte befinden sich unter dem Pfad `/monitoring/` und geben JSON-Antworten zurück. **Wichtig**: Diese Endpunkte sind ohne Login-Authentifizierung zugänglich, um die Integration mit Zabbix zu ermöglichen.
 
 1. **Gesamtstatus**: `/monitoring/health`
    - Prüft die Datenbankverbindung und gibt einen konsolidierten Status zurück
+   - Keine Authentifizierung erforderlich
    
 2. **Datenbankstatus**: `/monitoring/database`
    - Prüft die Erreichbarkeit der Datenbank und den Lesezugriff auf wichtige Tabellen
+   - Keine Authentifizierung erforderlich
 
 ## Zabbix-Einrichtung
 

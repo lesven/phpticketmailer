@@ -47,11 +47,10 @@ class MonitoringController extends AbstractController
     public function index(): Response
     {
         return $this->render('monitoring/index.html.twig');
-    }
-
-    /**
+    }    /**
      * Überprüft den allgemeinen Systemstatus
      * Diese Methode ist als Hauptendpunkt für Zabbix gedacht
+     * Hinweis: Dieser Endpunkt ist öffentlich zugänglich (ohne Login-Authentifizierung)
      * 
      * @return Response
      */
@@ -64,6 +63,7 @@ class MonitoringController extends AbstractController
         return $this->json($result);
     }    /**
      * Überprüft speziell die Datenbankverbindung und den Tabellenzugriff
+     * Hinweis: Dieser Endpunkt ist öffentlich zugänglich (ohne Login-Authentifizierung)
      * 
      * @return Response
      */

@@ -27,8 +27,7 @@ class SecuritySubscriber implements EventSubscriberInterface
         $session = $request->getSession();
         $route = $request->attributes->get('_route');
         $pathInfo = $request->getPathInfo();
-        
-        // Öffentliche Routen und Assets ohne Authentifizierung erlauben
+          // Öffentliche Routen und Assets ohne Authentifizierung erlauben
         if ($route === 'app_login' || 
             $route === '_wdt' || 
             $route === '_profiler' || 
@@ -41,9 +40,13 @@ class SecuritySubscriber implements EventSubscriberInterface
             $route === '_profiler_router' ||
             $route === '_profiler_exception' ||
             $route === '_profiler_exception_css' ||
+            $route === 'app_monitoring_health' ||  // Zabbix Monitoring Health-Check ohne Login erlauben
+            $route === 'app_monitoring_database' || // Zabbix Monitoring Database-Check ohne Login erlauben
             strpos($pathInfo, '/bundles/') === 0 ||
             strpos($pathInfo, '/_profiler/') === 0 ||
-            strpos($pathInfo, '/_wdt/') === 0) {
+            strpos($pathInfo, '/_wdt/') === 0 ||
+            strpos($pathInfo, '/monitoring/health') === 0 || // Alternative Prüfung für den Health-Endpunkt
+            strpos($pathInfo, '/monitoring/database') === 0) { // Alternative Prüfung für den Database-Endpunkt
             return;
         }
         

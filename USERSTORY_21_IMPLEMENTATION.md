@@ -9,6 +9,7 @@ Die Implementierung umfasst die Entwicklung von API-Endpunkten für das Datenban
 ## Komponenten
 
 1. **MonitoringController**: Ein REST-Controller zur Bereitstellung von Monitoring-Endpunkten
+   - Stellt öffentlich zugängliche Endpunkte (ohne Login) für Zabbix bereit
 2. **MonitoringService**: Ein Service zur Prüfung der Datenbankverbindung und -zugriffs
 3. **Web-Interface**: Eine Benutzeroberfläche zur manuellen Überwachung des Systems
 4. **Skripte**: Shell- und PowerShell-Skripte für automatisierte Prüfungen
@@ -29,6 +30,8 @@ Die Implementierung umfasst die Entwicklung von API-Endpunkten für das Datenban
 
 - **/monitoring/health**: Überprüft den Gesamtstatus des Systems (Datenbankverbindung)
 - **/monitoring/database**: Überprüft detailliert den Datenbankstatus
+
+Beide Endpunkte sind öffentlich zugänglich und erfordern keine Authentifizierung, um die Integration mit Zabbix zu gewährleisten. Dies wird durch entsprechende Ausnahmen im SecuritySubscriber erreicht.
 
 ### Beispiel-Anfrage
 
