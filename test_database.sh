@@ -209,7 +209,8 @@ test_data_integrity() {
     )
     
     for check in "${null_checks[@]}"; do
-        local count=$(php bin/console dbal:run-sql "$check" | tail -n +3 | head -n -1 | awk '{print $1}')
+        local result=$(php bin/console dbal:run-sql "$check")
+        local count=$(echo "$result" | grep -o '[0-9]\+' | head -1)
         if [ "$count" = "0" ]; then
             log_success "Keine NULL-Werte gefunden: $(echo "$check" | cut -d' ' -f4-6)"
         else
