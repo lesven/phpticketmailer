@@ -53,13 +53,17 @@ class SMTPConfig
      * Passwort für die Authentifizierung am SMTP-Server (optional)
      */
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $password = null;
-
-    /**
+    private ?string $password = null;    /**
      * Gibt an, ob TLS-Verschlüsselung verwendet werden soll
      */
     #[ORM\Column]
     private bool $useTLS = false;
+    
+    /**
+     * Gibt an, ob SSL-Zertifikatsüberprüfungen ignoriert werden sollen (für selbstsignierte Zertifikate)
+     */
+    #[ORM\Column]
+    private bool $verifySSL = true;
 
     /**
      * E-Mail-Adresse des Absenders
@@ -194,9 +198,7 @@ class SMTPConfig
     public function isUseTLS(): bool
     {
         return $this->useTLS;
-    }
-
-    /**
+    }    /**
      * Setzt die Verwendung von TLS-Verschlüsselung
      * 
      * @param bool $useTLS True, wenn TLS verwendet werden soll
@@ -205,6 +207,29 @@ class SMTPConfig
     public function setUseTLS(bool $useTLS): self
     {
         $this->useTLS = $useTLS;
+
+        return $this;
+    }
+
+    /**
+     * Gibt zurück, ob SSL-Zertifikatprüfungen aktiviert sind
+     * 
+     * @return bool True, wenn Zertifikate überprüft werden sollen
+     */
+    public function getVerifySSL(): bool
+    {
+        return $this->verifySSL;
+    }
+
+    /**
+     * Legt fest, ob SSL-Zertifikatprüfungen durchgeführt werden sollen
+     * 
+     * @param bool $verifySSL False, um Prüfungen zu deaktivieren (für selbstsignierte Zertifikate)
+     * @return self Für Method-Chaining
+     */
+    public function setVerifySSL(bool $verifySSL): self
+    {
+        $this->verifySSL = $verifySSL;
 
         return $this;
     }
@@ -276,13 +301,11 @@ class SMTPConfig
         $this->ticketBaseUrl = $ticketBaseUrl;
 
         return $this;
-    }
-
-    /**
+    }    /**
      * Generiert eine DSN (Data Source Name) für den Symfony Mailer
      * 
      * Diese Methode erstellt eine DSN im Format:
-     * smtp://[username]:[password]@host:port[?encryption=tls]
+     * smtp://[username]:[password]@host:port[?encryption=tls&verify_peer=0/1]
      * 
      * @return string Die generierte DSN
      */
@@ -296,8 +319,21 @@ class SMTPConfig
         
         $dsn .= $this->host . ':' . $this->port;
         
+        // Query-Parameter hinzufügen
+        $params = [];
+        
         if ($this->useTLS) {
-            $dsn .= '?encryption=tls';
+            $params[] = 'encryption=tls';
+        }
+        
+        // Wenn SSL-Verifizierung deaktiviert ist, verify_peer=0 hinzufügen
+        if (!$this->verifySSL) {
+            $params[] = 'verify_peer=0';
+        }
+        
+        // Query-Parameter an DSN anhängen, wenn vorhanden
+        if (!empty($params)) {
+            $dsn .= '?' . implode('&', $params);
         }
         
         return $dsn;

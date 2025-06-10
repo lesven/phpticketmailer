@@ -77,11 +77,11 @@ class SMTPConfigController extends AbstractController
             $config = new SMTPConfig();
             // Standardwerte setzen
             $config->setHost('localhost');
-            $config->setPort(25);
-            $config->setSenderEmail('noreply@example.com');
+            $config->setPort(25);            $config->setSenderEmail('noreply@example.com');
             $config->setSenderName('Ticket-System');
             $config->setTicketBaseUrl('https://www.ticket.de');
             $config->setUseTLS(false);
+            $config->setVerifySSL(true);
         }
         
         // Formular erstellen und Request verarbeiten

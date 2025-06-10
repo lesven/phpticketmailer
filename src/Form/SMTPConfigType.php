@@ -47,12 +47,22 @@ class SMTPConfigType extends AbstractType
                     'placeholder' => 'Optional: SMTP-Passwort'
                 ],
                 'always_empty' => false
-            ])
-            ->add('useTLS', CheckboxType::class, [
+            ])            ->add('useTLS', CheckboxType::class, [
                 'label' => 'TLS-Verschlüsselung verwenden',
                 'required' => false,
                 'attr' => [
                     'class' => 'form-check-input'                ],
+                'label_attr' => [
+                    'class' => 'form-check-label'
+                ]
+            ])
+            ->add('verifySSL', CheckboxType::class, [
+                'label' => 'SSL-Zertifikate überprüfen',
+                'required' => false,
+                'help' => 'Deaktivieren Sie diese Option für selbstsignierte Zertifikate',
+                'attr' => [
+                    'class' => 'form-check-input'
+                ],
                 'label_attr' => [
                     'class' => 'form-check-label'
                 ]
