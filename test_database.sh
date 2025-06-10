@@ -61,7 +61,7 @@ test_all_tables() {
 test_emails_sent_structure() {
     log_info "Teste Struktur der emails_sent Tabelle..."
     
-    local structure=$(php bin/console dbal:run-sql "DESCRIBE emails_sent")
+    local structure=$(php bin/console dbal:run-sql "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'emails_sent'")
     
     local required_columns=("id" "ticket_id" "username" "email" "subject" "status" "timestamp" "test_mode" "ticket_name")
     
