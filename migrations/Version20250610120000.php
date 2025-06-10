@@ -19,11 +19,11 @@ final class Version20250610120000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE smtp_config ADD verify_ssl TINYINT(1) NOT NULL DEFAULT 1');
+        $this->addSql('ALTER TABLE smtpconfig ADD verify_ssl TINYINT(1) NOT NULL DEFAULT 1');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE smtp_config DROP COLUMN verify_ssl');
+        $this->addSql('ALTER TABLE smtpconfig DROP COLUMN verify_ssl');
     }
 }
