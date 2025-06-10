@@ -155,7 +155,7 @@ test_smtp_config_table() {
     log_info "Teste SMTP-Konfigurationstabelle..."
     
     # Prüfe ob verify_ssl Spalte existiert
-    local structure=$(php bin/console dbal:run-sql "DESCRIBE smtpconfig")
+    local structure=$(php bin/console dbal:run-sql "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'smtpconfig'")
     
     if echo "$structure" | grep -q "verify_ssl"; then
         log_success "verify_ssl Spalte ist vorhanden"
@@ -165,7 +165,8 @@ test_smtp_config_table() {
     fi
     
     # Teste Standard-Wert
-    local default_value=$(php bin/console dbal:run-sql "SHOW COLUMNS FROM smtpconfig LIKE 'verify_ssl'" | grep -o "Default: [01]" | cut -d' ' -f2 || echo "1")
+    local default_info=$(php bin/console dbal:run-sql "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'smtpconfig' AND COLUMN_NAME = 'verify_ssl'")
+    local default_value=$(echo "$default_info" | grep -o '[01]' | head -1)
     if [ "$default_value" = "1" ]; then
         log_success "verify_ssl hat korrekten Standard-Wert (1)"
     else
