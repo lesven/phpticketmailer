@@ -340,7 +340,13 @@ verify_data_integrity() {
     log_info "Überprüfe Datenintegrität..."
     
     # Prüfe ob alle Testdaten noch vorhanden sind
-    local count=$(php bin/console dbal:run-sql "SELECT COUNT(*) as count FROM emails_sent WHERE ticket_id LIKE 'TEST-%'" | tail -n +3 | head -n -1 | awk '{print $1}')
+    local result=$(php bin/console dbal:run-sql "SELECT COUNT(*) as count FROM emails_sent WHERE ticket_id LIKE 'TEST-%'")
+    local count=$(echo "$result" | grep -o '[0-9]\+' | head -1)
+    
+    if [ -z "$count" ]; then
+        # Fallback: Versuche alternative Extraktion
+        count=$(echo "$result" | tr -d ' \t\n\r|-' | grep -o '[0-9]\+' | head -1)
+    fi
     
     if [ "$count" = "4" ]; then
         log_success "Alle Testdaten sind vorhanden"
