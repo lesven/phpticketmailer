@@ -97,7 +97,8 @@ test_data_insertion() {
     php bin/console dbal:run-sql "INSERT INTO emails_sent (ticket_id, username, email, subject, status, timestamp, test_mode, ticket_name) VALUES 
         ('DBTEST-001', 'dbtest_user1', 'dbtest1@example.com', 'Test Subject', 'sent', NOW(), 0, 'Test Ticket')" > /dev/null
     
-    local count=$(php bin/console dbal:run-sql "SELECT COUNT(*) as count FROM emails_sent WHERE ticket_id = 'DBTEST-001'" | tail -n +3 | head -n -1 | awk '{print $1}')
+    local result=$(php bin/console dbal:run-sql "SELECT COUNT(*) as count FROM emails_sent WHERE ticket_id = 'DBTEST-001'")
+    local count=$(echo "$result" | grep -o '[0-9]\+' | head -1)
     
     if [ "$count" = "1" ]; then
         log_success "Dateneinf gung in emails_sent erfolgreich"
