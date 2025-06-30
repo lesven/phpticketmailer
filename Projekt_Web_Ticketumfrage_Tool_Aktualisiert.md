@@ -199,3 +199,10 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Nach einem Updat esol lautomatisch eine Versionsnummer angezeigt werden
 - Die Versionsnummer soll im Footer angezeigt werden
 - Die Versionsnummer soll den Zeitpunkt des Updates enthalten, also menschenlesbar sein
+
+### Userstory 23: Als Mailversender möchte ich die E-Mail Adressen von unbekannten User leichter aus Outlook copy pasten können, damit der Versand schneller geht ###
+*Wenn ich eine unbekannte Email raussuche kommt die im folgenden Format vor: "Nachname, Vorname <e.mail@domain.de>" Ich möchte in dem Formular unter /unknown-users sowohl normale E-Mail adressen als auch Email adressen in dem Format eingeben können und er soll die copy paste E_;Mails dann entsprehcend in das normale FOrmat überführen, damit ich das bei der Eingabe nicht per Hand löschen muss. also ich mache dann aus "Nachname, Vorname <e.mail@domain.de>" immer durch löschen "e.mail@domain.de"*
+** Akzeptanzkriterien: **
+- Frontend soll richtige Email und das andere Format validieren
+- im Backend werden nur normale E-Mail Adressen gespeichert
+- Nach der Umformung soll die E-Mail nochmal validiert werden dass sie dem richtigen Format entspricht

@@ -1,6 +1,122 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Unbekannte Benutzer - {{ parent() }}{% endblock %}
+{% block title %}Unbekannte Be    <div class="mt-3">
+        <a href="{{ path('csv_upload') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Zurück zum Upload
+        </a>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInputs = document.querySelectorAll('.email-input');
+            
+            // E-Mail-Normalisierung und Validierung
+            function normalizeEmail(emailInput) {
+                emailInput = emailInput.trim();
+                
+                if (!emailInput) {
+                    return { valid: false, email: '', isOutlook: false };
+                }
+                
+                // Outlook-Format erkennen: "Name <email@domain.de>" oder Varianten
+                const outlookMatch = emailInput.match(/<([^<>]+)>/);
+                if (outlookMatch) {
+                    const extractedEmail = outlookMatch[1].trim();
+                    return {
+                        valid: isValidEmail(extractedEmail),
+                        email: extractedEmail,
+                        isOutlook: true
+                    };
+                }
+                
+                // Standard-E-Mail-Format prüfen
+                return {
+                    valid: isValidEmail(emailInput),
+                    email: emailInput,
+                    isOutlook: false
+                };
+            }
+            
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            // Event-Listener für alle E-Mail-Eingabefelder
+            emailInputs.forEach(function(input) {
+                const feedbackDiv = input.parentNode.querySelector('.invalid-feedback');
+                const previewDiv = input.parentNode.querySelector('.email-preview');
+                const previewText = input.parentNode.querySelector('.email-preview-text');
+                
+                input.addEventListener('input', function() {
+                    const result = normalizeEmail(this.value);
+                    
+                    // Reset-Klassen
+                    this.classList.remove('is-valid', 'is-invalid');
+                    
+                    if (!this.value) {
+                        // Leer - keine Validierung
+                        previewDiv.style.display = 'none';
+                        return;
+                    }
+                    
+                    if (result.valid) {
+                        this.classList.add('is-valid');
+                        feedbackDiv.textContent = '';
+                        
+                        // Vorschau anzeigen wenn Outlook-Format erkannt
+                        if (result.isOutlook) {
+                            previewText.textContent = result.email;
+                            previewDiv.style.display = 'block';
+                        } else {
+                            previewDiv.style.display = 'none';
+                        }
+                    } else {
+                        this.classList.add('is-invalid');
+                        previewDiv.style.display = 'none';
+                        
+                        if (result.isOutlook) {
+                            feedbackDiv.textContent = 'Die E-Mail-Adresse in den spitzen Klammern ist ungültig.';
+                        } else {
+                            feedbackDiv.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+                        }
+                    }
+                });
+                
+                // Bei Verlassen des Feldes nochmals validieren
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        this.dispatchEvent(new Event('input'));
+                    }
+                });
+            });
+            
+            // Form-Submission Validierung
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                let hasErrors = false;
+                
+                emailInputs.forEach(function(input) {
+                    if (input.value) {
+                        const result = normalizeEmail(input.value);
+                        if (!result.valid) {
+                            hasErrors = true;
+                            input.classList.add('is-invalid');
+                        }
+                    }
+                });
+                
+                if (hasErrors) {
+                    e.preventDefault();
+                    alert('Bitte korrigieren Sie die ungültigen E-Mail-Adressen.');
+                }
+            });
+        });
+    </script>
+{% endblock %} - {{ parent() }}{% endblock %}
 
 {% block body %}
     <h1 class="mb-4">Unbekannte Benutzer</h1>
@@ -8,6 +124,13 @@
     <div class="alert alert-info">
         <p>Für folgende in der CSV-Datei gefundene Benutzer sind keine E-Mail-Adressen hinterlegt. 
         Bitte geben Sie die E-Mail-Adressen ein, damit die Zufriedenheits-E-Mails versendet werden können.</p>
+        
+        <p><strong>Unterstützte E-Mail-Formate:</strong></p>
+        <ul>
+            <li>Standard: <code>beispiel@domain.de</code></li>
+            <li>Outlook-Format: <code>"Nachname, Vorname &lt;beispiel@domain.de&gt;"</code></li>
+        </ul>
+        <p><small class="text-muted">Das Outlook-Format wird automatisch zur Standard-E-Mail-Adresse konvertiert.</small></p>
     </div>
     
     <div class="card">
@@ -29,7 +152,16 @@
                                 <tr>
                                     <td>{{ username }}</td>
                                     <td>
-                                        <input type="email" name="email_{{ username }}" class="form-control" required>
+                                        <input type="text" 
+                                               name="email_{{ username }}" 
+                                               id="email_{{ username }}"
+                                               class="form-control email-input" 
+                                               placeholder="beispiel@domain.de oder 'Name &lt;beispiel@domain.de&gt;'"
+                                               required>
+                                        <div class="invalid-feedback"></div>
+                                        <small class="form-text text-muted email-preview" style="display: none;">
+                                            Erkannte E-Mail: <span class="email-preview-text"></span>
+                                        </small>
                                     </td>
                                 </tr>
                             {% endfor %}

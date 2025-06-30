@@ -10,6 +10,7 @@ use App\Service\SessionManager;
 use App\Service\UploadResult;
 use App\Service\UnknownUsersResult;
 use App\Service\EmailService;
+use App\Service\EmailNormalizer;
 use App\Exception\TicketMailerException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +31,8 @@ class CsvUploadController extends AbstractController
         private readonly CsvUploadOrchestrator $csvUploadOrchestrator,
         private readonly SessionManager $sessionManager,
         private readonly EmailService $emailService,
-        private readonly CsvFieldConfigRepository $csvFieldConfigRepository
+        private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
+        private readonly EmailNormalizer $emailNormalizer
     ) {
     }
       /**
@@ -158,9 +160,20 @@ class CsvUploadController extends AbstractController
         $emailMappings = [];
         
         foreach ($unknownUsers as $username) {
-            $email = $request->request->get('email_' . $username);
-            if (!empty($email)) {
-                $emailMappings[$username] = $email;
+            $emailInput = $request->request->get('email_' . $username);
+            if (!empty($emailInput)) {
+                try {
+                    // E-Mail normalisieren (Outlook-Format -> Standard-Format)
+                    $normalizedEmail = $this->emailNormalizer->normalizeEmail($emailInput);
+                    $emailMappings[$username] = $normalizedEmail;
+                } catch (\InvalidArgumentException $e) {
+                    // Fehler wird im Frontend durch JavaScript abgefangen
+                    // Falls JavaScript deaktiviert ist, wird hier ein Fallback bereitgestellt
+                    throw new TicketMailerException(
+                        "Ungültige E-Mail-Adresse für Benutzer '{$username}': " . $e->getMessage(),
+                        'validation_error'
+                    );
+                }
             }
         }
         
