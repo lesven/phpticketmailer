@@ -162,9 +162,14 @@ class UserController extends AbstractController
             $entityManager->flush();
 
             $this->addFlash('success', 'Benutzer erfolgreich gelöscht!');
-        }        return $this->redirectToRoute('user_index');
+        }
+        
+        return $this->redirectToRoute('user_index');
     }
 
+    /**
+     * Schaltet den Umfrage-Ausschluss für einen Benutzer um
+     */
     #[Route('/{id}/toggle-exclude', name: 'user_toggle_exclude', methods: ['POST'])]
     public function toggleExclude(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {

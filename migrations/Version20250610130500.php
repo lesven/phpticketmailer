@@ -11,7 +11,7 @@ final class Version20250610130500 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'F\xC3\xBCgt excluded_from_surveys Feld zur users Tabelle hinzu';
+        return 'Fügt excluded_from_surveys Feld zur users Tabelle hinzu';
     }
 
     public function up(Schema $schema): void

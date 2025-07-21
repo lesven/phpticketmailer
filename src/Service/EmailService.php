@@ -185,7 +185,7 @@ class EmailService
                 continue;
             }
             
-            // Normaler E-Mail-Versand
+            // Normaler E-Mail-Versand (User existiert und ist nicht ausgeschlossen)
             $emailRecord = $this->processTicketEmail(
                 $ticket, 
                 $emailConfig, 
