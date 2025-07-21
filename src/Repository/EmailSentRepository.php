@@ -22,6 +22,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class EmailSentRepository extends ServiceEntityRepository
 {
+    private const COUNT_SELECT = 'COUNT(e.id)';
+    
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency
      * 
@@ -125,7 +127,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countSuccessfulEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->where('e.status = :status')
             ->setParameter('status', 'sent')
             ->getQuery()
@@ -155,7 +157,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countTotalEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -168,7 +170,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countFailedEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->where('e.status LIKE :status')
             ->setParameter('status', 'error%')
             ->getQuery()

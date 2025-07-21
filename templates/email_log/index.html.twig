@@ -27,7 +27,7 @@
                 </div>
             </div>
         </div>
-        {% if search is empty %}
+        {% if pagination and currentPage > 1 %}
             <input type="hidden" name="page" value="{{ currentPage }}">
         {% endif %}
     </form>
