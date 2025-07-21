@@ -7,14 +7,14 @@
  * @package App\Tests\Controller
  */
 
-namespace App\Tests\Controller;
+namespace App\Tests\Repository;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Test-Klasse für DashboardController
  */
-class DashboardControllerTest extends WebTestCase
+class DashboardControllerTest extends KernelTestCase
 {
     /**
      * Test für die Dashboard-Statistiken
@@ -70,11 +70,11 @@ class DashboardControllerTest extends WebTestCase
         self::assertArrayHasKey('success_rate', $content);
         
         // Überprüfe, dass die Werte numerisch sind
-        self::assertIsInt($content['total']);
-        self::assertIsInt($content['successful']);
-        self::assertIsInt($content['failed']);
-        self::assertIsInt($content['skipped']);
-        self::assertIsInt($content['unique_recipients']);
-        self::assertIsFloat($content['success_rate']) || self::assertIsInt($content['success_rate']);
+        self::assertTrue(is_int($content['total']));
+        self::assertTrue(is_int($content['successful']));
+        self::assertTrue(is_int($content['failed']));
+        self::assertTrue(is_int($content['skipped']));
+        self::assertTrue(is_int($content['unique_recipients']));
+        self::assertTrue(is_float($content['success_rate']) || is_int($content['success_rate']));
     }
 }
