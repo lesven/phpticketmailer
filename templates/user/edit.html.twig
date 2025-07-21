@@ -24,6 +24,13 @@
                     <div class="form-text">E-Mail-Adresse für den Versand</div>
                     <div class="text-danger">{{ form_errors(form.email) }}</div>
                 </div>
+
+                <div class="form-check mb-3">
+                    {{ form_widget(form.excludedFromSurveys) }}
+                    {{ form_label(form.excludedFromSurveys) }}
+                    <div class="form-text">Benutzer erhält keine Umfrage-E-Mails, wenn aktiviert.</div>
+                    <div class="text-danger">{{ form_errors(form.excludedFromSurveys) }}</div>
+                </div>
                 
                 <div class="d-flex gap-2">
                     <a href="{{ path('user_index') }}" class="btn btn-secondary">
