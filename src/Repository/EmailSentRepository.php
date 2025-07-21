@@ -22,6 +22,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class EmailSentRepository extends ServiceEntityRepository
 {
+    private const COUNT_SELECT = 'COUNT(e.id)';
+    
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency
      * 
@@ -30,6 +32,30 @@ class EmailSentRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, EmailSent::class);
+    }
+
+    /**
+     * Erstellt einen QueryBuilder für das Versandprotokoll mit optionaler Filterung
+     *
+     * Mit diesem QueryBuilder können E-Mails nach Test- oder Live-Modus gefiltert
+     * werden. Die Ergebnisse werden standardmäßig nach Zeitstempel absteigend
+     * sortiert, sodass die neuesten Einträge zuerst erscheinen.
+     *
+     * @param string $filter Filteroption ('all', 'live' oder 'test')
+     * @return \Doctrine\ORM\QueryBuilder Der konfigurierte QueryBuilder
+     */
+    public function createFilteredQueryBuilder(string $filter = 'all'): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->orderBy('e.timestamp', 'DESC');
+
+        if ($filter === 'live') {
+            $qb->andWhere('e.testMode = false');
+        } elseif ($filter === 'test') {
+            $qb->andWhere('e.testMode = true');
+        }
+
+        return $qb;
     }
 
     /**
@@ -101,7 +127,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countSuccessfulEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->where('e.status = :status')
             ->setParameter('status', 'sent')
             ->getQuery()
@@ -131,7 +157,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countTotalEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -144,7 +170,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function countFailedEmails(): int
     {
         return $this->createQueryBuilder('e')
-            ->select('COUNT(e.id)')
+            ->select(self::COUNT_SELECT)
             ->where('e.status LIKE :status')
             ->setParameter('status', 'error%')
             ->getQuery()
