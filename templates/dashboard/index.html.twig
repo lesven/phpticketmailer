@@ -52,6 +52,65 @@
         </div>
     </div>
     
+    <!-- E-Mail-Statistiken -->
+    <h2 class="mb-3">E-Mail-Statistiken</h2>
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.total }}</h4>
+                    <p class="card-text">Gesamt E-Mails</p>
+                    <small>Alle Versandversuche</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.successful }}</h4>
+                    <p class="card-text">Erfolgreich</p>
+                    <small>Zugestellt</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.failed }}</h4>
+                    <p class="card-text">Fehlgeschlagen</p>
+                    <small>Fehler beim Versand</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.skipped }}</h4>
+                    <p class="card-text">Übersprungen</p>
+                    <small>Nicht versendet</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.unique_recipients }}</h4>
+                    <p class="card-text">Einzigartige Benutzer</p>
+                    <small>Empfänger insgesamt</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">{{ statistics.success_rate }}%</h4>
+                    <p class="card-text">Erfolgsrate</p>
+                    <small>Zustellungsrate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <h2 class="mb-3">Letzte E-Mail-Versandaktionen</h2>
     
     {% if recentEmails is empty %}
