@@ -5,10 +5,31 @@
 {% block body %}
     <h1 class="mb-4">Versandprotokoll</h1>
     <form method="get" class="mb-3">
-        <div class="input-group">
-            <input type="text" name="search" class="form-control" placeholder="Ticket-ID suchen..." value="{{ search|default('') }}">
-            <button class="btn btn-primary" type="submit">Suchen</button>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Ticket-ID suchen..." value="{{ search|default('') }}">
+                    <button class="btn btn-primary" type="submit">Suchen</button>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter" id="filter_all" value="all" {{ filter == 'all' ? 'checked' }} onchange="this.form.submit()">
+                    <label class="form-check-label" for="filter_all">Alle E-Mails anzeigen</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter" id="filter_live" value="live" {{ filter == 'live' ? 'checked' }} onchange="this.form.submit()">
+                    <label class="form-check-label" for="filter_live">Nur Live-Mails anzeigen</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter" id="filter_test" value="test" {{ filter == 'test' ? 'checked' }} onchange="this.form.submit()">
+                    <label class="form-check-label" for="filter_test">Nur Test-Mails anzeigen</label>
+                </div>
+            </div>
         </div>
+        {% if search is empty %}
+            <input type="hidden" name="page" value="{{ currentPage }}">
+        {% endif %}
     </form>
     {% if emails is empty %}
         <div class="alert alert-info">Keine E-Mails gefunden.</div>
@@ -53,5 +74,24 @@
                 </tbody>
             </table>
         </div>
+        {% if pagination is not null %}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Seite {{ currentPage }} von {{ totalPages }}
+                </div>
+                <div class="btn-group" role="group">
+                    {% if pagination.hasPrevious %}
+                        <a href="{{ path('email_log', {'page': pagination.getPreviousPage(), 'filter': filter}) }}" class="btn btn-outline-primary">Zurück</a>
+                    {% else %}
+                        <span class="btn btn-outline-secondary disabled">Zurück</span>
+                    {% endif %}
+                    {% if pagination.hasNext %}
+                        <a href="{{ path('email_log', {'page': pagination.getNextPage(), 'filter': filter}) }}" class="btn btn-outline-primary">Weiter</a>
+                    {% else %}
+                        <span class="btn btn-outline-secondary disabled">Weiter</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
     {% endif %}
 {% endblock %}

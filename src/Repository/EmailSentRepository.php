@@ -33,6 +33,30 @@ class EmailSentRepository extends ServiceEntityRepository
     }
 
     /**
+     * Erstellt einen QueryBuilder für das Versandprotokoll mit optionaler Filterung
+     *
+     * Mit diesem QueryBuilder können E-Mails nach Test- oder Live-Modus gefiltert
+     * werden. Die Ergebnisse werden standardmäßig nach Zeitstempel absteigend
+     * sortiert, sodass die neuesten Einträge zuerst erscheinen.
+     *
+     * @param string $filter Filteroption ('all', 'live' oder 'test')
+     * @return \Doctrine\ORM\QueryBuilder Der konfigurierte QueryBuilder
+     */
+    public function createFilteredQueryBuilder(string $filter = 'all'): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->orderBy('e.timestamp', 'DESC');
+
+        if ($filter === 'live') {
+            $qb->andWhere('e.testMode = false');
+        } elseif ($filter === 'test') {
+            $qb->andWhere('e.testMode = true');
+        }
+
+        return $qb;
+    }
+
+    /**
      * Findet die zuletzt gesendeten E-Mails
      * 
      * Diese Methode ruft die neuesten E-Mail-Protokolle ab, sortiert nach
