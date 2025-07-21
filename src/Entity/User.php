@@ -52,6 +52,12 @@ class User
     private ?string $email = null;
 
     /**
+     * Gibt an, ob der Benutzer von Umfragen ausgeschlossen ist
+     */
+    #[ORM\Column]
+    private bool $excludedFromSurveys = false;
+
+    /**
      * Gibt die ID des Benutzers zurück
      * 
      * @return int|null Die ID des Benutzers
@@ -103,6 +109,24 @@ class User
     public function setEmail(string $email): self
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * Gibt zurück, ob der Benutzer von Umfragen ausgeschlossen ist
+     */
+    public function isExcludedFromSurveys(): bool
+    {
+        return $this->excludedFromSurveys;
+    }
+
+    /**
+     * Setzt, ob der Benutzer von Umfragen ausgeschlossen ist
+     */
+    public function setExcludedFromSurveys(bool $excludedFromSurveys): self
+    {
+        $this->excludedFromSurveys = $excludedFromSurveys;
 
         return $this;
     }

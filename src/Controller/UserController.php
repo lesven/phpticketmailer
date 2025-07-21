@@ -160,8 +160,20 @@ class UserController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
             $entityManager->remove($user);
             $entityManager->flush();
-            
+
             $this->addFlash('success', 'Benutzer erfolgreich gelöscht!');
         }        return $this->redirectToRoute('user_index');
+    }
+
+    #[Route('/{id}/toggle-exclude', name: 'user_toggle_exclude', methods: ['POST'])]
+    public function toggleExclude(Request $request, User $user, EntityManagerInterface $entityManager): Response
+    {
+        if ($this->isCsrfTokenValid('toggle_exclude'.$user->getId(), $request->request->get('_token'))) {
+            $user->setExcludedFromSurveys(!$user->isExcludedFromSurveys());
+            $entityManager->flush();
+        }
+
+        $referer = $request->headers->get('referer');
+        return $this->redirect($referer ?: $this->generateUrl('user_index'));
     }
 }

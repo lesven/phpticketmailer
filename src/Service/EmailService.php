@@ -159,10 +159,25 @@ class EmailService
                 $existingEmail = $existingTickets[$ticketId];
                 $formattedDate = $existingEmail->getTimestamp()->format('d.m.Y');
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket, 
-                    $currentTime, 
+                    $ticket,
+                    $currentTime,
                     $testMode,
                     'Nicht versendet – Ticket bereits verarbeitet am ' . $formattedDate
+                );
+                $this->entityManager->persist($emailRecord);
+                $sentEmails[] = $emailRecord;
+                $processedTicketIds[$ticketId] = true;
+                continue;
+            }
+
+            // Prüfe, ob der Benutzer von Umfragen ausgeschlossen ist
+            $user = $this->userRepository->findByUsername($ticket['username']);
+            if ($user && $user->isExcludedFromSurveys()) {
+                $emailRecord = $this->createSkippedEmailRecord(
+                    $ticket,
+                    $currentTime,
+                    $testMode,
+                    'Nicht versendet – Von Umfragen ausgeschlossen'
                 );
                 $this->entityManager->persist($emailRecord);
                 $sentEmails[] = $emailRecord;
