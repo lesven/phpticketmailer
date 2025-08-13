@@ -206,3 +206,26 @@ Dieses Dokument beschreibt die Anforderungen und das Design einer Web-Anwendung,
 - Frontend soll richtige Email und das andere Format validieren
 - im Backend werden nur normale E-Mail Adressen gespeichert
 - Nach der Umformung soll die E-Mail nochmal validiert werden dass sie dem richtigen Format entspricht
+
+### Userstory 24: Paginierung und Filterung des Versandprotokolls ###
+*Als Administrator möchte ich das Versandprotokoll unter /versandprotokoll mit Paginierung und Filteroptionen nutzen können, damit ich auch bei vielen versendeten E-Mails die Übersicht behalte und gezielt nach Test- oder Live-Mails suchen kann.*
+** Akzeptanzkriterien: **
+- Das Versandprotokoll wird serverseitig paginiert mit maximal 50 Einträgen pro Seite
+- Die Navigation erfolgt über „Zurück" und „Weiter"-Buttons
+- Oberhalb der Tabelle befinden sich Radio-Buttons für die Filterung:
+  - ○ Alle E-Mails anzeigen (Standard)
+  - ○ Nur Live-Mails anzeigen
+  - ○ Nur Test-Mails anzeigen
+- Bei aktiver Suche nach Ticket-ID werden alle Suchergebnisse komplett angezeigt (ohne Paginierung)
+- Beim ersten Laden der Seite wird immer Seite 1 mit dem Filter "Alle E-Mails anzeigen" geladen
+
+### Userstory 25: Benutzer von Umfragen ausschließen ###
+*Als Administrator möchte ich bestimmte Benutzer dauerhaft von Umfragen ausschließen können, damit keine E-Mails an Personen geschickt werden, die keine Umfragen erhalten sollen (z.B. ehemalige Mitarbeiter oder Personen die sich abgemeldet haben).*
+** Akzeptanzkriterien: **
+- In der Benutzerliste gibt es eine neue Spalte "Von Umfragen ausgeschlossen" mit einer Checkbox
+- Die Checkbox kann direkt in der Übersicht aktiviert/deaktiviert werden
+- In der Bearbeiten-Ansicht eines Benutzers gibt es eine Checkbox "Von Umfragen ausgeschlossen" mit erklärendem Text
+- Neue Benutzer erhalten standardmäßig E-Mails (Checkbox nicht aktiviert)
+- Beim E-Mail-Versand werden Benutzer mit aktivierter Checkbox übersprungen
+- Im Versandprotokoll erscheinen übersprungene Benutzer mit dem Status "Nicht versendet – Von Umfragen ausgeschlossen"
+- Die Datenbankstruktur wird um das entsprechende Feld erweitert

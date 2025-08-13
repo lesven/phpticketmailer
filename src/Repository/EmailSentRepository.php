@@ -22,6 +22,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class EmailSentRepository extends ServiceEntityRepository
 {
+    private const COUNT_SELECT = 'COUNT(e.id)';
+    
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency
      * 
@@ -30,6 +32,30 @@ class EmailSentRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, EmailSent::class);
+    }
+
+    /**
+     * Erstellt einen QueryBuilder für das Versandprotokoll mit optionaler Filterung
+     *
+     * Mit diesem QueryBuilder können E-Mails nach Test- oder Live-Modus gefiltert
+     * werden. Die Ergebnisse werden standardmäßig nach Zeitstempel absteigend
+     * sortiert, sodass die neuesten Einträge zuerst erscheinen.
+     *
+     * @param string $filter Filteroption ('all', 'live' oder 'test')
+     * @return \Doctrine\ORM\QueryBuilder Der konfigurierte QueryBuilder
+     */
+    public function createFilteredQueryBuilder(string $filter = 'all'): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->orderBy('e.timestamp', 'DESC');
+
+        if ($filter === 'live') {
+            $qb->andWhere('e.testMode = false');
+        } elseif ($filter === 'test') {
+            $qb->andWhere('e.testMode = true');
+        }
+
+        return $qb;
     }
 
     /**
@@ -91,5 +117,89 @@ class EmailSentRepository extends ServiceEntityRepository
         }
 
         return $existingTickets;
+    }
+
+    /**
+     * Zählt die Gesamtanzahl der erfolgreich versendeten E-Mails
+     *
+     * @return int Die Anzahl der erfolgreich versendeten E-Mails
+     */
+    public function countSuccessfulEmails(): int
+    {
+        return $this->createQueryBuilder('e')
+            ->select(self::COUNT_SELECT)
+            ->where('e.status = :status')
+            ->setParameter('status', 'sent')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Zählt die Anzahl einzigartiger Benutzer, die E-Mails erhalten haben
+     *
+     * @return int Die Anzahl einzigartiger Benutzer
+     */
+    public function countUniqueRecipients(): int
+    {
+        return $this->createQueryBuilder('e')
+            ->select('COUNT(DISTINCT e.username)')
+            ->where('e.status = :status')
+            ->setParameter('status', 'sent')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Zählt die Gesamtanzahl aller E-Mail-Versandversuche (erfolgreich und fehlgeschlagen)
+     *
+     * @return int Die Gesamtanzahl aller E-Mail-Einträge
+     */
+    public function countTotalEmails(): int
+    {
+        return $this->createQueryBuilder('e')
+            ->select(self::COUNT_SELECT)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Zählt die Anzahl fehlgeschlagener E-Mail-Versendungen
+     *
+     * @return int Die Anzahl der fehlgeschlagenen E-Mails
+     */
+    public function countFailedEmails(): int
+    {
+        return $this->createQueryBuilder('e')
+            ->select(self::COUNT_SELECT)
+            ->where('e.status LIKE :status')
+            ->setParameter('status', 'error%')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Holt alle E-Mail-Statistiken in einer einzigen Abfrage
+     *
+     * @return array Assoziatives Array mit allen Statistiken
+     */
+    public function getEmailStatistics(): array
+    {
+        // Grundstatistiken
+        $total = $this->countTotalEmails();
+        $successful = $this->countSuccessfulEmails();
+        $failed = $this->countFailedEmails();
+        $unique = $this->countUniqueRecipients();
+
+        // Berechne zusätzliche Statistiken
+        $skipped = $total - $successful - $failed;
+
+        return [
+            'total' => $total,
+            'successful' => $successful,
+            'failed' => $failed,
+            'skipped' => $skipped,
+            'unique_recipients' => $unique,
+            'success_rate' => $total > 0 ? round(($successful / $total) * 100, 1) : 0
+        ];
     }
 }

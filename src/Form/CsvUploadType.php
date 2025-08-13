@@ -68,7 +68,7 @@ class CsvUploadType extends AbstractType
             ->add('testMode', CheckboxType::class, [
                 'label' => 'Testmodus (E-Mails werden an Test-Adresse gesendet)',
                 'required' => false, // Checkbox ist optional
-                'data' => true, // Standardmäßig aktiviert, um versehentliches Versenden zu vermeiden
+                'data' => false, // Standardmäßig deaktiviert, da Live-Versand häufiger verwendet wird
                 'attr' => ['class' => 'form-check-input'], // Bootstrap-Styling
             ])
             // Checkbox für Erneut-Versenden bei bereits verarbeiteten Tickets
