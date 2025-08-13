@@ -149,8 +149,13 @@ class EmailService
                     $testMode,
                     'Nicht versendet – Mehrfaches Vorkommen in derselben CSV-Datei'
                 );
-                $this->entityManager->persist($emailRecord);
-                $sentEmails[] = $emailRecord;
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving duplicate record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
                 continue;
             }
             
@@ -164,8 +169,13 @@ class EmailService
                     $testMode,
                     'Nicht versendet – Ticket bereits verarbeitet am ' . $formattedDate
                 );
-                $this->entityManager->persist($emailRecord);
-                $sentEmails[] = $emailRecord;
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
                 $processedTicketIds[$ticketId] = true;
                 continue;
             }
@@ -179,8 +189,13 @@ class EmailService
                     $testMode,
                     'Nicht versendet – Von Umfragen ausgeschlossen'
                 );
-                $this->entityManager->persist($emailRecord);
-                $sentEmails[] = $emailRecord;
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
                 $processedTicketIds[$ticketId] = true;
                 continue;
             }
@@ -194,15 +209,32 @@ class EmailService
                 $currentTime
             );
             
-            $this->entityManager->persist($emailRecord);
-            $sentEmails[] = $emailRecord;
+            // Speichere jeden Datensatz einzeln, um Batch-Fehler zu vermeiden
+            try {
+                $this->entityManager->persist($emailRecord);
+                $this->entityManager->flush();
+                $sentEmails[] = $emailRecord;
+            } catch (\Exception $e) {
+                error_log('Error saving email record for ticket ' . $ticket['ticketId'] . ': ' . $e->getMessage());
+                // Erstelle einen Fehler-Datensatz stattdessen
+                $errorRecord = clone $emailRecord;
+                $errorRecord->setStatus('error: database save failed - ' . substr($e->getMessage(), 0, 100));
+                try {
+                    $this->entityManager->persist($errorRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $errorRecord;
+                } catch (\Exception $innerE) {
+                    error_log('Critical: Could not save error record: ' . $innerE->getMessage());
+                }
+            }
             $processedTicketIds[$ticketId] = true;
         }
 
+        // Cleanup: Alle verbleibenden Datensätze (falls welche übrig sind)
         try {
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            error_log('Error saving email records: ' . $e->getMessage());
+            error_log('Error saving remaining email records: ' . $e->getMessage());
         }
 
         return $sentEmails;
