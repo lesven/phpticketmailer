@@ -65,6 +65,8 @@
         "post-update-cmd": [
             "@auto-scripts"
         ]
+    ,
+    "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit -c phpunit.xml.dist --coverage-html build/coverage-html || true && cp -f coverage.xml build/logs/clover.xml || true"
     },
     "conflict": {
         "symfony/symfony": "*"
