@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Controller für das Hochladen und Verarbeiten von CSV-Dateien mit Ticketdaten
@@ -73,7 +73,7 @@ class CsvUploadController extends AbstractController
     /**
      * Zeigt das Formular zum Hochladen einer CSV-Datei an und verarbeitet die Übermittlung
      * 
-     * @Route("/upload", name="csv_upload")
+     [Route("/upload", name="csv_upload")]
      * @param Request $request HTTP-Anfrage
      * @return Response HTTP-Antwort
      */
@@ -115,7 +115,7 @@ class CsvUploadController extends AbstractController
      * Zeigt eine Seite an, auf der E-Mail-Adressen für unbekannte Benutzernamen eingegeben werden können.
      * Die eingegebenen E-Mail-Adressen werden neuen Benutzern zugeordnet und in der Datenbank gespeichert.
      * 
-     * @Route("/unknown-users", name="unknown_users")
+     [Route("/unknown-users", name="unknown_users")]
      * @param Request $request HTTP-Anfrage
      * @return Response HTTP-Antwort
      */
@@ -159,7 +159,7 @@ class CsvUploadController extends AbstractController
      * Verwendet die in der Session gespeicherten Ticketdaten, um E-Mails zu versenden.
      * Unterstützt einen Testmodus, in dem E-Mails nicht tatsächlich versendet werden.
      * 
-     * @Route("/send-emails", name="send_emails")
+     [Route("/send-emails", name="send_emails")]
      * @param Request $request HTTP-Anfrage
      * @return Response HTTP-Antwort
      */

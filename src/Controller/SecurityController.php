@@ -8,7 +8,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -27,9 +27,7 @@ class SecurityController extends AbstractController
         $this->csrfTokenManager = $csrfTokenManager;
     }
 
-    /**
-     * @Route("/login", name="app_login")
-     */
+    #[Route('/login', name: 'app_login')]
     public function login(Request $request, SessionInterface $session): Response
     {
         // Wenn der Benutzer bereits authentifiziert ist, leite zum Dashboard um
@@ -84,18 +82,14 @@ class SecurityController extends AbstractController
         ]);
     }
     
-    /**
-     * @Route("/logout", name="app_logout")
-     */
+    #[Route('/logout', name: 'app_logout')]
     public function logout(SessionInterface $session): Response
     {
         $session->remove('is_authenticated');
         return $this->redirectToRoute('app_login');
     }
     
-    /**
-     * @Route("/password", name="change_password")
-     */
+    #[Route('/password', name: 'change_password')]
     public function changePassword(Request $request): Response
     {
         $error = null;

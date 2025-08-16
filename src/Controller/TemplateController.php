@@ -8,11 +8,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
- * @Route("/template")
+ [Route("/template")]
  */
 class TemplateController extends AbstractController
 {
@@ -26,7 +26,7 @@ class TemplateController extends AbstractController
     }
     
     /**
-     * @Route("/", name="template_manage")
+     [Route("/", name="template_manage")]
      */
     public function manage(Request $request): Response
     {
@@ -86,7 +86,7 @@ class TemplateController extends AbstractController
     }
     
     /**
-     * @Route("/download", name="template_download")
+     [Route("/download", name="template_download")]
      */
     public function download(): Response
     {

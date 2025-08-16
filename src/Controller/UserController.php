@@ -11,15 +11,15 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderUtils;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * @Route("/user")
+ [Route("/user")]
  */
 class UserController extends AbstractController
 {
     /**
-     * @Route("/", name="user_index", methods={"GET"})
+     [Route("/", name="user_index", methods={"GET"})]
      */
     public function index(Request $request, UserRepository $userRepository): Response
     {
@@ -46,7 +46,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/export", name="user_export", methods={"GET"})
+     [Route("/export", name="user_export", methods={"GET"})]
      */
     public function export(UserRepository $userRepository): Response
     {
@@ -77,7 +77,7 @@ class UserController extends AbstractController
     }
     
     /**
-     * @Route("/import", name="user_import", methods={"GET","POST"})
+     [Route("/import", name="user_import", methods={"GET","POST"})]
      */
     public function import(Request $request, EntityManagerInterface $entityManager): Response
     {
@@ -214,7 +214,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/new", name="user_new", methods={"GET","POST"})
+     [Route("/new", name="user_new", methods={"GET","POST"})]
      */
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
@@ -237,7 +237,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/edit", name="user_edit", methods={"GET","POST"})
+     [Route("/{id}/edit", name="user_edit", methods={"GET","POST"})]
      */
     public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
@@ -258,7 +258,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * @Route("/{id}", name="user_delete", methods={"POST"})
+     [Route("/{id}", name="user_delete", methods={"POST"})]
      */
     public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
