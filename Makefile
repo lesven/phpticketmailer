@@ -117,6 +117,10 @@ test:
 	@echo "Running phpunit inside $(PHP_SERVICE)"
 	$(DC) run --rm $(PHP_SERVICE) vendor/bin/phpunit --colors=always
 
+coverage:
+	@echo "Running phpunit coverage inside $(PHP_SERVICE)"
+	$(DC) run --rm --no-deps -u 0 $(PHP_SERVICE) bash -lc 'XDEBUG_MODE=coverage vendor/bin/phpunit -c phpunit.coverage.final.xml --coverage-text --colors=never || true'
+
 
 # Shortcut to run arbitrary command in php container
 run-php:
