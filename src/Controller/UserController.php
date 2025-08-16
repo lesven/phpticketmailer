@@ -172,12 +172,19 @@ class UserController extends AbstractController
         
         // Sammle alle existierenden Benutzernamen
         $existingUsers = $entityManager->getRepository(User::class)->findAll();
-        foreach ($existingUsers as $user) {
-            $existingUsernames[$user->getUsername()] = $user;
+        if ($existingUsers !== null) {
+            foreach ($existingUsers as $user) {
+                $existingUsernames[$user->getUsername()] = $user;
+            }
         }
         
         // CSV-Zeilen verarbeiten
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+            if (!is_array($row) || count($row) === 0) {
+                $skipped++;
+                continue;
+            }
+            
             if (count($row) <= max($emailIndex, $usernameIndex)) {
                 $skipped++;
                 continue;
