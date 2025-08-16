@@ -62,7 +62,8 @@ class CsvUploadControllerTest extends TestCase
         $emailService = $this->createMock(EmailService::class);
 
     $fileField = $this->createMock(FormInterface::class);
-    $fileField->method('getData')->willReturn($this->createMock(UploadedFile::class));
+        $fileField = $this->createMock(FormInterface::class);
+        $fileField->method('getData')->willReturn($this->createMock(UploadedFile::class));
         $testModeField = $this->createMock(FormInterface::class);
         $testModeField->method('getData')->willReturn(false);
 
