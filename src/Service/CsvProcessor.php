@@ -155,6 +155,12 @@ class CsvProcessor
      */
     private function storeTicketsInSession(array $validTickets): void
     {
-        $this->requestStack->getSession()->set('valid_tickets', $validTickets);
+        $session = $this->requestStack->getSession();
+        // Wenn keine Session vorhanden ist, nicht abst51rzen (z.B. in manchen CLI- oder Test-Umgebungen)
+        if ($session === null) {
+            return;
+        }
+
+        $session->set('valid_tickets', $validTickets);
     }
 }

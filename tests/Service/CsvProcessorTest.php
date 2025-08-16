@@ -133,4 +133,58 @@ class CsvProcessorTest extends TestCase
         $this->expectException(\Exception::class);
         $processor->process($dummyFile);
     }
+
+    public function testProcessClosesHandleWhenProcessRowsCallbackThrows(): void
+    {
+        $csvReader = $this->createMock(CsvFileReader::class);
+        /** @var CsvFileReader $csvReader */
+        $csvReader->expects($this->once())
+            ->method('openCsvFile')
+            ->willReturn('fake-handle');
+
+        $csvReader->expects($this->once())
+            ->method('readHeader')
+            ->with('fake-handle')
+            ->willReturn(['ticketId', 'username', 'ticketName']);
+
+        $csvReader->expects($this->once())
+            ->method('validateRequiredColumns')
+            ->willReturn(['ticketId' => 0, 'username' => 1, 'ticketName' => 2]);
+
+        // processRows will throw during processing to simulate a runtime error inside the callback
+        $csvReader->expects($this->once())
+            ->method('processRows')
+            ->with('fake-handle', $this->isType('callable'))
+            ->willReturnCallback(function ($handle, $callback) {
+                throw new \Exception('processing failed');
+            });
+
+        // Simulate callback throwing during processing by making CsvProcessor's isRowValid or createTicketFromRow throw
+        // We'll mock UserValidator to a noop
+        $userValidator = $this->createMock(UserValidator::class);
+
+        // We expect closeHandle to be called even if processing throws; simulate processRows callback that throws
+        $csvReader->expects($this->once())
+            ->method('closeHandle')
+            ->with('fake-handle');
+
+        $session = new Session(new MockArraySessionStorage());
+        $session->start();
+        $request = new Request();
+        $request->setSession($session);
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        $processor = new CsvProcessor($csvReader, $userValidator, $requestStack);
+
+        $dummyFile = $this->getMockBuilder('\Symfony\Component\HttpFoundation\File\UploadedFile')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        // To force an exception during processing, we override CsvProcessor's private methods via reflection is cumbersome.
+        // Instead, simulate processRows calling callback that triggers invalid row handling (no exception) but ensure closeHandle called.
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('processing failed');
+    $processor->process($dummyFile);
+    }
 }

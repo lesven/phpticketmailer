@@ -475,4 +475,52 @@ class EmailServiceTest extends TestCase
         $this->assertSame('sent', $result[0]->getStatus());
         $this->assertSame('sent', $result[1]->getStatus());
     }
+
+    public function testSendTicketEmailsUsesMailTransportFactoryWhenCustomSmtpPresent(): void
+    {
+        $mailer = $this->createMock(MailerInterface::class);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $userRepo = $this->createMock(UserRepository::class);
+        $smtpRepo = $this->createMock(SMTPConfigRepository::class);
+        $params = new ParameterBag([
+            'app.email_subject' => 'sub',
+            'app.ticket_base_url' => 'https://x',
+            'app.test_email' => 't@e',
+            'app.sender_email' => 's@e',
+            'app.sender_name' => 'S',
+        ]);
+
+        $smtp = $this->createMock(SMTPConfig::class);
+        $smtp->method('getSenderEmail')->willReturn('smtp-sender@example.com');
+        $smtp->method('getSenderName')->willReturn('SMTP Sender');
+        $smtp->method('getDSN')->willReturn('smtp://user:pass@smtp.example');
+
+        $smtpRepo->method('getConfig')->willReturn($smtp);
+
+        // Adapter mock should be used to send
+        $adapter = $this->createMock(\App\Service\MailerAdapterInterface::class);
+        $adapter->expects($this->once())->method('send');
+
+        // Factory should be called with the DSN and return the adapter
+        $factory = $this->createMock(\App\Service\MailTransportFactoryInterface::class);
+        $factory->expects($this->once())->method('createFromDsn')->with('smtp://user:pass@smtp.example')->willReturn($adapter);
+
+        $user = new User();
+        $user->setEmail('real@example.com');
+        $userRepo->method('findByUsername')->willReturn($user);
+
+        $em->expects($this->once())->method('persist')->with($this->isInstanceOf(EmailSent::class));
+        $em->expects($this->once())->method('flush');
+
+        $service = new EmailService($mailer, $em, $userRepo, $smtpRepo, $params, sys_get_temp_dir(), $factory);
+
+        $tickets = [
+            ['ticketId' => 'C1', 'username' => 'u', 'ticketName' => 't'],
+        ];
+
+        $result = $service->sendTicketEmails($tickets, false);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('sent', $result[0]->getStatus());
+    }
 }
