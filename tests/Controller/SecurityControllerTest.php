@@ -61,7 +61,8 @@ class SecurityControllerTest extends TestCase
         $session->method('get')->with('is_authenticated')->willReturn(true);
 
     $router = $this->createMock(RouterInterface::class);
-    $router->method('generate')->willReturn('/dashboard');
+        $router = $this->createMock(RouterInterface::class);
+        $router->method('generate')->willReturn('/dashboard');
 
         $this->setContainerMocks(null, $router);
 
