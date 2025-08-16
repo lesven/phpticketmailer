@@ -348,7 +348,13 @@ class EmailServiceTest extends TestCase
         $em = $this->createMock(EntityManagerInterface::class);
         $userRepo = $this->createMock(UserRepository::class);
         $smtpRepo = $this->createMock(SMTPConfigRepository::class);
-        $params = $this->createMock(ParameterBagInterface::class);
+        $params = new ParameterBag([
+            'app.email_subject' => 'sub',
+            'app.ticket_base_url' => 'https://x',
+            'app.test_email' => 't@e',
+            'app.sender_email' => 's@e',
+            'app.sender_name' => 'S',
+        ]);
 
         $tmpDir = sys_get_temp_dir() . '/phptmptpl_' . uniqid();
         mkdir($tmpDir . '/templates/emails', 0777, true);
