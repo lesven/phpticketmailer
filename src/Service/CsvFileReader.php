@@ -47,12 +47,18 @@ class CsvFileReader
     public function openCsvFile($file)
     {
         $path = $file instanceof UploadedFile ? $file->getPathname() : $file;
-        $handle = fopen($path, 'r');
-        
-        if ($handle === false) {
+        // Prüfe, ob die Datei existiert und lesbar ist, bevor fopen aufgerufen wird.
+        if (!is_file($path) || !is_readable($path)) {
             throw new \Exception('CSV-Datei konnte nicht geöffnet werden');
         }
-        
+
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            // Falls fopen trotzdem fehlschlägt, werfen wir eine Exception.
+            throw new \Exception('CSV-Datei konnte nicht geöffnet werden');
+        }
+
         return $handle;
     }
     
