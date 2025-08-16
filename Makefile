@@ -12,7 +12,7 @@ DB_SERVICE ?= mysql
 COMPOSER_FLAGS ?= --no-interaction --prefer-dist --optimize-autoloader
 
 .PHONY: help build up down restart logs ps shell composer-install composer-update composer-dump-env \
-        console cache-clear cache-warmup migrate migrate-fresh db-create db-drop test
+	console cache-clear cache-warmup migrate migrate-fresh db-create db-drop test coverage
 
 help:
 	@echo "Makefile commands (verwende: make <target>)"
@@ -116,6 +116,10 @@ db-drop:
 test:
 	@echo "Running phpunit inside $(PHP_SERVICE)"
 	$(DC) run --rm $(PHP_SERVICE) vendor/bin/phpunit --colors=always
+
+coverage:
+	@echo "Running phpunit coverage inside $(PHP_SERVICE)"
+	$(DC) run --rm --no-deps -u 0 $(PHP_SERVICE) bash -lc 'XDEBUG_MODE=coverage vendor/bin/phpunit -c phpunit.coverage.final.xml --coverage-text --colors=never || true'
 
 
 # Shortcut to run arbitrary command in php container
