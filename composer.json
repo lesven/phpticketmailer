@@ -31,7 +31,10 @@
         "symfony/debug-bundle": "^6.4",
         "symfony/maker-bundle": "^1.48",
         "symfony/stopwatch": "^6.4",
-        "symfony/web-profiler-bundle": "^6.4"
+        "symfony/web-profiler-bundle": "^6.4",
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^1.11",
+        "vimeo/psalm": "^5.26"
     },
     "config": {
         "allow-plugins": {
@@ -62,6 +65,8 @@
         "post-update-cmd": [
             "@auto-scripts"
         ]
+    ,
+    "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit -c phpunit.xml.dist --coverage-html build/coverage-html || true && cp -f coverage.xml build/logs/clover.xml || true"
     },
     "conflict": {
         "symfony/symfony": "*"
