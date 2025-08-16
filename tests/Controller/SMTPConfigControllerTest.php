@@ -97,7 +97,7 @@ class SMTPConfigControllerTest extends TestCase
         $form->expects($this->once())->method('handleRequest');
         $form->method('isSubmitted')->willReturn(true);
         $form->method('isValid')->willReturn(true);
-    $formView = $this->createMock(\Symfony\Component\Form\FormView::class);
+        $formView = $this->createMock(FormView::class);
     $form->method('createView')->willReturn($formView);
 
         $formFactory = $this->createMock(FormFactoryInterface::class);
