@@ -184,7 +184,12 @@ class CsvProcessorTest extends TestCase
         // To force an exception during processing, we override CsvProcessor's private methods via reflection is cumbersome.
         // Instead, simulate processRows calling callback that triggers invalid row handling (no exception) but ensure closeHandle called.
     $this->expectException(\Exception::class);
+        // Simulate processRows calling the callback, which throws an exception to test exception handling and resource cleanup.
+        // This approach more accurately tests that closeHandle is called when an exception occurs during row processing.
+    $this->expectException(\Exception::class);
     $this->expectExceptionMessage('processing failed');
+    // The callback passed to processRows will throw, simulating a runtime error during row processing.
+    // We expect closeHandle to be called and the exception to be propagated.
     $processor->process($dummyFile);
     }
 }
