@@ -1,6 +1,7 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    # Enables legacy doctrine annotation services when needed. (Default)
     #csrf_protection: true
     http_method_override: false
     handle_all_throwables: true
