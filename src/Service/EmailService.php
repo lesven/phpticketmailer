@@ -21,6 +21,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
+use App\Service\MailTransportFactoryInterface;
 
 class EmailService
 {
@@ -59,6 +60,11 @@ class EmailService
      * @var string
      */
     private $projectDir;
+    /**
+     * Optional factory to create mail transports (testable custom SMTP path)
+     * @var MailTransportFactoryInterface|null
+     */
+    private $mailTransportFactory;
     
     /**
      * Konstruktor mit Dependency Injection aller benötigten Services
@@ -76,7 +82,8 @@ class EmailService
         UserRepository $userRepository,
         SMTPConfigRepository $smtpConfigRepository,
         ParameterBagInterface $params,
-        string $projectDir
+        string $projectDir,
+        ?MailTransportFactoryInterface $mailTransportFactory = null
     ) {
         $this->mailer = $mailer;
         $this->entityManager = $entityManager;
@@ -84,6 +91,7 @@ class EmailService
         $this->smtpConfigRepository = $smtpConfigRepository;
         $this->params = $params;
         $this->projectDir = $projectDir;
+        $this->mailTransportFactory = $mailTransportFactory;
     }
     
     /**
@@ -257,8 +265,14 @@ class EmailService
             
         // Wenn eine SMTP-Konfiguration vorhanden ist, verwende sie
         if ($config['useCustomSMTP']) {
-            $transport = Transport::fromDsn($config['smtpDSN']);
-            $transport->send($email);
+            if ($this->mailTransportFactory !== null) {
+                $adapter = $this->mailTransportFactory->createFromDsn($config['smtpDSN']);
+                $adapter->send($email);
+            } else {
+                // backwards compatible: use Transport::fromDsn
+                $transport = Transport::fromDsn($config['smtpDSN']);
+                $transport->send($email);
+            }
         } else {
             $this->mailer->send($email);
         }

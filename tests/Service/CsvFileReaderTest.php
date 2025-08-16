@@ -63,4 +63,37 @@ class CsvFileReaderTest extends TestCase
         $this->expectException(\Exception::class);
         $reader->openCsvFile('/path/does/not/exist.csv');
     }
+
+    public function testReadHeaderThrowsOnEmptyFile(): void
+    {
+        $this->tmpFile = tempnam(sys_get_temp_dir(), 'csv');
+        // create empty file (no header)
+        file_put_contents($this->tmpFile, "");
+
+        $reader = new CsvFileReader(',', 1000);
+        $handle = $reader->openCsvFile($this->tmpFile);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('CSV-Header');
+        $reader->readHeader($handle);
+    }
+
+    public function testOpenCsvFileResolvesUploadedFile(): void
+    {
+        $content = "h1,h2\n1,2\n";
+        $this->tmpFile = tempnam(sys_get_temp_dir(), 'csv');
+        file_put_contents($this->tmpFile, $content);
+
+        $uploaded = $this->getMockBuilder('\Symfony\Component\HttpFoundation\File\UploadedFile')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $uploaded->method('getPathname')->willReturn($this->tmpFile);
+
+        $reader = new CsvFileReader(',', 1000);
+        $handle = $reader->openCsvFile($uploaded);
+
+        $header = $reader->readHeader($handle);
+        $this->assertSame(['h1', 'h2'], $header);
+        $reader->closeHandle($handle);
+    }
 }

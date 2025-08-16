@@ -22,3 +22,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    # Explicit bindings for mailer adapters/factory
+    App\Service\SymfonyMailerAdapter:
+        arguments:
+            $mailer: '@mailer.mailer'
+        tags: []
+
+    App\Service\SymfonyMailTransportFactory:
+        tags: []
+        public: false
