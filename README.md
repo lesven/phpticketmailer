@@ -18,7 +18,7 @@ Eine Symfony-Anwendung zum automatisierten Versand von Zufriedenheitsanfragen pe
 - PHP 8.3 oder höher
 - MySQL 8.0 oder höher (oder MariaDB 10.11+)
 - Composer
-- Symfony 7.2
+- Symfony 7.3
 - Symfony CLI (optional, für die lokale Entwicklung)
 - Docker und Docker Compose (optional, für die Docker-Installation)
 
