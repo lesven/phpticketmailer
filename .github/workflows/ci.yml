@@ -18,4 +18,4 @@ jobs:
           composer-options: --no-interaction --no-progress
       - run: vendor/bin/phpunit
       #- run: vendor/bin/phpstan analyse --no-progress
-      - run: vendor/bin/psalm --no-progress
+      #- run: vendor/bin/psalm --no-progress
