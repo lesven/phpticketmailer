@@ -31,7 +31,19 @@ class SecuritySubscriberTest extends TestCase
     // Should not set a response (no redirect)
     $subscriber->onKernelRequest($event);
 
-    $this->assertNull($event->getResponse());
+        $request = Request::create('/bundles/some/file.js', 'GET');
+
+        // SecuritySubscriber calls $request->getSession(); provide a mock to avoid exception
+        $session = $this->createMock(SessionInterface::class);
+        $session->method('get')->willReturn(null);
+        $request->setSession($session);
+
+        $event = new RequestEvent($kernel, $request, HttpKernelInterface::MAIN_REQUEST);
+
+        // Should not set a response (no redirect)
+        $subscriber->onKernelRequest($event);
+
+        $this->assertNull($event->getResponse());
     }
 
     public function testRedirectsToLoginWhenNotAuthenticated(): void
