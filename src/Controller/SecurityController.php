@@ -28,8 +28,9 @@ class SecurityController extends AbstractController
     }
 
     /**
-     * @Route("/login", name="app_login")
+    * @Route("/login", name="app_login")
      */
+    #[Route('/login', name: 'app_login')]
     public function login(Request $request, SessionInterface $session): Response
     {
         // Wenn der Benutzer bereits authentifiziert ist, leite zum Dashboard um
@@ -85,8 +86,9 @@ class SecurityController extends AbstractController
     }
     
     /**
-     * @Route("/logout", name="app_logout")
+    * @Route("/logout", name="app_logout")
      */
+    #[Route('/logout', name: 'app_logout')]
     public function logout(SessionInterface $session): Response
     {
         $session->remove('is_authenticated');
@@ -94,8 +96,9 @@ class SecurityController extends AbstractController
     }
     
     /**
-     * @Route("/password", name="change_password")
+    * @Route("/password", name="change_password")
      */
+    #[Route('/password', name: 'change_password')]
     public function changePassword(Request $request): Response
     {
         $error = null;

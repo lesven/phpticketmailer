@@ -11,9 +11,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
-/**
- * @Route("/template")
- */
 class TemplateController extends AbstractController
 {
     private $projectDir;
@@ -25,9 +22,7 @@ class TemplateController extends AbstractController
         $this->slugger = $slugger;
     }
     
-    /**
-     * @Route("/", name="template_manage")
-     */
+    #[Route('/template/', name: 'template_manage')]
     public function manage(Request $request): Response
     {
         $templatePath = $this->getTemplatePath();
@@ -85,9 +80,7 @@ class TemplateController extends AbstractController
         ]);
     }
     
-    /**
-     * @Route("/download", name="template_download")
-     */
+    #[Route('/template/download', name: 'template_download')]
     public function download(): Response
     {
         $templatePath = $this->getTemplatePath();

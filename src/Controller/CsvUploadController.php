@@ -72,11 +72,11 @@ class CsvUploadController extends AbstractController
     
     /**
      * Zeigt das Formular zum Hochladen einer CSV-Datei an und verarbeitet die Übermittlung
-     * 
-     * @Route("/upload", name="csv_upload")
-     * @param Request $request HTTP-Anfrage
-     * @return Response HTTP-Antwort
+    *
+    * @param Request $request HTTP-Anfrage
+    * @return Response HTTP-Antwort
      */
+    #[Route('/upload', name: 'csv_upload')]
     public function upload(Request $request): Response
     {
         $form = $this->createForm(CsvUploadType::class);
@@ -115,10 +115,10 @@ class CsvUploadController extends AbstractController
      * Zeigt eine Seite an, auf der E-Mail-Adressen für unbekannte Benutzernamen eingegeben werden können.
      * Die eingegebenen E-Mail-Adressen werden neuen Benutzern zugeordnet und in der Datenbank gespeichert.
      * 
-     * @Route("/unknown-users", name="unknown_users")
-     * @param Request $request HTTP-Anfrage
-     * @return Response HTTP-Antwort
+    * @param Request $request HTTP-Anfrage
+    * @return Response HTTP-Antwort
      */
+    #[Route('/unknown-users', name: 'unknown_users')]
     public function unknownUsers(Request $request): Response
     {
         $session = $request->getSession();
@@ -159,10 +159,10 @@ class CsvUploadController extends AbstractController
      * Verwendet die in der Session gespeicherten Ticketdaten, um E-Mails zu versenden.
      * Unterstützt einen Testmodus, in dem E-Mails nicht tatsächlich versendet werden.
      * 
-     * @Route("/send-emails", name="send_emails")
-     * @param Request $request HTTP-Anfrage
-     * @return Response HTTP-Antwort
+    * @param Request $request HTTP-Anfrage
+    * @return Response HTTP-Antwort
      */
+    #[Route('/send-emails', name: 'send_emails')]
     public function sendEmails(Request $request): Response
     {
         $testMode = (bool)$request->query->get('testMode', 0);
