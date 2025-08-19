@@ -217,17 +217,16 @@ class EmailService
             } catch (\Exception $e) {
                 error_log('Error saving email record for ticket ' . $ticket['ticketId'] . ': ' . $e->getMessage());
                 // Erstelle einen Fehler-Datensatz stattdessen
-                $errorRecord = clone $emailRecord;
                 $errorRecord = new EmailSent();
                 // Copy relevant fields from $emailRecord to $errorRecord
                 $errorRecord->setTicketId($emailRecord->getTicketId());
                 $errorRecord->setUsername($emailRecord->getUsername());
                 $errorRecord->setTimestamp($emailRecord->getTimestamp());
-                $errorRecord->setTestMode($emailRecord->isTestMode());
+                $errorRecord->setTestMode($emailRecord->getTestMode());
                 $errorRecord->setStatus('error: database save failed - ' . substr($e->getMessage(), 0, 100));
-                $errorRecord->setEmailAddress($emailRecord->getEmailAddress());
+                $errorRecord->setEmail($emailRecord->getEmail());
                 $errorRecord->setSubject($emailRecord->getSubject());
-                $errorRecord->setBody($emailRecord->getBody());
+                $errorRecord->setTicketName($emailRecord->getTicketName());
                 // Add any other fields that need to be copied here
                 try {
                     $this->entityManager->persist($errorRecord);
