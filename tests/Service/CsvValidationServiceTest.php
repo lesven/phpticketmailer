@@ -89,4 +89,88 @@ class CsvValidationServiceTest extends TestCase
         @unlink($txt);
         @unlink($tmp);
     }
+
+    public function testIsValidEmailWithEmptyAndLongValues(): void
+    {
+        $this->assertFalse($this->svc->isValidEmail(''));
+        $longEmail = str_repeat('a', 64) . '@example.com';
+        $this->assertTrue($this->svc->isValidEmail($longEmail));
+    }
+
+    public function testIsValidEmailWithUnicode(): void
+    {
+        $this->assertFalse($this->svc->isValidEmail('ü@exämple.com'));
+    }
+
+    public function testIsValidTicketIdWithEmptyAndLongValues(): void
+    {
+        $this->assertFalse($this->svc->isValidTicketId(''));
+        $longId = str_repeat('A', 100);
+        $this->assertFalse($this->svc->isValidTicketId($longId)); // Annahme: zu lange IDs sind ungültig
+    }
+
+    public function testValidateCsvRowAllFieldsMissing(): void
+    {
+        $row = [];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 1);
+        $this->assertFalse($res['valid']);
+        $this->assertCount(3, $res['errors']);
+    }
+
+    public function testValidateCsvRowAllFieldsEmpty(): void
+    {
+        $row = ['email'=>'','ticketId'=>'','username'=>''];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 2);
+        $this->assertFalse($res['valid']);
+        $this->assertNotEmpty($res['errors']);
+    }
+
+    public function testValidateCsvRowAllFieldsValid(): void
+    {
+        $row = ['email'=>'foo@example.com','ticketId'=>'T1','username'=>'u1'];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 3);
+        $this->assertTrue($res['valid']);
+        $this->assertEmpty($res['errors']);
+    }
+
+    public function testValidateUploadedFileWithVariousExtensions(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        $csv = $tmp . '.csv';
+        $pdf = $tmp . '.pdf';
+        $exe = $tmp . '.exe';
+        copy($tmp, $csv);
+        copy($tmp, $pdf);
+        copy($tmp, $exe);
+        $this->assertNull($this->svc->validateUploadedFile(new \SplFileInfo($csv)));
+        try {
+            $this->svc->validateUploadedFile(new \SplFileInfo($pdf));
+            $this->fail('PDF should not be allowed');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Nur .csv und .txt Dateien sind erlaubt', $e->getMessage());
+        }
+        try {
+            $this->svc->validateUploadedFile(new \SplFileInfo($exe));
+            $this->fail('EXE should not be allowed');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Nur .csv und .txt Dateien sind erlaubt', $e->getMessage());
+        }
+        @unlink($csv);
+        @unlink($pdf);
+        @unlink($exe);
+        @unlink($tmp);
+    }
+
+    public function testValidateUploadedFileWithNoExtension(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        $file = new \SplFileInfo($tmp);
+        try {
+            $this->svc->validateUploadedFile($file);
+            $this->fail('File without extension should not be allowed');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Nur .csv und .txt Dateien sind erlaubt', $e->getMessage());
+        }
+        @unlink($tmp);
+    }
 }
