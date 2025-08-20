@@ -3,7 +3,7 @@
  * EmailLogController.php
  * 
  * Controller für das Versandprotokoll (Userstory 20).
- * Zeigt die letzten 100 versendeten E-Mails und ermöglicht die Suche nach Ticket-ID.
+ * Zeigt versendete E-Mails mit Paginierung und ermöglicht die Suche nach Ticket-ID.
  */
 
 namespace App\Controller;
@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\EmailSentRepository;
+use App\Service\PaginationService;
 
 class EmailLogController extends AbstractController
 {
@@ -24,22 +25,33 @@ class EmailLogController extends AbstractController
     }
 
     #[Route('/versandprotokoll', name: 'email_log')]
-    public function index(Request $request): Response
+    public function index(Request $request, PaginationService $paginationService): Response
     {
         $search = $request->query->get('search');
+        $filter = $request->query->get('filter', 'all');
+        $page = max(1, (int) $request->query->get('page', 1));
+
+        $queryBuilder = $this->emailSentRepository->createFilteredQueryBuilder($filter);
+
         if ($search) {
-            $emails = $this->emailSentRepository->createQueryBuilder('e')
-                ->where('e.ticketId LIKE :search')
-                ->setParameter('search', $search.'%')
-                ->orderBy('e.timestamp', 'DESC')
-                ->getQuery()
-                ->getResult();
+            $queryBuilder
+                ->andWhere('e.ticketId LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+
+            $emails = $queryBuilder->getQuery()->getResult();
+            $pagination = null;
         } else {
-            $emails = $this->emailSentRepository->findBy([], ['timestamp' => 'DESC'], 100);
+            $pagination = $paginationService->paginate($queryBuilder, $page, 50);
+            $emails = $pagination->results;
         }
+
         return $this->render('email_log/index.html.twig', [
             'emails' => $emails,
             'search' => $search,
+            'filter' => $filter,
+            'pagination' => $pagination,
+            'currentPage' => $pagination ? $pagination->currentPage : 1,
+            'totalPages' => $pagination ? $pagination->totalPages : 1,
         ]);
     }
 }

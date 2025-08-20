@@ -252,6 +252,16 @@ test_search_functionality() {
         log_error "Wildcard-Suche funktioniert nicht korrekt!"
         exit 1
     fi
+    
+    # Teste Fuzzy-Suche (partial match)
+    local fuzzy_response=$(curl -s -b "$COOKIES_FILE" "$BASE_URL/versandprotokoll?search=02")
+    
+    if echo "$fuzzy_response" | grep -q "TEST-002" && ! echo "$fuzzy_response" | grep -q "TEST-001"; then
+        log_success "Fuzzy-Suche funktioniert korrekt"
+    else
+        log_error "Fuzzy-Suche funktioniert nicht korrekt!"
+        exit 1
+    fi
 }
 
 test_status_display() {

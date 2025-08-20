@@ -149,8 +149,13 @@ class EmailService
                     $testMode,
                     'Nicht versendet – Mehrfaches Vorkommen in derselben CSV-Datei'
                 );
-                $this->entityManager->persist($emailRecord);
-                $sentEmails[] = $emailRecord;
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving duplicate record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
                 continue;
             }
             
@@ -159,18 +164,43 @@ class EmailService
                 $existingEmail = $existingTickets[$ticketId];
                 $formattedDate = $existingEmail->getTimestamp()->format('d.m.Y');
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket, 
-                    $currentTime, 
+                    $ticket,
+                    $currentTime,
                     $testMode,
                     'Nicht versendet – Ticket bereits verarbeitet am ' . $formattedDate
                 );
-                $this->entityManager->persist($emailRecord);
-                $sentEmails[] = $emailRecord;
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
+                $processedTicketIds[$ticketId] = true;
+                continue;
+            }
+
+            // Prüfe, ob der Benutzer von Umfragen ausgeschlossen ist
+            $user = $this->userRepository->findByUsername($ticket['username']);
+            if ($user && $user->isExcludedFromSurveys()) {
+                $emailRecord = $this->createSkippedEmailRecord(
+                    $ticket,
+                    $currentTime,
+                    $testMode,
+                    'Nicht versendet – Von Umfragen ausgeschlossen'
+                );
+                try {
+                    $this->entityManager->persist($emailRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $emailRecord;
+                } catch (\Exception $e) {
+                    error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
+                }
                 $processedTicketIds[$ticketId] = true;
                 continue;
             }
             
-            // Normaler E-Mail-Versand
+            // Normaler E-Mail-Versand (User existiert und ist nicht ausgeschlossen)
             $emailRecord = $this->processTicketEmail(
                 $ticket, 
                 $emailConfig, 
@@ -179,15 +209,41 @@ class EmailService
                 $currentTime
             );
             
-            $this->entityManager->persist($emailRecord);
-            $sentEmails[] = $emailRecord;
+            // Speichere jeden Datensatz einzeln, um Batch-Fehler zu vermeiden
+            try {
+                $this->entityManager->persist($emailRecord);
+                $this->entityManager->flush();
+                $sentEmails[] = $emailRecord;
+            } catch (\Exception $e) {
+                error_log('Error saving email record for ticket ' . $ticket['ticketId'] . ': ' . $e->getMessage());
+                // Erstelle einen Fehler-Datensatz stattdessen
+                $errorRecord = new EmailSent();
+                // Copy relevant fields from $emailRecord to $errorRecord
+                $errorRecord->setTicketId($emailRecord->getTicketId());
+                $errorRecord->setUsername($emailRecord->getUsername());
+                $errorRecord->setTimestamp($emailRecord->getTimestamp());
+                $errorRecord->setTestMode($emailRecord->getTestMode());
+                $errorRecord->setStatus('error: database save failed - ' . substr($e->getMessage(), 0, 100));
+                $errorRecord->setEmail($emailRecord->getEmail());
+                $errorRecord->setSubject($emailRecord->getSubject());
+                $errorRecord->setTicketName($emailRecord->getTicketName());
+                // Add any other fields that need to be copied here
+                try {
+                    $this->entityManager->persist($errorRecord);
+                    $this->entityManager->flush();
+                    $sentEmails[] = $errorRecord;
+                } catch (\Exception $innerE) {
+                    error_log('Critical: Could not save error record: ' . $innerE->getMessage());
+                }
+            }
             $processedTicketIds[$ticketId] = true;
         }
 
+        // Cleanup: Alle verbleibenden Datensätze (falls welche übrig sind)
         try {
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            error_log('Error saving email records: ' . $e->getMessage());
+            error_log('Error saving remaining email records: ' . $e->getMessage());
         }
 
         return $sentEmails;

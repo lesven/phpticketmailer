@@ -115,8 +115,8 @@ class UserValidator
             return false;
         }
         
-        // Nur alphanumerische Zeichen, Punkt, Unterstrich und Bindestrich erlaubt
-        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
+        // Nur alphanumerische Zeichen, Punkt, Unterstrich, Bindestrich und @ erlaubt
+        if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $username)) {
             return false;
         }
         
