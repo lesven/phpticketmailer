@@ -172,4 +172,49 @@ class MonitoringServiceTest extends TestCase
         $this->assertArrayHasKey('timestamp', $res);
         $this->assertInstanceOf(\DateTime::class, $res['timestamp']);
     }
+
+    public function testCheckDatabaseWhenCreateQueryBuilderThrows()
+    {
+        $this->connection->expects($this->once())->method('connect');
+
+        $exc = new \Exception('qb fail');
+        $this->userRepository->method('createQueryBuilder')->will($this->throwException($exc));
+
+        $query = $this->createMock(\Doctrine\ORM\AbstractQuery::class);
+        $query->method('getSingleScalarResult')->willReturn(0);
+        $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('getQuery')->willReturn($query);
+
+        $this->emailSentRepository->method('createQueryBuilder')->willReturn($qb);
+        $this->csvFieldConfigRepository->method('createQueryBuilder')->willReturn($qb);
+
+        $res = $this->monitoringService->checkDatabase();
+
+        $this->assertSame('error', $res['status']);
+        $this->assertSame('error', $res['tables']['users']['status']);
+        $this->assertStringContainsString('qb fail', $res['tables']['users']['error']);
+    }
+
+    public function testCheckDatabaseWhenRecordCountIsNull()
+    {
+        $this->connection->expects($this->once())->method('connect');
+
+        $query = $this->createMock(\Doctrine\ORM\AbstractQuery::class);
+        $query->method('getSingleScalarResult')->willReturn(null);
+        $qb = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('getQuery')->willReturn($query);
+
+        $this->userRepository->method('createQueryBuilder')->willReturn($qb);
+        $this->emailSentRepository->method('createQueryBuilder')->willReturn($qb);
+        $this->csvFieldConfigRepository->method('createQueryBuilder')->willReturn($qb);
+
+        $res = $this->monitoringService->checkDatabase();
+
+        $this->assertSame('ok', $res['status']);
+        $this->assertArrayHasKey('users', $res['tables']);
+        $this->assertArrayHasKey('recordCount', $res['tables']['users']);
+        $this->assertNull($res['tables']['users']['recordCount']);
+    }
 }
