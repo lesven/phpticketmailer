@@ -35,4 +35,78 @@ class CsvUploadOrchestratorTest extends TestCase
 
         @unlink($tmp);
     }
+
+    public function testProcessUploadNoUnknownUsers(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        file_put_contents($tmp, "a\n");
+        $uploaded = new UploadedFile($tmp, 'test.csv', null, null, true);
+
+        $processor = $this->createMock(\App\Service\CsvProcessor::class);
+        $processor->method('process')->willReturn(['validTickets'=>['t1'], 'invalidRows'=>[], 'unknownUsers'=>[]]);
+
+        $repo = $this->createMock(\App\Repository\CsvFieldConfigRepository::class);
+        $session = $this->createMock(\App\Service\SessionManager::class);
+        $session->method('getUnknownUsers')->willReturn([]);
+        $session->method('storeUploadResults')->willReturnCallback(function() { /* void */ });
+        $creator = $this->createMock(\App\Service\UserCreator::class);
+        $cfg = $this->createMock(CsvFieldConfig::class);
+
+        $orchestrator = new CsvUploadOrchestrator($processor, $repo, $session, $creator);
+        $res = $orchestrator->processUpload($uploaded, true, false, $cfg);
+        $this->assertIsObject($res);
+        if (property_exists($res, 'redirectRoute')) {
+            $this->assertNotEquals('unknown_users', $res->redirectRoute);
+        }
+        @unlink($tmp);
+    }
+
+    public function testProcessUploadOnlyInvalidRows(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        file_put_contents($tmp, "a\n");
+        $uploaded = new UploadedFile($tmp, 'test.csv', null, null, true);
+
+        $processor = $this->createMock(\App\Service\CsvProcessor::class);
+        $processor->method('process')->willReturn(['validTickets'=>[], 'invalidRows'=>['row1','row2'], 'unknownUsers'=>[]]);
+
+        $repo = $this->createMock(\App\Repository\CsvFieldConfigRepository::class);
+        $session = $this->createMock(\App\Service\SessionManager::class);
+        $session->method('getUnknownUsers')->willReturn([]);
+        $session->method('storeUploadResults')->willReturnCallback(function() { /* void */ });
+        $creator = $this->createMock(\App\Service\UserCreator::class);
+        $cfg = $this->createMock(CsvFieldConfig::class);
+
+        $orchestrator = new CsvUploadOrchestrator($processor, $repo, $session, $creator);
+        $res = $orchestrator->processUpload($uploaded, true, false, $cfg);
+        $this->assertIsObject($res);
+        if (property_exists($res, 'redirectRoute')) {
+            $this->assertNotEquals('unknown_users', $res->redirectRoute);
+        }
+        @unlink($tmp);
+    }
+
+    public function testSessionHandlingMultipleUploads(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        file_put_contents($tmp, "a\n");
+        $uploaded = new UploadedFile($tmp, 'test.csv', null, null, true);
+
+        $processor = $this->createMock(\App\Service\CsvProcessor::class);
+        $processor->method('process')->willReturn(['validTickets'=>['t1'], 'invalidRows'=>[], 'unknownUsers'=>['u1']]);
+
+        $repo = $this->createMock(\App\Repository\CsvFieldConfigRepository::class);
+        $session = $this->createMock(\App\Service\SessionManager::class);
+        $session->method('getUnknownUsers')->willReturnOnConsecutiveCalls(['u1'], ['u2']);
+        $session->method('storeUploadResults')->willReturnCallback(function() { /* void */ });
+        $creator = $this->createMock(\App\Service\UserCreator::class);
+        $cfg = $this->createMock(CsvFieldConfig::class);
+
+        $orchestrator = new CsvUploadOrchestrator($processor, $repo, $session, $creator);
+        $res1 = $orchestrator->processUpload($uploaded, true, false, $cfg);
+        $this->assertEquals('unknown_users', $res1->redirectRoute);
+        $res2 = $orchestrator->processUpload($uploaded, true, false, $cfg);
+        $this->assertEquals('unknown_users', $res2->redirectRoute);
+        @unlink($tmp);
+    }
 }
