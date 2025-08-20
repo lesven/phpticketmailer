@@ -19,16 +19,16 @@ class UserImportType extends AbstractType
                 'mapped' => false,
                 'required' => true,
                 'constraints' => [
-                    new File([
-                        'maxSize' => '1024k',
-                        'mimeTypes' => [
+                    new File(
+                        maxSize: '1024k',
+                        mimeTypes: [
                             'text/csv',
                             'text/plain',
                             'application/csv',
                             'application/vnd.ms-excel',
                         ],
-                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige CSV-Datei hoch.',
-                    ])
+                        mimeTypesMessage: 'Bitte laden Sie eine gültige CSV-Datei hoch.',
+                    )
                 ],
                 'attr' => ['class' => 'form-control'],
                 'help' => 'Die CSV-Datei sollte die Spalten "email" und "benutzername" enthalten.',

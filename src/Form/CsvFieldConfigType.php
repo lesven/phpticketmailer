@@ -25,7 +25,7 @@ class CsvFieldConfigType extends AbstractType
                 ],
                 'help' => 'Name der Spalte für die Ticket-ID (Standard: ticketId)',
                 'constraints' => [
-                    new Length(['max' => 50, 'maxMessage' => 'Der Spaltenname darf maximal 50 Zeichen lang sein'])
+                    new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
             ])
             ->add('usernameField', TextType::class, [
@@ -38,7 +38,7 @@ class CsvFieldConfigType extends AbstractType
                 ],
                 'help' => 'Name der Spalte für den Benutzernamen (Standard: username)',
                 'constraints' => [
-                    new Length(['max' => 50, 'maxMessage' => 'Der Spaltenname darf maximal 50 Zeichen lang sein'])
+                    new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
             ])
             ->add('ticketNameField', TextType::class, [
@@ -51,7 +51,7 @@ class CsvFieldConfigType extends AbstractType
                 ],
                 'help' => 'Name der Spalte für den Ticket-Namen (Standard: ticketName)',
                 'constraints' => [
-                    new Length(['max' => 50, 'maxMessage' => 'Der Spaltenname darf maximal 50 Zeichen lang sein'])
+                    new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
             ]);
     }

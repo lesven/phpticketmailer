@@ -29,7 +29,7 @@ class CsvProcessorTest extends TestCase
             $path = $file instanceof \Symfony\Component\HttpFoundation\File\UploadedFile ? $file->getPathname() : $file;
             return fopen($path, 'r');
         }
-        public function readHeader($handle): array { return fgetcsv($handle); }
+    public function readHeader($handle): array { return fgetcsv($handle, 1000, ',', '"', '\\'); }
         public function validateRequiredColumns(array $header, array $requiredColumns): array {
             $indices = [];
             foreach ($requiredColumns as $col) {
@@ -41,7 +41,7 @@ class CsvProcessorTest extends TestCase
         }
         public function processRows($handle, callable $rowProcessor): void {
             $rowNumber = 1;
-            while (($row = fgetcsv($handle)) !== false) {
+            while (($row = fgetcsv($handle, 1000, ',', '"', '\\')) !== false) {
                 $rowNumber++;
                 $rowProcessor($row, $rowNumber);
             }

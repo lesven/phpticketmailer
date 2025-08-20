@@ -24,7 +24,7 @@ class EmailSendingException extends TicketMailerException
     /**
      * Erstellt eine Exception für Verbindungsfehler zum SMTP-Server
      */
-    public static function connectionError(string $host, int $port, \Throwable $previous = null): self
+    public static function connectionError(string $host, int $port, ?\Throwable $previous = null): self
     {
         return new self(
             message: "Verbindung zum SMTP-Server {$host}:{$port} fehlgeschlagen",
@@ -40,7 +40,7 @@ class EmailSendingException extends TicketMailerException
     /**
      * Erstellt eine Exception für Authentifizierungsfehler
      */
-    public static function authenticationError(string $username, \Throwable $previous = null): self
+    public static function authenticationError(string $username, ?\Throwable $previous = null): self
     {
         return new self(
             message: "SMTP-Authentifizierung für Benutzer '{$username}' fehlgeschlagen",
