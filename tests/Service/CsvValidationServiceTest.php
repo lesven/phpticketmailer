@@ -173,4 +173,63 @@ class CsvValidationServiceTest extends TestCase
         }
         @unlink($tmp);
     }
+
+    public function testIsValidEmailWithSpecialCases(): void
+    {
+        $this->assertFalse($this->svc->isValidEmail('plainaddress'));
+        $this->assertFalse($this->svc->isValidEmail('@missinglocal.com'));
+        $this->assertFalse($this->svc->isValidEmail('missingdomain@'));
+        $this->assertFalse($this->svc->isValidEmail('user@domain@domain.com'));
+        $this->assertFalse($this->svc->isValidEmail('user@domain..com'));
+        $this->assertFalse($this->svc->isValidEmail('user@.com'));
+    }
+
+    public function testIsValidTicketIdWithNumbersAndLetters(): void
+    {
+        $this->assertTrue($this->svc->isValidTicketId('ABC123'));
+        $this->assertTrue($this->svc->isValidTicketId('123456'));
+        $this->assertTrue($this->svc->isValidTicketId('TICKET_001'));
+        $this->assertFalse($this->svc->isValidTicketId('!@#$%^&*()'));
+        $this->assertFalse($this->svc->isValidTicketId('äöüß'));
+    }
+
+    public function testValidateCsvRowWithMixedOrder(): void
+    {
+        $row = ['username'=>'u1','ticketId'=>'T1','email'=>'foo@example.com'];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 4);
+        $this->assertTrue($res['valid']);
+        $this->assertEmpty($res['errors']);
+    }
+
+    public function testValidateCsvRowWithExtraFields(): void
+    {
+        $row = ['email'=>'foo@example.com','ticketId'=>'T1','username'=>'u1','extra'=>'x'];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 5);
+        $this->assertTrue($res['valid']);
+        $this->assertEmpty($res['errors']);
+    }
+
+    public function testValidateCsvRowWithNullValues(): void
+    {
+        $row = ['email'=>null,'ticketId'=>null,'username'=>null];
+        $res = $this->svc->validateCsvRow($row, ['email','ticketId','username'], 6);
+        $this->assertFalse($res['valid']);
+        $this->assertNotEmpty($res['errors']);
+    }
+
+    public function testValidateUploadedFileWithEmptyFile(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        $csv = $tmp . '.csv';
+        file_put_contents($csv, '');
+        $this->assertNull($this->svc->validateUploadedFile(new \SplFileInfo($csv)));
+        @unlink($csv);
+        @unlink($tmp);
+    }
+
+    public function testValidateUploadedFileWithFalseObject(): void
+    {
+        $this->expectException(\TypeError::class);
+        $this->svc->validateUploadedFile(false);
+    }
 }
