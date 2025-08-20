@@ -18,7 +18,7 @@ WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
 
-.PHONY: help build up up-d down restart ps logs logs-php exec-php composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+.PHONY: help build up up-d down restart ps logs logs-php exec-php console composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
@@ -31,6 +31,7 @@ help:
 	@echo "  make logs            -> Logs aller Services (folgen)"
 	@echo "  make logs-php        -> Logs des PHP-Service"
 	@echo "  make exec-php        -> Interaktiv in den PHP-Container (bash)"
+	@echo "  make console         -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
 	@echo "  make composer-install-> composer install im PHP-Container"
 	@echo "  make composer-update -> composer update im PHP-Container"
 	@echo "  make cache-clear     -> Symfony Cache leeren (dev & prod)"
@@ -76,6 +77,11 @@ logs-php:
 exec-php:
 	@echo "==> Exec into $(PHP_SERVICE)"
 	@$(DC_BASE) $(DC_ARGS) exec $(PHP_SERVICE) bash
+
+## Symfony Console passthrough: make console ARGS="cache:clear --env=prod"
+console:
+	@echo "==> Running php bin/console in $(PHP_SERVICE): $(ARGS)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console $(ARGS)
 
 ## Composer helpers (führen Composer im PHP-Container aus)
 composer-install:
