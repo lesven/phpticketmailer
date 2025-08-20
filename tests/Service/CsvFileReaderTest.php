@@ -299,4 +299,65 @@ class CsvFileReaderTest extends TestCase
 
         $this->csvFileReader->closeHandle($handle);
     }
+
+    public function testReadHeaderWithUnicodeCharacters(): void
+    {
+        $content = "nämé,émail,âge\nJöhn,jöhn@example.com,30\n";
+        file_put_contents($this->tempFile, $content);
+
+        $handle = $this->csvFileReader->openCsvFile($this->tempFile);
+        $header = $this->csvFileReader->readHeader($handle);
+
+        $this->assertEquals(['nämé', 'émail', 'âge'], $header);
+        $this->csvFileReader->closeHandle($handle);
+    }
+
+    public function testReadHeaderWithDuplicateColumns(): void
+    {
+        $content = "id,name,id\n1,John,2\n";
+        file_put_contents($this->tempFile, $content);
+
+        $handle = $this->csvFileReader->openCsvFile($this->tempFile);
+        $header = $this->csvFileReader->readHeader($handle);
+
+        $this->assertEquals(['id', 'name', 'id'], $header);
+        $this->csvFileReader->closeHandle($handle);
+    }
+
+    public function testProcessRowsWithMalformedRow(): void
+    {
+        $content = "id,name\n1,John\n2\n3,Jane,Extra\n";
+        file_put_contents($this->tempFile, $content);
+
+        $handle = $this->csvFileReader->openCsvFile($this->tempFile);
+        $this->csvFileReader->readHeader($handle);
+
+        $malformed = [];
+        $this->csvFileReader->processRows($handle, function($row, $rowNumber) use (&$malformed) {
+            if (count($row) !== 2) {
+                $malformed[] = $rowNumber;
+            }
+        });
+        $this->assertContains(3, $malformed); // Zeile mit zu wenig Spalten
+        $this->assertContains(4, $malformed); // Zeile mit zu vielen Spalten
+        $this->csvFileReader->closeHandle($handle);
+    }
+
+    public function testProcessRowsWithLargeFile(): void
+    {
+        $rows = [];
+        $content = "id,name\n";
+        for ($i = 1; $i <= 1000; $i++) {
+            $content .= "$i,Name$i\n";
+        }
+        file_put_contents($this->tempFile, $content);
+
+        $handle = $this->csvFileReader->openCsvFile($this->tempFile);
+        $this->csvFileReader->readHeader($handle);
+        $this->csvFileReader->processRows($handle, function($row) use (&$rows) {
+            $rows[] = $row;
+        });
+        $this->assertCount(1000, $rows);
+        $this->csvFileReader->closeHandle($handle);
+    }
 }
