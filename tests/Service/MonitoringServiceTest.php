@@ -137,4 +137,39 @@ class MonitoringServiceTest extends TestCase
         $this->assertEquals('error', $result['status']);
         $this->assertEquals('error', $result['checks']['database']['status']);
     }
+
+    public function testConstructorDefaultBaseUrlIsSet(): void
+    {
+        $svc = new \App\Service\MonitoringService(
+            $this->connection,
+            $this->userRepository,
+            $this->emailSentRepository,
+            $this->csvFieldConfigRepository
+        );
+
+        $ref = new \ReflectionClass($svc);
+        $prop = $ref->getProperty('baseUrl');
+        $prop->setAccessible(true);
+
+        $this->assertSame('http://localhost:8090', $prop->getValue($svc));
+    }
+
+    public function testCheckSystemHealthReturnsDateTimeTimestamp(): void
+    {
+        $this->connection->expects($this->once())->method('connect');
+        $queryBuilder = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $query = $this->createMock(\Doctrine\ORM\AbstractQuery::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('getQuery')->willReturn($query);
+        $query->method('getSingleScalarResult')->willReturn(0);
+
+        $this->userRepository->method('createQueryBuilder')->willReturn($queryBuilder);
+        $this->emailSentRepository->method('createQueryBuilder')->willReturn($queryBuilder);
+        $this->csvFieldConfigRepository->method('createQueryBuilder')->willReturn($queryBuilder);
+
+        $res = $this->monitoringService->checkSystemHealth();
+
+        $this->assertArrayHasKey('timestamp', $res);
+        $this->assertInstanceOf(\DateTime::class, $res['timestamp']);
+    }
 }
