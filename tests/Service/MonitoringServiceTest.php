@@ -112,7 +112,9 @@ class MonitoringServiceTest extends TestCase
         $this->assertArrayHasKey('timestamp', $result);
         $this->assertArrayHasKey('checks', $result);
         $this->assertArrayHasKey('database', $result['checks']);
-    }    public function testCheckSystemHealthWhenComponentFails()
+    }
+    
+    public function testCheckSystemHealthWhenComponentFails()
     {
         // Mock the component check methods
         $monitoringService = $this->getMockBuilder(MonitoringService::class)
