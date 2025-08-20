@@ -20,21 +20,34 @@ class CsvProcessorTest extends TestCase
 
         $uploaded = new UploadedFile($tmp, 'test.csv', null, null, true);
 
-        $reader = $this->createMock(CsvFileReader::class);
-        $reader->method('openCsvFile')->willReturn(fopen($tmp, 'r'));
-        $reader->method('readHeader')->willReturn(['ticketId','username','ticketName']);
-        $reader->method('validateRequiredColumns')->willReturn(['ticketId'=>0,'username'=>1,'ticketName'=>2]);
-        $reader->method('processRows')->willReturnCallback(function($_handle, $rowCallback) use ($tmp) {
-            // ignore the provided handle and read directly from the temp file
-            $h = fopen($tmp, 'r');
-            fgetcsv($h); // skip header
-            $n = 1;
-            while (($r = fgetcsv($h)) !== false) {
-                $n++;
-                $rowCallback($r, $n);
+    // Test stub for CsvFileReader behaviour (ensures correct processRows callback usage)
+    $tmpPath = $tmp;
+    $reader = new class($tmpPath) extends CsvFileReader {
+        private string $path;
+        public function __construct(string $path) { parent::__construct(',', 1000); $this->path = $path; }
+        public function openCsvFile($file) {
+            $path = $file instanceof \Symfony\Component\HttpFoundation\File\UploadedFile ? $file->getPathname() : $file;
+            return fopen($path, 'r');
+        }
+        public function readHeader($handle): array { return fgetcsv($handle); }
+        public function validateRequiredColumns(array $header, array $requiredColumns): array {
+            $indices = [];
+            foreach ($requiredColumns as $col) {
+                $i = array_search($col, $header);
+                if ($i === false) throw new \Exception('missing');
+                $indices[$col] = $i;
             }
-            fclose($h);
-        });
+            return $indices;
+        }
+        public function processRows($handle, callable $rowProcessor): void {
+            $rowNumber = 1;
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNumber++;
+                $rowProcessor($row, $rowNumber);
+            }
+        }
+        public function closeHandle($handle): void { if (is_resource($handle)) { fclose($handle); } }
+    };
 
         $userValidator = $this->createMock(UserValidator::class);
         $userValidator->method('identifyUnknownUsers')->willReturn(['user3']);
