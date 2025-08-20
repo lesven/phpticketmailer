@@ -18,7 +18,7 @@ WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
 
-.PHONY: help build up up-d down restart ps logs logs-php exec-php composer-install composer-update cache-clear cache-warmup migrate migrate-status test fresh recreate-db
+.PHONY: help build up up-d down restart ps logs logs-php exec-php composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
@@ -86,6 +86,12 @@ composer-update:
 	@echo "==> composer update im $(PHP_SERVICE)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) composer update --no-interaction
 
+## Update only phpunit in composer.lock (sauberer als full update)
+composer-update-phpunit:
+	@echo "==> composer update phpunit/phpunit im $(PHP_SERVICE)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) composer update phpunit/phpunit --with-dependencies --no-interaction || \
+		echo "composer update phpunit failed"
+
 ## Symfony cache
 cache-clear:
 	@echo "==> symfony cache:clear (dev & prod)"
@@ -112,6 +118,11 @@ migrate:
 test:
 	@echo "==> Running PHPUnit tests inside $(PHP_SERVICE)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) bash -lc "if [ -f vendor/bin/phpunit ]; then vendor/bin/phpunit --colors=always; else echo 'phpunit not found, run composer install first'; exit 1; fi"
+
+## Generate code coverage (HTML + text summary)
+coverage:
+	@echo "==> Running PHPUnit coverage inside $(PHP_SERVICE)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) /bin/sh -lc "echo '=== php -v ===' && php -v && echo '=== php -m (xdebug?) ===' && php -m | grep -i xdebug || true && if [ -f vendor/bin/phpunit ]; then mkdir -p var/coverage && XDEBUG_MODE=coverage XDEBUG_CONFIG='start_with_request=1' vendor/bin/phpunit --colors=always --coverage-html var/coverage --coverage-text; else echo 'phpunit not found, run composer install first'; exit 1; fi"
 
 ## Recreate DB: stop, remove volumes and bring up database only
 
