@@ -18,7 +18,7 @@ WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
 
-.PHONY: help build up up-d down restart ps logs logs-php exec-php composer-install composer-update cache-clear cache-warmup migrate migrate-status test fresh recreate-db
+.PHONY: help build up up-d up-foreground down restart ps logs logs-php exec-php composer-install composer-update cache-clear cache-warmup migrate migrate-status test fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
