@@ -86,6 +86,12 @@ composer-update:
 	@echo "==> composer update im $(PHP_SERVICE)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) composer update --no-interaction
 
+## Update only phpunit in composer.lock (sauberer als full update)
+composer-update-phpunit:
+	@echo "==> composer update phpunit/phpunit im $(PHP_SERVICE)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) composer update phpunit/phpunit --with-dependencies --no-interaction || \
+		echo "composer update phpunit failed"
+
 ## Symfony cache
 cache-clear:
 	@echo "==> symfony cache:clear (dev & prod)"

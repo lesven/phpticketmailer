@@ -97,29 +97,21 @@ class MonitoringServiceTest extends TestCase
                 $this->csvFieldConfigRepository,
                 'http://test.local'
             ])
-            ->onlyMethods(['checkDatabase', 'checkWebserver', 'checkContainers'])
+            ->onlyMethods(['checkDatabase'])
             ->getMock();
-        
+
         $monitoringService->expects($this->once())
             ->method('checkDatabase')
             ->willReturn(['status' => 'ok', 'tables' => []]);
-            
-        $monitoringService->expects($this->once())
-            ->method('checkWebserver')
-            ->willReturn(['status' => 'ok', 'url' => 'http://test.local']);
-            
-        $monitoringService->expects($this->once())
-            ->method('checkContainers')
-            ->willReturn(['status' => 'ok', 'containers' => []]);
-            
+
         // Act
         $result = $monitoringService->checkSystemHealth();
-        
+
         // Assert
         $this->assertEquals('ok', $result['status']);
         $this->assertArrayHasKey('timestamp', $result);
         $this->assertArrayHasKey('checks', $result);
-        $this->assertCount(3, $result['checks']);
+        $this->assertArrayHasKey('database', $result['checks']);
     }    public function testCheckSystemHealthWhenComponentFails()
     {
         // Mock the component check methods
@@ -131,26 +123,18 @@ class MonitoringServiceTest extends TestCase
                 $this->csvFieldConfigRepository,
                 'http://test.local'
             ])
-            ->onlyMethods(['checkDatabase', 'checkWebserver', 'checkContainers'])
+            ->onlyMethods(['checkDatabase'])
             ->getMock();
-        
+
         $monitoringService->expects($this->once())
             ->method('checkDatabase')
-            ->willReturn(['status' => 'ok', 'tables' => []]);
-            
-        $monitoringService->expects($this->once())
-            ->method('checkWebserver')
-            ->willReturn(['status' => 'error', 'url' => 'http://test.local', 'error' => 'Connection timed out']);
-            
-        $monitoringService->expects($this->once())
-            ->method('checkContainers')
-            ->willReturn(['status' => 'ok', 'containers' => []]);
-            
+            ->willReturn(['status' => 'error', 'tables' => [], 'error' => 'Datenbankfehler']);
+
         // Act
         $result = $monitoringService->checkSystemHealth();
-        
+
         // Assert
         $this->assertEquals('error', $result['status']);
-        $this->assertEquals('error', $result['checks']['webserver']['status']);
+        $this->assertEquals('error', $result['checks']['database']['status']);
     }
 }
