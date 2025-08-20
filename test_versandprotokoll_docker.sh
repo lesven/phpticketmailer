@@ -290,6 +290,16 @@ test_docker_search_functionality() {
         log_error "Docker-Wildcard-Suche funktioniert nicht korrekt!"
         exit 1
     fi
+    
+    # Teste Fuzzy-Suche (partial match)
+    local fuzzy_response=$(curl -s -b "$COOKIES_FILE" "$BASE_URL/versandprotokoll?search=002")
+    
+    if echo "$fuzzy_response" | grep -q "DOCKERTEST-002" && ! echo "$fuzzy_response" | grep -q "DOCKERTEST-001"; then
+        log_success "Docker-Fuzzy-Suche funktioniert korrekt"
+    else
+        log_error "Docker-Fuzzy-Suche funktioniert nicht korrekt!"
+        exit 1
+    fi
 }
 
 test_docker_performance() {

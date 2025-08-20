@@ -36,7 +36,7 @@ class EmailLogController extends AbstractController
         if ($search) {
             $queryBuilder
                 ->andWhere('e.ticketId LIKE :search')
-                ->setParameter('search', $search . '%');
+                ->setParameter('search', '%' . $search . '%');
 
             $emails = $queryBuilder->getQuery()->getResult();
             $pagination = null;
