@@ -22,4 +22,12 @@ final class UserTest extends TestCase
         $this->assertSame('bob@example.local', $u->getEmail());
         $this->assertTrue($u->isExcludedFromSurveys());
     }
+
+    public function testSetEmailNullRaisesTypeError(): void
+    {
+        $this->expectException(\TypeError::class);
+        $u = new User();
+        /** @phpstan-ignore-next-line */
+        $u->setEmail(null);
+    }
 }

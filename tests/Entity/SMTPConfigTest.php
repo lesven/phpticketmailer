@@ -49,4 +49,25 @@ final class SMTPConfigTest extends TestCase
         $dsn = $c->getDSN();
         $this->assertSame('smtp://localhost:25', $dsn);
     }
+
+    /**
+     * @dataProvider invalidConfigProvider
+     */
+    public function testInvalidConfigsThrowTypeError($host, $port): void
+    {
+        $this->expectException(\TypeError::class);
+        $c = new SMTPConfig();
+        /** @phpstan-ignore-next-line */
+        $c->setHost($host);
+        /** @phpstan-ignore-next-line */
+        $c->setPort($port);
+    }
+
+    public static function invalidConfigProvider(): array
+    {
+        return [
+            'null host' => [null, 25],
+            'string port' => ['smtp.local', 'not-a-port'],
+        ];
+    }
 }

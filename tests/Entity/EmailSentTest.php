@@ -43,4 +43,20 @@ final class EmailSentTest extends TestCase
 
         $this->assertSame('2025-08-20 12:34:56', $e->getFormattedTimestamp());
     }
+
+  public function testSettingInvalidTimestampTypeRaisesTypeError(): void
+  {
+    $this->expectException(\TypeError::class);
+    $e = new EmailSent();
+    /** @phpstan-ignore-next-line */
+    $e->setTimestamp('not a datetime');
+  }
+
+  public function testSetTestModeTypeErrorOnNull(): void
+  {
+    $this->expectException(\TypeError::class);
+    $e = new EmailSent();
+    /** @phpstan-ignore-next-line */
+    $e->setTestMode(null);
+  }
 }

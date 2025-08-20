@@ -21,4 +21,24 @@ final class AdminPasswordTest extends TestCase
         $this->assertSame($entity, $chain2);
         $this->assertSame('hashed', $entity->getPassword());
     }
+
+    public function testSetPlainPasswordNullAndEmpty(): void
+    {
+        $entity = new AdminPassword();
+
+        $entity->setPlainPassword(null);
+        $this->assertNull($entity->getPlainPassword());
+
+        $entity->setPlainPassword('');
+        $this->assertSame('', $entity->getPlainPassword());
+    }
+
+    public function testSetPasswordTypeErrorOnNull(): void
+    {
+        $this->expectException(\TypeError::class);
+        $entity = new AdminPassword();
+        // setPassword requires string, passing null should raise TypeError
+        /** @phpstan-ignore-next-line */
+        $entity->setPassword(null);
+    }
 }
