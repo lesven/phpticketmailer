@@ -64,7 +64,8 @@ class CsvFileReader
      */
     public function readHeader($handle): array
     {
-        $header = fgetcsv($handle, $this->maxLineLength, $this->delimiter);
+    // Provide enclosure and escape to avoid deprecation warning in newer PHP versions
+    $header = fgetcsv($handle, $this->maxLineLength, $this->delimiter, '"', '\\');
         if ($header === false) {
             throw new \Exception('CSV-Header konnte nicht gelesen werden');
         }
@@ -114,7 +115,7 @@ class CsvFileReader
     {
         $rowNumber = 1; // Header ist Zeile 1
         
-        while (($row = fgetcsv($handle, $this->maxLineLength, $this->delimiter)) !== false) {
+    while (($row = fgetcsv($handle, $this->maxLineLength, $this->delimiter, '"', '\\')) !== false) {
             $rowNumber++;
             $rowProcessor($row, $rowNumber);
         }

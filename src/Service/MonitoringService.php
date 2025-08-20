@@ -39,8 +39,10 @@ class MonitoringService
     /**
      * @var CsvFieldConfigRepository
      */
-    private $csvFieldConfigRepository;    /**
-     * @var string 
+    private $csvFieldConfigRepository;
+
+    /**
+     * @var string|null
      */
     private $baseUrl;
 
@@ -58,7 +60,7 @@ class MonitoringService
         UserRepository $userRepository,
         EmailSentRepository $emailSentRepository,
         CsvFieldConfigRepository $csvFieldConfigRepository,
-        string $baseUrl = null
+    ?string $baseUrl = null
     ) {
         $this->connection = $connection;
         $this->userRepository = $userRepository;

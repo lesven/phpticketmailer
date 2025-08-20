@@ -51,7 +51,7 @@ class CsvProcessingException extends TicketMailerException
     /**
      * Erstellt eine Exception für Datei-I/O-Probleme
      */
-    public static function fileReadError(string $filename, \Throwable $previous = null): self
+    public static function fileReadError(string $filename, ?\Throwable $previous = null): self
     {
         return new self(
             message: "Die CSV-Datei '{$filename}' konnte nicht gelesen werden",

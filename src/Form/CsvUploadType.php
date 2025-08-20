@@ -43,9 +43,9 @@ class CsvUploadType extends AbstractType
                 'mapped' => false, // Nicht an eine Entitätseigenschaft gebunden
                 'required' => true, // Datei ist erforderlich
                 'constraints' => [
-                    new File([
-                        'maxSize' => '1024k', // Maximale Dateigröße: 1MB
-                        'mimeTypes' => [
+                    new File(
+                        maxSize: '1024k', // Maximale Dateigröße: 1MB
+                        mimeTypes: [
                             'text/csv',
                             'text/plain',
                             'application/csv',
@@ -53,8 +53,8 @@ class CsvUploadType extends AbstractType
                             'text/comma-separated-values',
                             'text/x-comma-separated-values',
                         ],
-                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige CSV-Datei hoch',
-                    ])
+                        mimeTypesMessage: 'Bitte laden Sie eine gültige CSV-Datei hoch',
+                    )
                 ],
                 'attr' => ['class' => 'form-control'], // Bootstrap-Styling
                 'help' => 'Die CSV-Datei muss die konfigurierten Spalten enthalten',
