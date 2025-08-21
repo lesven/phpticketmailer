@@ -139,10 +139,12 @@ class CsvProcessor
      */
     private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): array
     {
+        $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? '';
+        $ticketName = mb_substr($ticketNameRaw, 0, 50);
         return [
             'ticketId' => $row[$columnIndices[$fieldMapping['ticketId']]],
             'username' => $row[$columnIndices[$fieldMapping['username']]],
-            'ticketName' => $row[$columnIndices[$fieldMapping['ticketName']]] ?: null,
+            'ticketName' => $ticketName ?: null,
         ];
     }
     
