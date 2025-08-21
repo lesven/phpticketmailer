@@ -21,14 +21,14 @@ final class Version20250530120000 extends AbstractMigration
         // Tabelle für CSV-Feldkonfiguration erstellen (MariaDB/MySQL)
         $this->addSql('CREATE TABLE csv_field_config (
             id INT AUTO_INCREMENT NOT NULL, 
-            ticket_id_field VARCHAR(50) NOT NULL DEFAULT \'ticketId\', 
-            username_field VARCHAR(50) NOT NULL DEFAULT \'username\', 
-            ticket_name_field VARCHAR(50) NOT NULL DEFAULT \'ticketName\',
+            ticket_id_field VARCHAR(50) NOT NULL DEFAULT \'Vorgangsschlüssel\', 
+            username_field VARCHAR(50) NOT NULL DEFAULT \'Autor\', 
+            ticket_name_field VARCHAR(50) NOT NULL DEFAULT \'Zusammenfassung\',
             PRIMARY KEY(id)
         ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         
         // Standardkonfiguration einfügen
-        $this->addSql('INSERT INTO csv_field_config (ticket_id_field, username_field, ticket_name_field) VALUES (\'ticketId\', \'username\', \'ticketName\')');
+        $this->addSql('INSERT INTO csv_field_config (ticket_id_field, username_field, ticket_name_field) VALUES (\'Vorgangsschlüssel\', \'Autor\', \'Zusammenfassung\')');
     }
 
     public function down(Schema $schema): void
