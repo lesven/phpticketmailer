@@ -1,0 +1,30 @@
+<?php
+namespace App\Tests\Service;
+
+use PHPUnit\Framework\TestCase;
+use App\Service\CsvProcessor;
+
+class CsvProcessorSimpleTest extends TestCase
+{
+    public function testTicketNameIsTruncatedTo50Chars()
+    {
+        // Dummy-Objekte für die Abhängigkeiten
+        $reader = $this->createMock(\App\Service\CsvFileReader::class);
+        $validator = $this->createMock(\App\Service\UserValidator::class);
+        $requestStack = $this->createMock(\Symfony\Component\HttpFoundation\RequestStack::class);
+
+        $processor = new CsvProcessor($reader, $validator, $requestStack);
+
+        $row = [0 => '123', 1 => 'user', 2 => str_repeat('X', 60)];
+        $columnIndices = ['ticketId' => 0, 'username' => 1, 'ticketName' => 2];
+        $fieldMapping = ['ticketId' => 'ticketId', 'username' => 'username', 'ticketName' => 'ticketName'];
+
+        // Nutze Reflection, um die private Methode zu testen
+        $method = new \ReflectionMethod($processor, 'createTicketFromRow');
+        $method->setAccessible(true);
+        $result = $method->invoke($processor, $row, $columnIndices, $fieldMapping);
+
+        $this->assertEquals(50, mb_strlen($result['ticketName']));
+        $this->assertEquals(substr(str_repeat('X', 60), 0, 50), $result['ticketName']);
+    }
+}

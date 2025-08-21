@@ -9,15 +9,15 @@ final class CsvFieldConfigTest extends TestCase
     {
         $config = new CsvFieldConfig();
 
-        $this->assertSame('ticketId', $config->getTicketIdField());
-        $this->assertSame('username', $config->getUsernameField());
-        $this->assertSame('ticketName', $config->getTicketNameField());
+        $this->assertSame('Vorgangsschlüssel', $config->getTicketIdField());
+        $this->assertSame('Autor', $config->getUsernameField());
+        $this->assertSame('Zusammenfassung', $config->getTicketNameField());
 
         $mapping = $config->getFieldMapping();
         $this->assertIsArray($mapping);
-        $this->assertSame('ticketId', $mapping['ticketId']);
-        $this->assertSame('username', $mapping['username']);
-        $this->assertSame('ticketName', $mapping['ticketName']);
+        $this->assertSame('Vorgangsschlüssel', $mapping['ticketId']);
+        $this->assertSame('Autor', $mapping['username']);
+        $this->assertSame('Zusammenfassung', $mapping['ticketName']);
     }
 
     public function testSettersAcceptNullAndFallbackToDefaults(): void
@@ -25,10 +25,10 @@ final class CsvFieldConfigTest extends TestCase
         $config = new CsvFieldConfig();
 
         $config->setTicketIdField(null);
-        $this->assertSame('ticketId', $config->getTicketIdField());
+        $this->assertSame('Vorgangsschlüssel', $config->getTicketIdField());
 
         $config->setUsernameField('');
-        $this->assertSame('username', $config->getUsernameField());
+        $this->assertSame('Autor', $config->getUsernameField());
 
         $config->setTicketNameField('myTicket');
         $this->assertSame('myTicket', $config->getTicketNameField());
@@ -52,9 +52,9 @@ final class CsvFieldConfigTest extends TestCase
     public static function invalidFieldProvider(): array
     {
         return [
-            'all null' => [null, null, null, ['ticketId' => 'ticketId', 'username' => 'username', 'ticketName' => 'ticketName']],
-            'empty strings' => ['', '', '', ['ticketId' => 'ticketId', 'username' => 'username', 'ticketName' => 'ticketName']],
-            'custom mix' => ['id', null, '', ['ticketId' => 'id', 'username' => 'username', 'ticketName' => 'ticketName']],
+            'all null' => [null, null, null, ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
+            'empty strings' => ['', '', '', ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
+            'custom mix' => ['id', null, '', ['ticketId' => 'id', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
         ];
     }
 }

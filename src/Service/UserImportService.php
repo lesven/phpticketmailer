@@ -90,7 +90,7 @@ class UserImportService
     {
         $users = $this->userRepository->findAll();
         
-        $csvContent = "ID,Username,Email\n";
+        $csvContent = "ID,username,email\n";
         
         foreach ($users as $user) {
             $csvContent .= sprintf(

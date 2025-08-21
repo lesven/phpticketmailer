@@ -14,13 +14,13 @@ class CsvFieldConfig
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $ticketIdField = 'ticketId';
+    private ?string $ticketIdField = 'Vorgangsschlüssel';
 
     #[ORM\Column(length: 50)]
-    private ?string $usernameField = 'username';
+    private ?string $usernameField = 'Autor';
 
     #[ORM\Column(length: 50)]
-    private ?string $ticketNameField = 'ticketName';
+    private ?string $ticketNameField = 'Zusammenfassung';
 
     public function getId(): ?int
     {
@@ -29,36 +29,36 @@ class CsvFieldConfig
 
     public function getTicketIdField(): ?string
     {
-        return $this->ticketIdField ?: 'ticketId';
+        return $this->ticketIdField ?: 'Vorgangsschlüssel';
     }
 
     public function setTicketIdField(?string $ticketIdField): static
     {
-        $this->ticketIdField = $ticketIdField ?: 'ticketId';
+        $this->ticketIdField = $ticketIdField ?: 'Vorgangsschlüssel';
 
         return $this;
     }
 
     public function getUsernameField(): ?string
     {
-        return $this->usernameField ?: 'username';
+        return $this->usernameField ?: 'Autor';
     }
 
     public function setUsernameField(?string $usernameField): static
     {
-        $this->usernameField = $usernameField ?: 'username';
+        $this->usernameField = $usernameField ?: 'Autor';
 
         return $this;
     }
 
     public function getTicketNameField(): ?string
     {
-        return $this->ticketNameField ?: 'ticketName';
+        return $this->ticketNameField ?: 'Zusammenfassung';
     }
 
     public function setTicketNameField(?string $ticketNameField): static
     {
-        $this->ticketNameField = $ticketNameField ?: 'ticketName';
+        $this->ticketNameField = $ticketNameField ?: 'Zusammenfassung';
 
         return $this;
     }
