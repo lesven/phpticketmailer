@@ -20,10 +20,10 @@ class CsvFieldConfigType extends AbstractType
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control',
-                    'placeholder' => 'ticketId (Standard)',
+                    'placeholder' => 'Vorgangsschlüssel (Standard)',
                     'maxlength' => 50
                 ],
-                'help' => 'Name der Spalte für die Ticket-ID (Standard: ticketId)',
+                'help' => 'Name der Spalte für die Ticket-ID (Standard: Vorgangsschlüssel)',
                 'constraints' => [
                     new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
@@ -33,10 +33,10 @@ class CsvFieldConfigType extends AbstractType
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control',
-                    'placeholder' => 'username (Standard)',
+                    'placeholder' => 'Autor (Standard)',
                     'maxlength' => 50
                 ],
-                'help' => 'Name der Spalte für den Benutzernamen (Standard: username)',
+                'help' => 'Name der Spalte für den Benutzernamen (Standard: Autor)',
                 'constraints' => [
                     new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
@@ -46,10 +46,10 @@ class CsvFieldConfigType extends AbstractType
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control',
-                    'placeholder' => 'ticketName (Standard)',
+                    'placeholder' => 'Zusammenfassung (Standard)',
                     'maxlength' => 50
                 ],
-                'help' => 'Name der Spalte für den Ticket-Namen (Standard: ticketName)',
+                'help' => 'Name der Spalte für den Ticket-Namen (Standard: Zusammenfassung)',
                 'constraints' => [
                     new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
