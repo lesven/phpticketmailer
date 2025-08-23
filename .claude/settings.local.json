@@ -6,7 +6,8 @@
       "Bash(composer install:*)",
       "Bash(./vendor/bin/phpunit:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(SYMFONY_DEPRECATIONS_HELPER=disabled ./vendor/bin/phpunit)"
     ],
     "deny": [],
     "ask": []

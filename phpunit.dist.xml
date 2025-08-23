@@ -15,8 +15,10 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
-        <!-- Suppress Symfony deprecation warnings in tests -->
+        <!-- Suppress all deprecation warnings -->
         <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" />
+        <server name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" force="true" />
+        <ini name="error_reporting" value="-1" />
     </php>
 
     <testsuites>

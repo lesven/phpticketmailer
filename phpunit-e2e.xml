@@ -17,10 +17,15 @@
         <server name="SHELL_VERBOSITY" value="-1" />
         <!-- Override database for E2E tests -->
         <server name="DATABASE_URL" value="mysql://ticketuser:password@database:3306/ticket_mailer_db_test?serverVersion=8.0.40&amp;charset=utf8mb4" force="true" />
+        <!-- Suppress Symfony deprecation warnings in E2E tests -->
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" />
     </php>
 
     <testsuites>
-        <testsuite name="E2E Tests">
+        <testsuite name="Security E2E Tests">
+            <directory>tests/E2E/Security</directory>
+        </testsuite>
+        <testsuite name="All E2E Tests">
             <directory>tests/E2E</directory>
         </testsuite>
     </testsuites>
