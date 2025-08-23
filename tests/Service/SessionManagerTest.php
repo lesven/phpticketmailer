@@ -7,6 +7,12 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Test-Klasse für den SessionManager
+ * 
+ * Diese Klasse testet die Funktionalität des SessionManagers,
+ * der für das Speichern und Abrufen von Upload-Ergebnissen in der Session zuständig ist.
+ */
 class SessionManagerTest extends TestCase
 {
     private SessionManager $sessionManager;
@@ -24,6 +30,11 @@ class SessionManagerTest extends TestCase
         $this->sessionManager = new SessionManager($this->requestStack);
     }
 
+    /**
+     * Testet das Speichern vollständiger Upload-Ergebnisse in der Session
+     * - Überprüft, dass sowohl unbekannte Benutzer als auch gültige Tickets gespeichert werden
+     * - Testet die korrekte Anzahl der Session-Set-Aufrufe
+     */
     public function testStoreUploadResultsWithCompleteData(): void
     {
         $processingResult = [
@@ -40,6 +51,11 @@ class SessionManagerTest extends TestCase
         $this->sessionManager->storeUploadResults($processingResult);
     }
 
+    /**
+     * Testet das Speichern unvollständiger Upload-Ergebnisse (nur unbekannte Benutzer)
+     * - Überprüft das Verhalten bei fehlenden Datenfeldern
+     * - Testet die Robustheit bei partiellen Eingabedaten
+     */
     public function testStoreUploadResultsWithPartialData(): void
     {
         $processingResult = [

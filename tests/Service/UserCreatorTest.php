@@ -8,6 +8,12 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Test-Klasse für den UserCreator
+ * 
+ * Diese Klasse testet die Funktionalität des UserCreators,
+ * der für das Erstellen und Verwalten von User-Entitäten zuständig ist.
+ */
 class UserCreatorTest extends TestCase
 {
     private UserCreator $userCreator;
@@ -21,6 +27,12 @@ class UserCreatorTest extends TestCase
         $this->userCreator = new UserCreator($this->entityManager, $this->userValidator);
     }
 
+    /**
+     * Testet das Erstellen eines Benutzers mit gültigen Daten
+     * - Überprüft die Validierung von Benutzername und E-Mail
+     * - Überprüft die korrekte Persistierung des User-Objekts
+     * - Überprüft die Erhöhung des Pending-Users-Zählers
+     */
     public function testCreateUserWithValidData(): void
     {
         $username = 'testuser';
@@ -45,6 +57,12 @@ class UserCreatorTest extends TestCase
         $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
     }
 
+    /**
+     * Testet die Exception-Behandlung bei ungültigem Benutzernamen
+     * - Überprüft, dass InvalidArgumentException geworfen wird
+     * - Überprüft, dass E-Mail-Validierung und Persistierung übersprungen werden
+     * - Testet die korrekte Fehlerbehandlung bei Validierungsfehlern
+     */
     public function testCreateUserWithInvalidUsernameThrowsException(): void
     {
         $username = 'invalid username with spaces';
@@ -67,6 +85,12 @@ class UserCreatorTest extends TestCase
         $this->userCreator->createUser($username, $email);
     }
 
+    /**
+     * Testet die Exception-Behandlung bei ungültiger E-Mail-Adresse
+     * - Überprüft, dass InvalidArgumentException nach Benutzername-Validierung geworfen wird
+     * - Überprüft, dass Persistierung übersprungen wird
+     * - Testet die korrekte Reihenfolge der Validierungsschritte
+     */
     public function testCreateUserWithInvalidEmailThrowsException(): void
     {
         $username = 'validuser';
