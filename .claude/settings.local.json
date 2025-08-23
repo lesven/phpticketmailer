@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test:*)",
+      "Bash(mkdir:*)",
+      "Bash(composer install:*)",
+      "Bash(./vendor/bin/phpunit:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(SYMFONY_DEPRECATIONS_HELPER=disabled ./vendor/bin/phpunit)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,4 @@
+email,ticket_number,custom_field
+test1@example.com,TICKET-001,Duplicate Test 1
+test2@example.com,TICKET-001,Duplicate Test 2
+test3@example.com,TICKET-002,Unique Test
