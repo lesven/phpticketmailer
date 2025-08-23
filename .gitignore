@@ -16,3 +16,4 @@
 /.phpunit.cache/
 ###< phpunit/phpunit ###
 phpunit-events.log
+phpunit-results.xml

@@ -1,0 +1,5 @@
+email,ticket_number,custom_field
+invalid-email,TICKET-001,Test Invalid
+test@,TICKET-002,Test Missing Domain
+@example.com,TICKET-003,Test Missing Username
+valid@example.com,TICKET-004,Test Valid
