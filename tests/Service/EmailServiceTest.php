@@ -78,7 +78,7 @@ class EmailServiceTest extends TestCase
         $ticket = ['ticketId' => 'T-123', 'username' => 'jsmith', 'ticketName' => 'Problem'];
 
     $user = $this->createMock(\App\Entity\User::class);
-    $user->method('getEmail')->willReturn('jsmith@example.com');
+    $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('jsmith@example.com'));
 
         // call private prepareEmailContent via reflection
         $ref = new \ReflectionClass($this->service);
@@ -123,7 +123,7 @@ class EmailServiceTest extends TestCase
         $ticket = ['ticketId' => 'T-1', 'username' => 'user1', 'ticketName' => 'Demo'];
 
     $user = $this->createMock(\App\Entity\User::class);
-    $user->method('getEmail')->willReturn('user1@example.com');
+    $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user1@example.com'));
 
         $this->userRepo->method('findByUsername')->with('user1')->willReturn($user);
 
@@ -150,7 +150,7 @@ class EmailServiceTest extends TestCase
         $ticket = ['ticketId' => 'T-2', 'username' => 'user2', 'ticketName' => 'Demo2'];
 
     $user = $this->createMock(\App\Entity\User::class);
-    $user->method('getEmail')->willReturn('user2@example.com');
+    $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user2@example.com'));
 
         $this->userRepo->method('findByUsername')->with('user2')->willReturn($user);
         $this->smtpRepo->method('getConfig')->willReturn(null);
@@ -345,7 +345,7 @@ class EmailServiceTest extends TestCase
     public function testPrepareEmailContentNonTestModeDoesNotPrefix(): void
     {
         $user = $this->createMock(\App\Entity\User::class);
-        $user->method('getEmail')->willReturn('u@example.com');
+        $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('u@example.com'));
         $template = "Hello {{username}} - {{ticketId}} - {{ticketLink}} - {{dueDate}}";
 
         $ref = new \ReflectionClass($this->service);
@@ -361,7 +361,7 @@ class EmailServiceTest extends TestCase
     {
         // Create a mock SMTPConfig with the getters used by EmailService
         $config = $this->createMock(\App\Entity\SMTPConfig::class);
-        $config->method('getSenderEmail')->willReturn('dbsender@example.com');
+        $config->method('getSenderEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('dbsender@example.com'));
         $config->method('getSenderName')->willReturn('DB Sender');
         $config->method('getTicketBaseUrl')->willReturn('https://db.example');
         $config->method('getDSN')->willReturn('smtp://u:p@smtp.example:587?encryption=tls&verify_peer=0');

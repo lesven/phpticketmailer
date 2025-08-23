@@ -12,6 +12,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -46,10 +47,9 @@ class User
      * E-Mail-Adresse des Benutzers
      * An diese Adresse werden die Ticket-Benachrichtigungen gesendet
      */
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'email_address')]
     #[Assert\NotBlank]
-    #[Assert\Email]
-    private ?string $email = null;
+    private ?EmailAddress $email = null;
 
     /**
      * Gibt an, ob der Benutzer von Umfragen ausgeschlossen ist
@@ -93,9 +93,9 @@ class User
     /**
      * Gibt die E-Mail-Adresse des Benutzers zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getEmail(): ?string
+    public function getEmail(): ?EmailAddress
     {
         return $this->email;
     }
@@ -103,12 +103,16 @@ class User
     /**
      * Setzt die E-Mail-Adresse des Benutzers
      * 
-     * @param string $email Die E-Mail-Adresse
+     * @param EmailAddress|string $email Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setEmail(string $email): self
+    public function setEmail(EmailAddress|string $email): self
     {
-        $this->email = $email;
+        if (is_string($email)) {
+            $this->email = EmailAddress::fromString($email);
+        } else {
+            $this->email = $email;
+        }
 
         return $this;
     }

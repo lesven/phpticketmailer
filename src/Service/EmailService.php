@@ -449,7 +449,7 @@ class EmailService
         ];
           // Wenn eine Konfiguration vorhanden ist, verwende sie
         if ($config) {
-            $emailConfig['senderEmail'] = $config->getSenderEmail();
+            $emailConfig['senderEmail'] = (string) $config->getSenderEmail();
             $emailConfig['senderName'] = $config->getSenderName();
             $emailConfig['ticketBaseUrl'] = $config->getTicketBaseUrl();
             $emailConfig['useCustomSMTP'] = true;

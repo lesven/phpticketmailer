@@ -2,6 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 use App\Entity\EmailSent;
+use App\ValueObject\EmailAddress;
 
 final class EmailSentTest extends TestCase
 {
@@ -34,7 +35,7 @@ final class EmailSentTest extends TestCase
 
         $this->assertSame('T-123', $e->getTicketId());
         $this->assertSame('alice', $e->getUsername());
-        $this->assertSame('a@example.com', $e->getEmail());
+        $this->assertEquals(EmailAddress::fromString('a@example.com'), $e->getEmail());
         $this->assertSame('Hello', $e->getSubject());
         $this->assertSame('sent', $e->getStatus());
         $this->assertSame($now, $e->getTimestamp());

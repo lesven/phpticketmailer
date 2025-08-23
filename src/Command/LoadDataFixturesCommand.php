@@ -185,7 +185,7 @@ class LoadDataFixturesCommand extends Command
         $smtpConfig->setPassword(null);
         $smtpConfig->setUseTLS(false);
         $smtpConfig->setVerifySSL(false);
-        $smtpConfig->setSenderEmail('noreply@ticketmailer.local');
+        $smtpConfig->setSenderEmail(EmailAddress::fromString('noreply@ticketmailer.local'));
         $smtpConfig->setSenderName('Ticket Survey System');
         $smtpConfig->setTicketBaseUrl('https://tickets.example.com');
 
@@ -215,7 +215,7 @@ class LoadDataFixturesCommand extends Command
             $emailSent = new EmailSent();
             $emailSent->setTicketId(sprintf("FIXTURE-%03d", $i));
             $emailSent->setUsername("fixtures_user" . (($i % 10) + 1));
-            $emailSent->setEmail("user" . (($i % 10) + 1) . "@example.com");
+            $emailSent->setEmail(EmailAddress::fromString("user" . (($i % 10) + 1) . "@example.com"));
             $emailSent->setSubject(sprintf("Ticket-Umfrage: FIXTURE-%03d", $i));
             $emailSent->setStatus($statuses[$i % count($statuses)]);
             $emailSent->setTestMode($testModes[$i % count($testModes)]);

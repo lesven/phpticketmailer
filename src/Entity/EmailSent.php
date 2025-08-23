@@ -12,6 +12,7 @@
 namespace App\Entity;
 
 use App\Repository\EmailSentRepository;
+use App\ValueObject\EmailAddress;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -44,8 +45,8 @@ class EmailSent
     /**
      * E-Mail-Adresse des Empfängers
      */
-    #[ORM\Column(length: 255)]
-    private ?string $email = null;
+    #[ORM\Column(type: 'email_address')]
+    private ?EmailAddress $email = null;
 
     /**
      * Betreff der gesendeten E-Mail
@@ -136,9 +137,9 @@ class EmailSent
     /**
      * Gibt die E-Mail-Adresse des Empfängers zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getEmail(): ?string
+    public function getEmail(): ?EmailAddress
     {
         return $this->email;
     }
@@ -146,12 +147,21 @@ class EmailSent
     /**
      * Setzt die E-Mail-Adresse des Empfängers
      * 
-     * @param string $email Die E-Mail-Adresse
+     * @param EmailAddress|string|null $email Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setEmail(string $email): self
+    public function setEmail(EmailAddress|string|null $email): self
     {
-        $this->email = $email;
+        if (is_string($email)) {
+            // Leere Strings werden als null behandelt
+            if (empty($email)) {
+                $this->email = null;
+            } else {
+                $this->email = EmailAddress::fromString($email);
+            }
+        } else {
+            $this->email = $email;
+        }
 
         return $this;
     }

@@ -104,7 +104,7 @@ class SMTPConfigController extends AbstractController
                     
                     // E-Mail erstellen
                     $email = (new Email())
-                        ->from($config->getSenderEmail())
+                        ->from((string) $config->getSenderEmail())
                         ->to($testEmail)
                         ->subject('SMTP Konfigurationstest')
                         ->text('Dies ist eine Testnachricht zur Überprüfung der SMTP-Konfiguration.')

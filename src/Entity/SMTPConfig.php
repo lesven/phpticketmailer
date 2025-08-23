@@ -11,6 +11,7 @@
 
 namespace App\Entity;
 
+use App\ValueObject\EmailAddress;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -68,10 +69,9 @@ class SMTPConfig
     /**
      * E-Mail-Adresse des Absenders
      */
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'email_address')]
     #[Assert\NotBlank(message: 'Die Absender-E-Mail darf nicht leer sein')]
-    #[Assert\Email(message: 'Die E-Mail-Adresse {{ value }} ist ungültig')]
-    private ?string $senderEmail = null;
+    private ?EmailAddress $senderEmail = null;
 
     /**
      * Name des Absenders, der in E-Mails angezeigt wird
@@ -237,9 +237,9 @@ class SMTPConfig
     /**
      * Gibt die E-Mail-Adresse des Absenders zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getSenderEmail(): ?string
+    public function getSenderEmail(): ?EmailAddress
     {
         return $this->senderEmail;
     }
@@ -247,12 +247,16 @@ class SMTPConfig
     /**
      * Setzt die E-Mail-Adresse des Absenders
      * 
-     * @param string $senderEmail Die E-Mail-Adresse
+     * @param EmailAddress|string $senderEmail Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setSenderEmail(string $senderEmail): self
+    public function setSenderEmail(EmailAddress|string $senderEmail): self
     {
-        $this->senderEmail = $senderEmail;
+        if (is_string($senderEmail)) {
+            $this->senderEmail = EmailAddress::fromString($senderEmail);
+        } else {
+            $this->senderEmail = $senderEmail;
+        }
 
         return $this;
     }
