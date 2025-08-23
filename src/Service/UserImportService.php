@@ -45,10 +45,7 @@ class UserImportService
             $userData = [];
             $this->csvFileReader->processRows($handle, function ($row, $rowNumber) use (&$userData, $columnIndices) {
                 if (count($row) >= max($columnIndices) + 1) {
-                    $userData[] = [
-                        'username' => $row[$columnIndices['username']],
-                        'email' => $row[$columnIndices['email']]
-                    ];
+                    $userData[] = $this->mapRowToUserData($row, $columnIndices);
                 }
             });
             
@@ -128,6 +125,21 @@ class UserImportService
         }
 
         return ['success' => true];
+    }
+
+    /**
+     * Mappt eine CSV-Zeile auf das interne Benutzer-Daten-Array.
+     *
+     * @param array $row Die CSV-Zeile
+     * @param array $columnIndices Assoziatives Array mit Spaltenindizes
+     * @return array Assoziatives Array mit 'username' und 'email'
+     */
+    private function mapRowToUserData(array $row, array $columnIndices): array
+    {
+        return [
+            'username' => $row[$columnIndices['username']],
+            'email' => $row[$columnIndices['email']],
+        ];
     }
 
     /**
