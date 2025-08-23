@@ -138,7 +138,7 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->userCreator->method('createUser')
             ->willReturnCallback(function ($username, $email) {
                 // Verify correct parameters are passed
-                $this->assertContains($username, ['user1', 'user2', 'user3']);
+                $this->assertContainsEquals($username, ['user1', 'user2', 'user3']);
                 $this->assertStringEndsWith('@example.com', $email);
             });
 

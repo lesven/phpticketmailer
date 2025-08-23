@@ -8,6 +8,9 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+        types:
+            secure_password: App\Doctrine\Type\SecurePasswordType
+            email_address: App\Doctrine\Type\EmailAddressType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

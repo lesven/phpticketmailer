@@ -371,8 +371,8 @@ class CsvFileReaderTest extends TestCase
                 $malformed[] = $rowNumber;
             }
         });
-        $this->assertContains(3, $malformed); // Zeile mit zu wenig Spalten
-        $this->assertContains(4, $malformed); // Zeile mit zu vielen Spalten
+    $this->assertContainsEquals(3, $malformed); // Zeile mit zu wenig Spalten
+    $this->assertContainsEquals(4, $malformed); // Zeile mit zu vielen Spalten
         $this->csvFileReader->closeHandle($handle);
     }
 

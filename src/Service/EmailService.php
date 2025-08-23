@@ -265,7 +265,7 @@ class EmailService
         $emailRecord = new EmailSent();
         $emailRecord->setTicketId($ticket['ticketId']);
         $emailRecord->setUsername($ticket['username']);
-        $emailRecord->setEmail($user ? $user->getEmail() : '');
+        $emailRecord->setEmail($user ? (string) $user->getEmail() : '');
         $emailRecord->setSubject('');
         $emailRecord->setStatus($status);
         $emailRecord->setTimestamp(clone $timestamp);
@@ -315,7 +315,7 @@ class EmailService
         }
         
         // E-Mail-Einstellungen
-        $recipientEmail = $testMode ? $emailConfig['testEmail'] : $user->getEmail();
+        $recipientEmail = $testMode ? $emailConfig['testEmail'] : (string) $user->getEmail();
         $subject = str_replace('{{ticketId}}', $ticket['ticketId'], $emailConfig['subject']);
         $emailRecord->setEmail($recipientEmail);
         $emailRecord->setSubject($subject);

@@ -62,7 +62,7 @@ class UserCsvHelper
             "%d,%s,%s\n",
             $user->getId(),
             $this->escapeCsvField($user->getUsername()),
-            $this->escapeCsvField($user->getEmail())
+            $this->escapeCsvField((string) $user->getEmail())
         );
     }
 

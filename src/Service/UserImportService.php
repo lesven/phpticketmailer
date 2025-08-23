@@ -4,6 +4,8 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
+use App\Exception\InvalidEmailAddressException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -184,7 +186,14 @@ class UserImportService
                 // Benutzer erstellen
                 $user = new User();
                 $user->setUsername($username);
-                $user->setEmail($email);
+                
+                try {
+                    $emailAddress = EmailAddress::fromString($email);
+                    $user->setEmail($emailAddress);
+                } catch (InvalidEmailAddressException $e) {
+                    $errors[] = "Ungültige E-Mail für Benutzer '{$username}': " . $e->getMessage();
+                    continue;
+                }
 
                 $this->entityManager->persist($user);
                 $createdCount++;

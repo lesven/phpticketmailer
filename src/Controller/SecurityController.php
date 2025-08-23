@@ -12,7 +12,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class SecurityController extends AbstractController
 {
@@ -57,13 +56,13 @@ class SecurityController extends AbstractController
                     // Wenn kein Passwort gesetzt ist (erster Start), setze das Standardpasswort
                     if (!$adminPassword) {
                         $adminPassword = new AdminPassword();
-                        $adminPassword->setPassword(password_hash('geheim', PASSWORD_BCRYPT));
+                        $adminPassword->setPasswordFromPlaintext('DefaultP@ssw0rd123!');
                         $this->entityManager->persist($adminPassword);
                         $this->entityManager->flush();
                     }
                     
                     // Prüfe das Passwort
-                    if (password_verify($password, $adminPassword->getPassword())) {
+                    if ($adminPassword->verifyPassword($password)) {
                         $session->set('is_authenticated', true);
                         return $this->redirectToRoute('dashboard');
                     } else {
@@ -105,21 +104,20 @@ class SecurityController extends AbstractController
                 $currentPassword = $request->request->get('current_password');
                 $newPassword = $request->request->get('new_password');
                 
-                // Validiere neues Passwort
-                if (strlen($newPassword) < 8) {
-                    $error = 'Das neue Passwort muss mindestens 8 Zeichen lang sein.';
-                } else {
-                    $adminPassword = $this->entityManager->getRepository(AdminPassword::class)->findOneBy([], ['id' => 'ASC']);
-                    
-                    if ($adminPassword && password_verify($currentPassword, $adminPassword->getPassword())) {
-                        // Setze neues Passwort
-                        $adminPassword->setPassword(password_hash($newPassword, PASSWORD_BCRYPT));
+                $adminPassword = $this->entityManager->getRepository(AdminPassword::class)->findOneBy([], ['id' => 'ASC']);
+                
+                if ($adminPassword && $adminPassword->verifyPassword($currentPassword)) {
+                    try {
+                        // Setze neues Passwort (SecurePassword validiert automatisch die Stärke)
+                        $adminPassword->setPasswordFromPlaintext($newPassword);
                         $this->entityManager->flush();
                         
                         $success = 'Passwort erfolgreich geändert.';
-                    } else {
-                        $error = 'Das aktuelle Passwort ist nicht korrekt.';
+                    } catch (\App\Exception\WeakPasswordException $e) {
+                        $error = 'Schwaches Passwort: ' . $e->getMessage();
                     }
+                } else {
+                    $error = 'Das aktuelle Passwort ist nicht korrekt.';
                 }
             } catch (\Exception $e) {
                 $error = 'Ein Fehler ist aufgetreten: ' . $e->getMessage();

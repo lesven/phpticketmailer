@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\Entity\User;
+use App\ValueObject\EmailAddress;
+use App\Exception\InvalidEmailAddressException;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -37,9 +39,15 @@ class UserCreator
             throw new \InvalidArgumentException("Ungültige E-Mail-Adresse: {$email}");
         }
 
+        try {
+            $emailAddress = EmailAddress::fromString($email);
+        } catch (InvalidEmailAddressException $e) {
+            throw new \InvalidArgumentException("Ungültige E-Mail-Adresse: {$email} - " . $e->getMessage());
+        }
+
         $user = new User();
         $user->setUsername($username);
-        $user->setEmail($email);
+        $user->setEmail($emailAddress);
 
         $this->entityManager->persist($user);
         $this->newUsers[] = $user;
