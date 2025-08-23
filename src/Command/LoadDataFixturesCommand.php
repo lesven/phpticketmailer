@@ -77,7 +77,7 @@ class LoadDataFixturesCommand extends Command
             $io->success('Alle Fixture-Daten wurden erfolgreich geladen!');
             $io->note([
                 'Erstellt:',
-                '- 10 Testbenutzer (user1@example.com bis user10@example.com)',
+                '- 12 Testbenutzer (10 reguläre + 2 Sonderfälle)',
                 '- 1 SMTP-Konfiguration für Mailpit',
                 '- 1 CSV-Feldkonfiguration mit Standardwerten',
                 '- 15 Beispiel-E-Mail-Protokolle mit verschiedenen Status',
@@ -138,8 +138,9 @@ class LoadDataFixturesCommand extends Command
 
     private function loadUserFixtures(SymfonyStyle $io): void
     {
-        $io->progressStart(10);
+        $io->progressStart(12);
         
+        // Create 10 regular test users
         for ($i = 1; $i <= 10; $i++) {
             $user = new User();
             $user->setUsername("fixtures_user{$i}");
@@ -154,8 +155,24 @@ class LoadDataFixturesCommand extends Command
             $io->progressAdvance();
         }
         
+        // Add some edge case users for testing
+        $edgeCaseUsers = [
+            ['fixtures_admin_user', 'admin@example.com', true],
+            ['fixtures_test.with.dots', 'test.dots@example.com', false],
+        ];
+        
+        foreach ($edgeCaseUsers as $userData) {
+            $user = new User();
+            $user->setUsername($userData[0]);
+            $user->setEmail($userData[1]);
+            $user->setExcludedFromSurveys($userData[2]);
+            
+            $this->entityManager->persist($user);
+            $io->progressAdvance();
+        }
+        
         $io->progressFinish();
-        $io->writeln(' 10 Testbenutzer erstellt');
+        $io->writeln(' 12 Testbenutzer erstellt (10 reguläre + 2 Sonderfälle)');
     }
 
     private function loadSMTPConfigFixtures(SymfonyStyle $io): void

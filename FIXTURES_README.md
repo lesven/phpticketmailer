@@ -20,10 +20,13 @@ php bin/console app:load-data-fixtures --force
 
 Der Fixtures-Befehl erstellt folgende Testdaten:
 
-#### 1. Testbenutzer (10 Stück)
-- **Benutzernamen**: `fixtures_user1` bis `fixtures_user10`
+#### 1. Testbenutzer (12 Stück)
+- **Reguläre Benutzer**: `fixtures_user1` bis `fixtures_user10`
 - **E-Mails**: `user1@example.com` bis `user10@example.com`
-- **Besonderheiten**: Jeder 3. Benutzer ist von Umfragen ausgeschlossen (für Testzwecke)
+- **Sonderfälle**: 
+  - `fixtures_admin_user` (von Umfragen ausgeschlossen)
+  - `fixtures_test.with.dots` (Benutzername mit Punkten)
+- **Besonderheiten**: Jeder 3. reguläre Benutzer ist von Umfragen ausgeschlossen
 
 #### 2. SMTP-Konfiguration
 - **Host**: `mailpit` (für lokale Entwicklung)

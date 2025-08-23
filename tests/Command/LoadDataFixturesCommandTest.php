@@ -142,7 +142,7 @@ class LoadDataFixturesCommandTest extends TestCase
 
         // Check User entities
         $users = array_filter($persistedEntities, fn($e) => $e instanceof User);
-        $this->assertCount(10, $users);
+        $this->assertCount(12, $users);
         
         foreach ($users as $user) {
             $this->assertStringStartsWith('fixtures_user', $user->getUsername());
