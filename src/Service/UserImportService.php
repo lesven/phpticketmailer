@@ -20,7 +20,8 @@ class UserImportService
         private readonly UserRepository $userRepository,
         private readonly CsvFileReader $csvFileReader,
         private readonly CsvValidationService $csvValidationService,
-        private readonly UserValidator $userValidator
+        private readonly UserValidator $userValidator,
+        private readonly UserCsvHelper $csvHelper
     ) {
     }
 
@@ -45,7 +46,7 @@ class UserImportService
             $userData = [];
             $this->csvFileReader->processRows($handle, function ($row, $rowNumber) use (&$userData, $columnIndices) {
                 if (count($row) >= max($columnIndices) + 1) {
-                    $userData[] = $this->mapRowToUserData($row, $columnIndices);
+                    $userData[] = $this->csvHelper->mapRowToUserData($row, $columnIndices);
                 }
             });
             
@@ -90,12 +91,7 @@ class UserImportService
         $csvContent = "ID,username,email\n";
         
         foreach ($users as $user) {
-            $csvContent .= sprintf(
-                "%d,%s,%s\n",
-                $user->getId(),
-                $this->escapeCsvField($user->getUsername()),
-                $this->escapeCsvField($user->getEmail())
-            );
+            $csvContent .= $this->csvHelper->formatUserAsCsvLine($user);
         }
         
         return $csvContent;
@@ -128,19 +124,25 @@ class UserImportService
     }
 
     /**
+     * Formatiert einen User als CSV-Zeile.
+     */
+    private function formatUserAsCsvLine(User $user): string
+    {
+        return sprintf(
+            "%d,%s,%s\n",
+            $user->getId(),
+            $this->escapeCsvField($user->getUsername()),
+            $this->escapeCsvField($user->getEmail())
+        );
+    }
+
+    /**
      * Mappt eine CSV-Zeile auf das interne Benutzer-Daten-Array.
      *
      * @param array $row Die CSV-Zeile
      * @param array $columnIndices Assoziatives Array mit Spaltenindizes
      * @return array Assoziatives Array mit 'username' und 'email'
      */
-    private function mapRowToUserData(array $row, array $columnIndices): array
-    {
-        return [
-            'username' => $row[$columnIndices['username']],
-            'email' => $row[$columnIndices['email']],
-        ];
-    }
 
     /**
      * Löscht alle bestehenden Benutzer
@@ -203,9 +205,4 @@ class UserImportService
     /**
      * Escaped ein CSV-Feld für den Export
      */
-    private function escapeCsvField(string $field): string
-    {
-        // Anführungszeichen escapen und das Feld in Anführungszeichen setzen
-        return '"' . str_replace('"', '""', $field) . '"';
-    }
 }

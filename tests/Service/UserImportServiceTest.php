@@ -8,6 +8,7 @@ use App\Service\UserImportService;
 use App\Service\CsvFileReader;
 use App\Service\CsvValidationService;
 use App\Service\UserValidator;
+use App\Service\UserCsvHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +19,7 @@ class UserImportServiceTest extends TestCase
     private $csvFileReader;
     private $csvValidationService;
     private $userValidator;
+    private UserCsvHelper $userCsvHelper;
     private $userImportService;
 
     protected function setUp(): void
@@ -27,13 +29,15 @@ class UserImportServiceTest extends TestCase
         $this->csvFileReader = $this->createMock(CsvFileReader::class);
         $this->csvValidationService = $this->createMock(CsvValidationService::class);
         $this->userValidator = $this->createMock(UserValidator::class);
+    $this->userCsvHelper = new UserCsvHelper();
         
         $this->userImportService = new UserImportService(
             $this->entityManager,
             $this->userRepository,
             $this->csvFileReader,
             $this->csvValidationService,
-            $this->userValidator
+            $this->userValidator,
+            $this->userCsvHelper
         );
     }
 

@@ -2,41 +2,38 @@
 
 namespace App\Tests\Service;
 
-use App\Service\UserImportService;
+use App\Service\UserCsvHelper;
 use PHPUnit\Framework\TestCase;
-use Doctrine\ORM\EntityManagerInterface;
-use App\Repository\UserRepository;
-use App\Service\CsvFileReader;
-use App\Service\CsvValidationService;
-use App\Service\UserValidator;
 
+/**
+ * Unit tests for CSV row mapping.
+ *
+ * These tests validate that CSV rows are mapped to the expected internal
+ * data structure used by the import flow.
+ */
 class UserImportServiceMapRowToUserDataTest extends TestCase
 {
     /**
-     * Testet, dass mapRowToUserData eine CSV-Zeile korrekt auf das interne Format mappt.
+     * Prüft, dass `mapRowToUserData()` eine CSV-Zeile korrekt in ein
+     * assoziatives Array mit den Keys `username` und `email` übersetzt.
+     *
+     * Ablauf:
+     * - Erzeuge eine Beispielzeile und Spaltenindizes.
+     * - Rufe die Methode auf und vergleiche das Ergebnis mit den erwarteten Werten.
+     *
+     * @return void
      */
-    public function testMapRowToUserDataProducesExpectedArray()
+    public function testMapRowToUserDataProducesExpectedArray(): void
     {
-        // Mocks für Konstruktor-Parameter, keine Methoden werden hier benötigt
-        $em = $this->createMock(EntityManagerInterface::class);
-        $repo = $this->createMock(UserRepository::class);
-        $csvReader = $this->createMock(CsvFileReader::class);
-        $csvValidation = $this->createMock(CsvValidationService::class);
-        $userValidator = $this->createMock(UserValidator::class);
-
-        $service = new UserImportService($em, $repo, $csvReader, $csvValidation, $userValidator);
-
-        // Beispielzeile und Spaltenindizes
+        // Arrange
+        $helper = new UserCsvHelper();
         $row = ['ignored', 'alice', 'alice@example.com', 'extra'];
         $columnIndices = ['username' => 1, 'email' => 2];
 
-        // Reflection, um die private Methode aufzurufen
-        $refClass = new \ReflectionClass(UserImportService::class);
-        $method = $refClass->getMethod('mapRowToUserData');
-        $method->setAccessible(true);
+        // Act
+        $result = $helper->mapRowToUserData($row, $columnIndices);
 
-        $result = $method->invokeArgs($service, [$row, $columnIndices]);
-
+        // Assert
         $this->assertIsArray($result);
         $this->assertArrayHasKey('username', $result);
         $this->assertArrayHasKey('email', $result);
