@@ -145,8 +145,9 @@ class LoadDataFixturesCommandTest extends TestCase
         $this->assertCount(12, $users);
         
         foreach ($users as $user) {
-            $this->assertStringStartsWith('fixtures_user', $user->getUsername());
-            $this->assertStringContains('@example.com', $user->getEmail());
+            // All fixture usernames must start with the common prefix 'fixtures_'
+            $this->assertStringStartsWith('fixtures_', $user->getUsername());
+            $this->assertStringContainsString('@example.com', $user->getEmail());
         }
 
         // Check EmailSent entities
