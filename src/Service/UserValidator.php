@@ -67,7 +67,7 @@ class UserValidator
      */
     public function isKnownUser(string $username): bool
     {
-        return $this->userRepository->findOneByUsername($username) !== null;
+        return $this->userRepository->findByUsername($username) !== null;
     }
     
     /**
