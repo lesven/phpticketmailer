@@ -22,6 +22,8 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    # Explicit helper service for CSV operations
+    App\Service\UserCsvHelper: ~
       # Explizite Konfiguration für den MonitoringService
     App\Service\MonitoringService:
         arguments:
