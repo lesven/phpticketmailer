@@ -16,12 +16,16 @@ use App\Entity\SMTPConfig;
 use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
 use App\Repository\EmailSentRepository;
+use App\Event\Email\EmailSentEvent;
+use App\Event\Email\EmailFailedEvent;
+use App\Event\Email\BulkEmailCompletedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class EmailService
 {
@@ -84,7 +88,8 @@ class EmailService
         SMTPConfigRepository $smtpConfigRepository,
         EmailSentRepository $emailSentRepository,
         ParameterBagInterface $params,
-        string $projectDir
+        string $projectDir,
+        private readonly EventDispatcherInterface $eventDispatcher
     ) {
         $this->mailer = $mailer;
         $this->entityManager = $entityManager;
@@ -125,6 +130,7 @@ class EmailService
      */
     public function sendTicketEmailsWithDuplicateCheck(array $ticketData, bool $testMode = false, bool $forceResend = false): array
     {
+        $startTime = microtime(true);
         $sentEmails = [];
         $processedTicketIds = []; // Für innerhalb der CSV-Datei
         $currentTime = new \DateTime();
@@ -246,6 +252,21 @@ class EmailService
             error_log('Error saving remaining email records: ' . $e->getMessage());
         }
 
+        // 🔥 EVENT: Bulk E-Mail-Versand abgeschlossen
+        $endTime = microtime(true);
+        $sentCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'sent')));
+        $failedCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'error')));
+        $skippedCount = count($sentEmails) - $sentCount - $failedCount;
+
+        $this->eventDispatcher->dispatch(new BulkEmailCompletedEvent(
+            count($ticketData),
+            $sentCount,
+            $failedCount,
+            $skippedCount,
+            $testMode,
+            $endTime - $startTime
+        ));
+
         return $sentEmails;
     }
 
@@ -338,8 +359,30 @@ class EmailService
                 $emailConfig
             );
             $emailRecord->setStatus('sent');
+            
+            // 🔥 EVENT: E-Mail erfolgreich versendet
+            $this->eventDispatcher->dispatch(new EmailSentEvent(
+                $emailRecord->getTicketId(),
+                $emailRecord->getUsername(),
+                $emailRecord->getEmail(),
+                $emailRecord->getSubject(),
+                $emailRecord->getTestMode(),
+                $emailRecord->getTicketName()
+            ));
+            
         } catch (\Exception $e) {
             $emailRecord->setStatus('error: ' . substr($e->getMessage(), 0, 200));
+            
+            // 🔥 EVENT: E-Mail-Versand fehlgeschlagen
+            $this->eventDispatcher->dispatch(new EmailFailedEvent(
+                $emailRecord->getTicketId(),
+                $emailRecord->getUsername(),
+                $emailRecord->getEmail(),
+                $emailRecord->getSubject(),
+                $e->getMessage(),
+                $emailRecord->getTestMode(),
+                $emailRecord->getTicketName()
+            ));
         }
         
         return $emailRecord;

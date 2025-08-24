@@ -32,3 +32,22 @@ services:
             $emailSentRepository: '@App\Repository\EmailSentRepository'
             $csvFieldConfigRepository: '@App\Repository\CsvFieldConfigRepository'
             $baseUrl: '%app.monitoring.base_url%'
+            
+    # Event Handler mit Monolog Channels
+    App\EventHandler\AuditLogEventHandler:
+        arguments:
+            $auditLogger: '@monolog.logger.audit'
+            
+    App\EventHandler\StatisticsEventHandler:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $statisticsLogger: '@monolog.logger.statistics'
+            
+    App\EventHandler\AdminNotificationEventHandler:
+        arguments:
+            $logger: '@logger'
+            
+    # File Log Event Handler - deaktiviert, da wir jetzt Monolog verwenden  
+    # App\EventHandler\FileLogEventHandler:
+    #     arguments:
+    #         $projectDir: '%kernel.project_dir%'
