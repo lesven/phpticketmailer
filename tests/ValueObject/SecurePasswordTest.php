@@ -76,7 +76,7 @@ class SecurePasswordTest extends TestCase
         SecurePassword::fromPlaintext($weakPassword);
     }
 
-    public function weakPasswordProvider(): array
+    public static function weakPasswordProvider(): array
     {
         return [
             ['short'], // Too short
@@ -100,7 +100,7 @@ class SecurePasswordTest extends TestCase
         $this->assertTrue($password->verify($strongPassword));
     }
 
-    public function strongPasswordProvider(): array
+    public static function strongPasswordProvider(): array
     {
         return [
             ['StrongP@ssw0rd123!'],

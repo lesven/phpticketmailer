@@ -44,7 +44,7 @@ class TicketNumberTest extends TestCase
         TicketNumber::fromString($invalidTicket);
     }
 
-    public function invalidTicketNumberProvider(): array
+    public static function invalidTicketNumberProvider(): array
     {
         return [
             [''],

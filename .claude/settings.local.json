@@ -8,7 +8,8 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(SYMFONY_DEPRECATIONS_HELPER=disabled ./vendor/bin/phpunit)",
-      "Bash(php -l:*)"
+      "Bash(php -l:*)",
+      "Bash(SYMFONY_DEPRECATIONS_HELPER=max[self]=999 ./vendor/bin/phpunit tests/ValueObject/UsernameTest.php)"
     ],
     "deny": [],
     "ask": []

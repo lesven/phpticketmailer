@@ -43,11 +43,11 @@ class UsernameTest extends TestCase
     public function testIsReserved(): void
     {
         $adminUser = Username::fromString('user123');
-        $reservedUser = $this->expectException(InvalidUsernameException::class);
         
         $this->assertFalse($adminUser->isReserved());
         
         // This should throw an exception during creation
+        $this->expectException(InvalidUsernameException::class);
         Username::fromString('admin');
     }
 
@@ -85,7 +85,7 @@ class UsernameTest extends TestCase
         $this->assertInstanceOf(Username::class, $user);
     }
 
-    public function validUsernameProvider(): array
+    public static function validUsernameProvider(): array
     {
         return [
             ['user123'],
@@ -114,7 +114,7 @@ class UsernameTest extends TestCase
         Username::fromString($username);
     }
 
-    public function invalidUsernameProvider(): array
+    public static function invalidUsernameProvider(): array
     {
         return [
             ['', 'cannot be empty'],

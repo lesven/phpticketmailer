@@ -53,7 +53,7 @@ class EmailAddressTest extends TestCase
         EmailAddress::fromString($invalidEmail);
     }
 
-    public function invalidEmailProvider(): array
+    public static function invalidEmailProvider(): array
     {
         return [
             [''],
@@ -78,7 +78,7 @@ class EmailAddressTest extends TestCase
         $this->assertInstanceOf(EmailAddress::class, $email);
     }
 
-    public function validEmailProvider(): array
+    public static function validEmailProvider(): array
     {
         return [
             ['test@example.com'],

@@ -64,7 +64,7 @@ class TicketIdTest extends TestCase
         $this->assertInstanceOf(TicketId::class, $ticket);
     }
 
-    public function validTicketIdProvider(): array
+    public static function validTicketIdProvider(): array
     {
         return [
             ['ABC'],
@@ -92,7 +92,7 @@ class TicketIdTest extends TestCase
         TicketId::fromString($ticketId);
     }
 
-    public function invalidTicketIdProvider(): array
+    public static function invalidTicketIdProvider(): array
     {
         return [
             ['', 'cannot be empty'],
