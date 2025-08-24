@@ -120,7 +120,7 @@ class EmailServiceTest extends TestCase
 
     public function testProcessTicketEmailSendsEmailAndMarksSent(): void
     {
-        $ticket = ['ticketId' => 'T-1', 'username' => 'user1', 'ticketName' => 'Demo'];
+        $ticket = ['ticketId' => 'T-001', 'username' => 'user1', 'ticketName' => 'Demo'];
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user1@example.com'));
@@ -147,7 +147,7 @@ class EmailServiceTest extends TestCase
 
     public function testProcessTicketEmailWhenMailerThrowsSetsErrorStatus(): void
     {
-        $ticket = ['ticketId' => 'T-2', 'username' => 'user2', 'ticketName' => 'Demo2'];
+        $ticket = ['ticketId' => 'T-002', 'username' => 'user2', 'ticketName' => 'Demo2'];
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user2@example.com'));
@@ -170,7 +170,7 @@ class EmailServiceTest extends TestCase
 
     public function testSendTicketEmailsWithDuplicateInCsv(): void
     {
-        $ticket = ['ticketId' => 'D1', 'username' => 'dupuser', 'ticketName' => 'Dup'];
+        $ticket = ['ticketId' => 'DUP-001', 'username' => 'dupuser', 'ticketName' => 'Dup'];
         $tickets = [$ticket, $ticket];
 
         $user = new \App\Entity\User();
@@ -192,13 +192,13 @@ class EmailServiceTest extends TestCase
 
     public function testSendTicketEmailsWithExistingTicketInDb(): void
     {
-        $ticket = ['ticketId' => 'E1', 'username' => 'euser', 'ticketName' => 'Exist'];
+        $ticket = ['ticketId' => 'EXT-001', 'username' => 'euser', 'ticketName' => 'Exist'];
         $tickets = [$ticket];
 
         $existing = new \App\Entity\EmailSent();
         $existing->setTimestamp(new \DateTime('2025-01-02'));
 
-        $this->emailSentRepo->method('findExistingTickets')->willReturn(['E1' => $existing]);
+        $this->emailSentRepo->method('findExistingTickets')->willReturn(['EXT-001' => $existing]);
         $this->userRepo->method('findByUsername')->willReturn(null);
 
         $this->entityManager->expects($this->once())->method('persist');
@@ -212,7 +212,7 @@ class EmailServiceTest extends TestCase
 
     public function testSendTicketEmailsUserExcludedCreatesSkippedRecord(): void
     {
-        $ticket = ['ticketId' => 'X1', 'username' => 'ex', 'ticketName' => 'Ex'];
+        $ticket = ['ticketId' => 'EXC-001', 'username' => 'ex', 'ticketName' => 'Ex'];
         $tickets = [$ticket];
 
         $user = new \App\Entity\User();
@@ -264,7 +264,7 @@ class EmailServiceTest extends TestCase
 
     public function testSendTicketEmailsWithForceResendIgnoresExistingTickets(): void
     {
-        $ticket = ['ticketId' => 'F1', 'username' => 'fuser', 'ticketName' => 'Force'];
+        $ticket = ['ticketId' => 'FRC-001', 'username' => 'fuser', 'ticketName' => 'Force'];
         $tickets = [$ticket];
 
         $existing = new \App\Entity\EmailSent();
@@ -352,9 +352,9 @@ class EmailServiceTest extends TestCase
         $m = $ref->getMethod('prepareEmailContent');
         $m->setAccessible(true);
 
-        $out = $m->invoke($this->service, $template, ['ticketId'=>'Z1','username'=>'bob'], $user, 'https://base', false);
+        $out = $m->invoke($this->service, $template, ['ticketId'=>'ZZZ-001','username'=>'bob'], $user, 'https://base', false);
         $this->assertStringNotContainsString('*** TESTMODUS', $out);
-        $this->assertStringContainsString('Z1', $out);
+        $this->assertStringContainsString('ZZZ-001', $out);
     }
 
     public function testGetEmailConfigurationUsesDbConfig(): void
@@ -394,7 +394,7 @@ class EmailServiceTest extends TestCase
 
     public function testCreateSkippedEmailRecordWithAndWithoutUser(): void
     {
-        $ticket = ['ticketId' => 'S1', 'username' => 'suser', 'ticketName' => 'Skip'];
+        $ticket = ['ticketId' => 'SKP-001', 'username' => 'suser', 'ticketName' => 'Skip'];
         // Case 1: user present
         $user = new \App\Entity\User();
         $user->setEmail('s@example.com');
@@ -409,9 +409,9 @@ class EmailServiceTest extends TestCase
         /** @var \App\Entity\EmailSent $rec */
         $rec = $m->invoke($this->service, $ticket, $now, false, 'Status text');
         $this->assertInstanceOf(\App\Entity\EmailSent::class, $rec);
-        $this->assertEquals('S1', $rec->getTicketId());
+        $this->assertEquals(\App\ValueObject\TicketId::fromString('SKP-001'), $rec->getTicketId());
         $this->assertEquals('suser', $rec->getUsername());
-        $this->assertEquals('s@example.com', $rec->getEmail());
+        $this->assertEquals(\App\ValueObject\EmailAddress::fromString('s@example.com'), $rec->getEmail());
         $this->assertEquals('Status text', $rec->getStatus());
 
         // Case 2: user not found -> empty email
@@ -442,7 +442,7 @@ class EmailServiceTest extends TestCase
     public function testSendTicketEmailsCallsWrapper(): void
     {
         // Ensure wrapper simply calls underlying method; we spy on emailSentRepo findExistingTickets
-        $ticket = ['ticketId' => 'W1', 'username' => 'wuser', 'ticketName' => 'Wrap'];
+        $ticket = ['ticketId' => 'WRP-001', 'username' => 'wuser', 'ticketName' => 'Wrap'];
         $tickets = [$ticket];
 
         $this->emailSentRepo->method('findExistingTickets')->willReturn([]);
