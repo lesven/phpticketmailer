@@ -2,6 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 use App\Entity\User;
+use App\ValueObject\EmailAddress;
 
 final class UserTest extends TestCase
 {
@@ -18,16 +19,15 @@ final class UserTest extends TestCase
         $u->setEmail('bob@example.local');
         $u->setExcludedFromSurveys(true);
 
-        $this->assertSame('bob', $u->getUsername());
-        $this->assertSame('bob@example.local', $u->getEmail());
+        $this->assertEquals(\App\ValueObject\Username::fromString('bob'), $u->getUsername());
+        $this->assertEquals(EmailAddress::fromString('bob@example.local'), $u->getEmail());
         $this->assertTrue($u->isExcludedFromSurveys());
     }
 
-    public function testSetEmailNullRaisesTypeError(): void
+    public function testSetEmailWithInvalidEmailRaisesException(): void
     {
-        $this->expectException(\TypeError::class);
+        $this->expectException(\App\Exception\InvalidEmailAddressException::class);
         $u = new User();
-        /** @phpstan-ignore-next-line */
-        $u->setEmail(null);
+        $u->setEmail('invalid-email');
     }
 }

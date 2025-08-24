@@ -12,6 +12,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -38,18 +40,17 @@ class User
      * Benutzername (eindeutig im System)
      * Wird verwendet, um Benutzer in der CSV-Datei zu identifizieren
      */
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(type: 'username', unique: true)]
     #[Assert\NotBlank]
-    private ?string $username = null;
+    private ?Username $username = null;
 
     /**
      * E-Mail-Adresse des Benutzers
      * An diese Adresse werden die Ticket-Benachrichtigungen gesendet
      */
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'email_address')]
     #[Assert\NotBlank]
-    #[Assert\Email]
-    private ?string $email = null;
+    private ?EmailAddress $email = null;
 
     /**
      * Gibt an, ob der Benutzer von Umfragen ausgeschlossen ist
@@ -70,9 +71,9 @@ class User
     /**
      * Gibt den Benutzernamen zurück
      * 
-     * @return string|null Der Benutzername
+     * @return Username|null Der Benutzername
      */
-    public function getUsername(): ?string
+    public function getUsername(): ?Username
     {
         return $this->username;
     }
@@ -80,12 +81,16 @@ class User
     /**
      * Setzt den Benutzernamen
      * 
-     * @param string $username Der Benutzername
+     * @param Username|string $username Der Benutzername
      * @return self Für Method-Chaining
      */
-    public function setUsername(string $username): self
+    public function setUsername(Username|string $username): self
     {
-        $this->username = $username;
+        if (is_string($username)) {
+            $this->username = Username::fromString($username);
+        } else {
+            $this->username = $username;
+        }
 
         return $this;
     }
@@ -93,9 +98,9 @@ class User
     /**
      * Gibt die E-Mail-Adresse des Benutzers zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getEmail(): ?string
+    public function getEmail(): ?EmailAddress
     {
         return $this->email;
     }
@@ -103,12 +108,16 @@ class User
     /**
      * Setzt die E-Mail-Adresse des Benutzers
      * 
-     * @param string $email Die E-Mail-Adresse
+     * @param EmailAddress|string $email Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setEmail(string $email): self
+    public function setEmail(EmailAddress|string $email): self
     {
-        $this->email = $email;
+        if (is_string($email)) {
+            $this->email = EmailAddress::fromString($email);
+        } else {
+            $this->email = $email;
+        }
 
         return $this;
     }

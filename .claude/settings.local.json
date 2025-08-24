@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test:*)",
+      "Bash(mkdir:*)",
+      "Bash(composer install:*)",
+      "Bash(./vendor/bin/phpunit:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(SYMFONY_DEPRECATIONS_HELPER=disabled ./vendor/bin/phpunit)",
+      "Bash(php -l:*)",
+      "Bash(SYMFONY_DEPRECATIONS_HELPER=max[self]=999 ./vendor/bin/phpunit tests/ValueObject/UsernameTest.php)",
+      "Bash(sed:*)",
+      "Bash(php:*)",
+      "Bash(composer require:*)",
+      "Bash(cat:*)",
+      "Bash(make:*)",
+      "Bash(docker compose:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

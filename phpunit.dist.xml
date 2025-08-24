@@ -15,15 +15,21 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+        <!-- Show only self deprecations -->
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[direct]=0&amp;max[indirect]=0&amp;max[self]=999" />
     </php>
 
     <testsuites>
-        <testsuite name="Project Test Suite">
+        <testsuite name="Unit and Integration Tests">
             <directory>tests</directory>
+            <exclude>tests/E2E</exclude>
+        </testsuite>
+        <testsuite name="E2E Tests">
+            <directory>tests/E2E</directory>
         </testsuite>
     </testsuites>
 
-    <source ignoreSuppressionOfDeprecations="true" restrictNotices="true" restrictWarnings="true">
+    <source restrictNotices="true" restrictWarnings="true">
         <include>
             <directory>src</directory>
         </include>

@@ -99,6 +99,15 @@ console:
 	@echo "==> Running php bin/console in $(PHP_SERVICE): $(ARGS)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console $(ARGS)
 
+## Load application fixtures
+fixtures:
+	@echo "==> Loading data fixtures (no --force)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console app:load-data-fixtures
+
+fixtures-force:
+	@echo "==> Loading data fixtures (--force)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console app:load-data-fixtures --force
+
 ## Composer helpers (führen Composer im PHP-Container aus)
 composer-install:
 	@echo "==> composer install im $(PHP_SERVICE)"
@@ -138,8 +147,8 @@ migrate:
 ## Tests (PHPUnit)
 
 test:
-	@echo "==> Running PHPUnit tests inside $(PHP_SERVICE)"
-	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) bash -lc "if [ -f vendor/bin/phpunit ]; then vendor/bin/phpunit --colors=always; else echo 'phpunit not found, run composer install first'; exit 1; fi"
+	@echo "==> Running PHPUnit tests inside $(PHP_SERVICE) (APP_ENV=test)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) bash -lc "if [ -f vendor/bin/phpunit ]; then APP_ENV=test vendor/bin/phpunit --colors=always; else echo 'phpunit not found, run composer install first'; exit 1; fi"
 
 ## Generate code coverage (HTML + text summary)
 coverage:

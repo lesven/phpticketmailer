@@ -12,6 +12,9 @@
 namespace App\Entity;
 
 use App\Repository\EmailSentRepository;
+use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketId;
+use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -32,20 +35,20 @@ class EmailSent
     /**
      * ID des Tickets, für das die E-Mail versendet wurde
      */
-    #[ORM\Column(length: 255)]
-    private ?string $ticketId = null;
+    #[ORM\Column(type: 'ticket_id')]
+    private ?TicketId $ticketId = null;
 
     /**
      * Benutzername des Empfängers
      */
-    #[ORM\Column(length: 255)]
-    private ?string $username = null;
+    #[ORM\Column(type: 'username')]
+    private ?Username $username = null;
 
     /**
      * E-Mail-Adresse des Empfängers
      */
-    #[ORM\Column(length: 255)]
-    private ?string $email = null;
+    #[ORM\Column(type: 'email_address')]
+    private ?EmailAddress $email = null;
 
     /**
      * Betreff der gesendeten E-Mail
@@ -90,9 +93,9 @@ class EmailSent
     /**
      * Gibt die Ticket-ID zurück
      * 
-     * @return string|null Die ID des Tickets
+     * @return TicketId|null Die ID des Tickets
      */
-    public function getTicketId(): ?string
+    public function getTicketId(): ?TicketId
     {
         return $this->ticketId;
     }
@@ -100,12 +103,16 @@ class EmailSent
     /**
      * Setzt die Ticket-ID
      * 
-     * @param string $ticketId Die ID des Tickets
+     * @param TicketId|string $ticketId Die ID des Tickets
      * @return self Für Method-Chaining
      */
-    public function setTicketId(string $ticketId): self
+    public function setTicketId(TicketId|string $ticketId): self
     {
-        $this->ticketId = $ticketId;
+        if (is_string($ticketId)) {
+            $this->ticketId = TicketId::fromString($ticketId);
+        } else {
+            $this->ticketId = $ticketId;
+        }
 
         return $this;
     }
@@ -113,9 +120,9 @@ class EmailSent
     /**
      * Gibt den Benutzernamen des Empfängers zurück
      * 
-     * @return string|null Der Benutzername
+     * @return Username|null Der Benutzername
      */
-    public function getUsername(): ?string
+    public function getUsername(): ?Username
     {
         return $this->username;
     }
@@ -123,12 +130,16 @@ class EmailSent
     /**
      * Setzt den Benutzernamen des Empfängers
      * 
-     * @param string $username Der Benutzername
+     * @param Username|string $username Der Benutzername
      * @return self Für Method-Chaining
      */
-    public function setUsername(string $username): self
+    public function setUsername(Username|string $username): self
     {
-        $this->username = $username;
+        if (is_string($username)) {
+            $this->username = Username::fromString($username);
+        } else {
+            $this->username = $username;
+        }
 
         return $this;
     }
@@ -136,9 +147,9 @@ class EmailSent
     /**
      * Gibt die E-Mail-Adresse des Empfängers zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getEmail(): ?string
+    public function getEmail(): ?EmailAddress
     {
         return $this->email;
     }
@@ -146,12 +157,21 @@ class EmailSent
     /**
      * Setzt die E-Mail-Adresse des Empfängers
      * 
-     * @param string $email Die E-Mail-Adresse
+     * @param EmailAddress|string|null $email Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setEmail(string $email): self
+    public function setEmail(EmailAddress|string|null $email): self
     {
-        $this->email = $email;
+        if (is_string($email)) {
+            // Leere Strings werden als null behandelt
+            if (empty($email)) {
+                $this->email = null;
+            } else {
+                $this->email = EmailAddress::fromString($email);
+            }
+        } else {
+            $this->email = $email;
+        }
 
         return $this;
     }

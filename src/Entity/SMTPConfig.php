@@ -11,6 +11,8 @@
 
 namespace App\Entity;
 
+use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -46,8 +48,8 @@ class SMTPConfig
     /**
      * Benutzername für die Authentifizierung am SMTP-Server (optional)
      */
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $username = null;
+    #[ORM\Column(type: 'username', nullable: true)]
+    private ?Username $username = null;
 
     /**
      * Passwort für die Authentifizierung am SMTP-Server (optional)
@@ -68,10 +70,9 @@ class SMTPConfig
     /**
      * E-Mail-Adresse des Absenders
      */
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'email_address')]
     #[Assert\NotBlank(message: 'Die Absender-E-Mail darf nicht leer sein')]
-    #[Assert\Email(message: 'Die E-Mail-Adresse {{ value }} ist ungültig')]
-    private ?string $senderEmail = null;
+    private ?EmailAddress $senderEmail = null;
 
     /**
      * Name des Absenders, der in E-Mails angezeigt wird
@@ -147,9 +148,9 @@ class SMTPConfig
     /**
      * Gibt den Benutzernamen für die SMTP-Authentifizierung zurück
      * 
-     * @return string|null Der Benutzername
+     * @return Username|null Der Benutzername
      */
-    public function getUsername(): ?string
+    public function getUsername(): ?Username
     {
         return $this->username;
     }
@@ -157,12 +158,16 @@ class SMTPConfig
     /**
      * Setzt den Benutzernamen für die SMTP-Authentifizierung
      * 
-     * @param string|null $username Der Benutzername
+     * @param Username|string|null $username Der Benutzername
      * @return self Für Method-Chaining
      */
-    public function setUsername(?string $username): self
+    public function setUsername(Username|string|null $username): self
     {
-        $this->username = $username;
+        if (is_string($username)) {
+            $this->username = $username ? Username::fromString($username) : null;
+        } else {
+            $this->username = $username;
+        }
 
         return $this;
     }
@@ -237,9 +242,9 @@ class SMTPConfig
     /**
      * Gibt die E-Mail-Adresse des Absenders zurück
      * 
-     * @return string|null Die E-Mail-Adresse
+     * @return EmailAddress|null Die E-Mail-Adresse
      */
-    public function getSenderEmail(): ?string
+    public function getSenderEmail(): ?EmailAddress
     {
         return $this->senderEmail;
     }
@@ -247,12 +252,16 @@ class SMTPConfig
     /**
      * Setzt die E-Mail-Adresse des Absenders
      * 
-     * @param string $senderEmail Die E-Mail-Adresse
+     * @param EmailAddress|string $senderEmail Die E-Mail-Adresse
      * @return self Für Method-Chaining
      */
-    public function setSenderEmail(string $senderEmail): self
+    public function setSenderEmail(EmailAddress|string $senderEmail): self
     {
-        $this->senderEmail = $senderEmail;
+        if (is_string($senderEmail)) {
+            $this->senderEmail = EmailAddress::fromString($senderEmail);
+        } else {
+            $this->senderEmail = $senderEmail;
+        }
 
         return $this;
     }
@@ -314,7 +323,7 @@ class SMTPConfig
         $dsn = 'smtp://';
         
         if ($this->username && $this->password) {
-            $dsn .= urlencode($this->username) . ':' . urlencode($this->password) . '@';
+            $dsn .= urlencode((string) $this->username) . ':' . urlencode($this->password) . '@';
         }
         
         $dsn .= $this->host . ':' . $this->port;
