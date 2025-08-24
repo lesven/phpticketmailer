@@ -2,43 +2,60 @@
 
 use PHPUnit\Framework\TestCase;
 use App\Entity\AdminPassword;
+use App\Exception\WeakPasswordException;
 
 final class AdminPasswordTest extends TestCase
 {
-    public function testGetSetPlainAndEncryptedPassword(): void
+    public function testGetSetPasswordWithSecurePassword(): void
     {
         $entity = new AdminPassword();
 
         $this->assertNull($entity->getId());
         $this->assertNull($entity->getPassword());
-        $this->assertNull($entity->getPlainPassword());
 
-        $chain = $entity->setPlainPassword('s3cr3t');
-        $this->assertSame($entity, $chain);
-        $this->assertSame('s3cr3t', $entity->getPlainPassword());
-
-        $chain2 = $entity->setPassword('hashed');
-        $this->assertSame($entity, $chain2);
-        $this->assertSame('hashed', $entity->getPassword());
+        $entity->setPasswordFromPlaintext('StrongP@ssw0rd123!');
+        $this->assertNotNull($entity->getPassword());
+        $this->assertTrue($entity->verifyPassword('StrongP@ssw0rd123!'));
+        $this->assertFalse($entity->verifyPassword('wrongpassword'));
     }
 
-    public function testSetPlainPasswordNullAndEmpty(): void
+    public function testSetPasswordFromHash(): void
     {
         $entity = new AdminPassword();
-
-        $entity->setPlainPassword(null);
-        $this->assertNull($entity->getPlainPassword());
-
-        $entity->setPlainPassword('');
-        $this->assertSame('', $entity->getPlainPassword());
+        $hash = password_hash('TestP@ssw0rd123!', PASSWORD_BCRYPT);
+        
+        $entity->setPasswordFromHash($hash);
+        $this->assertNotNull($entity->getPassword());
+        $this->assertTrue($entity->verifyPassword('TestP@ssw0rd123!'));
     }
 
-    public function testSetPasswordTypeErrorOnNull(): void
+    public function testWeakPasswordRejection(): void
     {
-        $this->expectException(\TypeError::class);
+        $this->expectException(WeakPasswordException::class);
         $entity = new AdminPassword();
-        // setPassword requires string, passing null should raise TypeError
-        /** @phpstan-ignore-next-line */
-        $entity->setPassword(null);
+        $entity->setPasswordFromPlaintext('weak');
+    }
+
+    public function testPasswordRehashNeeded(): void
+    {
+        $entity = new AdminPassword();
+        $entity->setPasswordFromPlaintext('StrongP@ssw0rd123!');
+        
+        // This test just checks that the method exists and returns a boolean
+        $this->assertIsBool($entity->needsPasswordRehash());
+    }
+
+    public function testVerifyPasswordWithNoPassword(): void
+    {
+        $entity = new AdminPassword();
+        
+        $this->assertFalse($entity->verifyPassword('anypassword'));
+    }
+
+    public function testNeedsRehashWithNoPassword(): void
+    {
+        $entity = new AdminPassword();
+        
+        $this->assertFalse($entity->needsPasswordRehash());
     }
 }

@@ -2,6 +2,8 @@
 
 use PHPUnit\Framework\TestCase;
 use App\Entity\EmailSent;
+use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketId;
 
 final class EmailSentTest extends TestCase
 {
@@ -32,9 +34,9 @@ final class EmailSentTest extends TestCase
         $now = new \DateTimeImmutable('2025-08-20 12:34:56');
         $e->setTimestamp($now);
 
-        $this->assertSame('T-123', $e->getTicketId());
-        $this->assertSame('alice', $e->getUsername());
-        $this->assertSame('a@example.com', $e->getEmail());
+        $this->assertEquals(TicketId::fromString('T-123'), $e->getTicketId());
+        $this->assertEquals(\App\ValueObject\Username::fromString('alice'), $e->getUsername());
+        $this->assertEquals(EmailAddress::fromString('a@example.com'), $e->getEmail());
         $this->assertSame('Hello', $e->getSubject());
         $this->assertSame('sent', $e->getStatus());
         $this->assertSame($now, $e->getTimestamp());

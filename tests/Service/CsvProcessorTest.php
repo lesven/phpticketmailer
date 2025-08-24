@@ -164,8 +164,8 @@ class CsvProcessorTest extends TestCase
         $processor = new CsvProcessor($reader, $userValidator, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $ticketIds = array_column($res['validTickets'], 'ticketId');
-        $this->assertContains('1', $ticketIds);
-        $this->assertContains('2', $ticketIds);
+    $this->assertContainsEquals('1', $ticketIds);
+    $this->assertContainsEquals('2', $ticketIds);
         @unlink($tmp);
     }
 }

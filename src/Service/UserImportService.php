@@ -4,8 +4,14 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
+use App\Exception\InvalidEmailAddressException;
+use App\Event\User\UserImportStartedEvent;
+use App\Event\User\UserImportedEvent;
+use App\Event\User\UserImportCompletedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Service für den Import von Benutzern aus CSV-Dateien
@@ -21,7 +27,8 @@ class UserImportService
         private readonly CsvFileReader $csvFileReader,
         private readonly CsvValidationService $csvValidationService,
         private readonly UserValidator $userValidator,
-        private readonly UserCsvHelper $csvHelper
+        private readonly UserCsvHelper $csvHelper,
+        private readonly EventDispatcherInterface $eventDispatcher
     ) {
     }
 
@@ -33,6 +40,8 @@ class UserImportService
      * @return UserImportResult Ergebnis des Import-Vorgangs
      */    public function importUsersFromCsv(UploadedFile $csvFile, bool $clearExisting = false): UserImportResult
     {
+        $startTime = microtime(true);
+        
         try {
             // 1. CSV-Datei öffnen und lesen
             $handle = $this->csvFileReader->openCsvFile($csvFile);
@@ -57,11 +66,20 @@ class UserImportService
                 return UserImportResult::error('Die CSV-Datei ist leer oder enthält keine gültigen Daten.');
             }
 
+            // 🔥 EVENT: Import gestartet
+            $this->eventDispatcher->dispatch(new UserImportStartedEvent(
+                count($userData),
+                $csvFile->getClientOriginalName() ?? 'unknown.csv',
+                $clearExisting
+            ));
+
             // 5. Datenvalidierung
             $validationResult = $this->validateCsvData($userData);
             if (!$validationResult['success']) {
                 return UserImportResult::error($validationResult['message']);
-            }            // 6. Bestehende Benutzer löschen falls gewünscht
+            }
+            
+            // 6. Bestehende Benutzer löschen falls gewünscht
             if ($clearExisting) {
                 $this->clearExistingUsers();
             }
@@ -72,9 +90,28 @@ class UserImportService
             // 8. Benutzer erstellen und speichern
             $result = $this->createAndPersistUsers($uniqueData, $clearExisting);
 
+            // 🔥 EVENT: Import abgeschlossen
+            $endTime = microtime(true);
+            $this->eventDispatcher->dispatch(new UserImportCompletedEvent(
+                $result->createdCount,
+                count($result->errors),
+                $result->errors,
+                $csvFile->getClientOriginalName() ?? 'unknown.csv',
+                $endTime - $startTime
+            ));
+
             return $result;
 
         } catch (\Exception $e) {
+            $endTime = microtime(true);
+            $this->eventDispatcher->dispatch(new UserImportCompletedEvent(
+                0,
+                1,
+                [$e->getMessage()],
+                $csvFile->getClientOriginalName() ?? 'unknown.csv',
+                $endTime - $startTime
+            ));
+            
             return UserImportResult::error('Fehler beim Importieren: ' . $e->getMessage());
         }
     }
@@ -131,8 +168,8 @@ class UserImportService
         return sprintf(
             "%d,%s,%s\n",
             $user->getId(),
-            $this->escapeCsvField($user->getUsername()),
-            $this->escapeCsvField($user->getEmail())
+            $this->escapeCsvField((string) $user->getUsername()),
+            $this->escapeCsvField((string) $user->getEmail())
         );
     }
 
@@ -184,10 +221,24 @@ class UserImportService
                 // Benutzer erstellen
                 $user = new User();
                 $user->setUsername($username);
-                $user->setEmail($email);
+                
+                try {
+                    $emailAddress = EmailAddress::fromString($email);
+                    $user->setEmail($emailAddress);
+                } catch (InvalidEmailAddressException $e) {
+                    $errors[] = "Ungültige E-Mail für Benutzer '{$username}': " . $e->getMessage();
+                    continue;
+                }
 
                 $this->entityManager->persist($user);
                 $createdCount++;
+
+                // 🔥 EVENT: User wurde importiert
+                $this->eventDispatcher->dispatch(new UserImportedEvent(
+                    $user->getUsername(),
+                    $user->getEmail(),
+                    $user->isExcludedFromSurveys()
+                ));
 
             } catch (\Exception $e) {
                 $errors[] = "Fehler beim Erstellen von Benutzer '{$row['username']}': " . $e->getMessage();

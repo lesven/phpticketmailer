@@ -7,6 +7,7 @@ use App\Entity\EmailSent;
 use App\Entity\SMTPConfig;
 use App\Entity\CsvFieldConfig;
 use App\Entity\AdminPassword;
+use App\ValueObject\EmailAddress;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -81,7 +82,7 @@ class LoadDataFixturesCommand extends Command
                 '- 1 SMTP-Konfiguration für Mailpit',
                 '- 1 CSV-Feldkonfiguration mit Standardwerten',
                 '- 15 Beispiel-E-Mail-Protokolle mit verschiedenen Status',
-                '- 1 Admin-Passwort (Benutzer: admin, Passwort: admin123)',
+                '- 1 Admin-Passwort (Passwort: AdminP@ssw0rd123!)',
             ]);
 
             return Command::SUCCESS;
@@ -144,7 +145,7 @@ class LoadDataFixturesCommand extends Command
         for ($i = 1; $i <= 10; $i++) {
             $user = new User();
             $user->setUsername("fixtures_user{$i}");
-            $user->setEmail("user{$i}@example.com");
+            $user->setEmail(EmailAddress::fromString("user{$i}@example.com"));
             
             // Make some users excluded from surveys for testing
             if ($i % 3 === 0) {
@@ -164,7 +165,7 @@ class LoadDataFixturesCommand extends Command
         foreach ($edgeCaseUsers as $userData) {
             $user = new User();
             $user->setUsername($userData[0]);
-            $user->setEmail($userData[1]);
+            $user->setEmail(EmailAddress::fromString($userData[1]));
             $user->setExcludedFromSurveys($userData[2]);
             
             $this->entityManager->persist($user);
@@ -184,7 +185,7 @@ class LoadDataFixturesCommand extends Command
         $smtpConfig->setPassword(null);
         $smtpConfig->setUseTLS(false);
         $smtpConfig->setVerifySSL(false);
-        $smtpConfig->setSenderEmail('noreply@ticketmailer.local');
+        $smtpConfig->setSenderEmail(EmailAddress::fromString('noreply@ticketmailer.local'));
         $smtpConfig->setSenderName('Ticket Survey System');
         $smtpConfig->setTicketBaseUrl('https://tickets.example.com');
 
@@ -214,7 +215,7 @@ class LoadDataFixturesCommand extends Command
             $emailSent = new EmailSent();
             $emailSent->setTicketId(sprintf("FIXTURE-%03d", $i));
             $emailSent->setUsername("fixtures_user" . (($i % 10) + 1));
-            $emailSent->setEmail("user" . (($i % 10) + 1) . "@example.com");
+            $emailSent->setEmail(EmailAddress::fromString("user" . (($i % 10) + 1) . "@example.com"));
             $emailSent->setSubject(sprintf("Ticket-Umfrage: FIXTURE-%03d", $i));
             $emailSent->setStatus($statuses[$i % count($statuses)]);
             $emailSent->setTestMode($testModes[$i % count($testModes)]);
@@ -236,13 +237,9 @@ class LoadDataFixturesCommand extends Command
     private function loadAdminPasswordFixtures(SymfonyStyle $io): void
     {
         $adminPassword = new AdminPassword();
-        $adminPassword->setPlainPassword('admin123');
-        
-        // Hash the password using PHP's password_hash like in SecurityController
-        $hashedPassword = password_hash('admin123', PASSWORD_BCRYPT);
-        $adminPassword->setPassword($hashedPassword);
+        $adminPassword->setPasswordFromPlaintext('AdminP@ssw0rd123!');
         
         $this->entityManager->persist($adminPassword);
-        $io->writeln('Admin-Passwort erstellt (admin123)');
+        $io->writeln('Admin-Passwort erstellt (AdminP@ssw0rd123!)');
     }
 }

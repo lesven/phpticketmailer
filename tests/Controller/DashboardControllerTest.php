@@ -5,6 +5,8 @@ namespace App\Tests\Controller;
 use App\Controller\DashboardController;
 use App\Repository\EmailSentRepository;
 use App\Entity\EmailSent;
+use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketId;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Twig\Environment;
@@ -99,9 +101,9 @@ class DashboardControllerTest extends TestCase
     private function createMockEmailSent(string $ticketId, string $status, string $email): EmailSent
     {
         $emailSent = $this->createMock(EmailSent::class);
-        $emailSent->method('getTicketId')->willReturn($ticketId);
+        $emailSent->method('getTicketId')->willReturn(TicketId::fromString($ticketId));
         $emailSent->method('getStatus')->willReturn($status);
-        $emailSent->method('getEmail')->willReturn($email);
+        $emailSent->method('getEmail')->willReturn(EmailAddress::fromString($email));
         $emailSent->method('getTimestamp')->willReturn(new \DateTime());
         return $emailSent;
     }

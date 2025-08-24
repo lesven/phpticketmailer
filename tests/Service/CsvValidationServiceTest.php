@@ -212,7 +212,7 @@ class CsvValidationServiceTest extends TestCase
         $result = $this->service->validateCsvRow($row, $required, 10);
 
         $this->assertFalse($result['valid']);
-        $this->assertContains("Feld 'ticketId' ist leer oder fehlt", $result['errors']);
+    $this->assertContainsEquals("Feld 'ticketId' ist leer oder fehlt", $result['errors']);
         $this->assertEquals(10, $result['line_number']);
     }
 
@@ -228,8 +228,8 @@ class CsvValidationServiceTest extends TestCase
         $result = $this->service->validateCsvRow($row, $required, 15);
 
         $this->assertFalse($result['valid']);
-        $this->assertContains("Feld 'username' ist leer oder fehlt", $result['errors']);
-        $this->assertContains("Feld 'email' ist leer oder fehlt", $result['errors']);
+    $this->assertContainsEquals("Feld 'username' ist leer oder fehlt", $result['errors']);
+    $this->assertContainsEquals("Feld 'email' ist leer oder fehlt", $result['errors']);
     }
 
     public function testValidateCsvRowWithInvalidEmail(): void
@@ -244,7 +244,7 @@ class CsvValidationServiceTest extends TestCase
         $result = $this->service->validateCsvRow($row, $required, 20);
 
         $this->assertFalse($result['valid']);
-        $this->assertContains('Ungültige E-Mail-Adresse: invalid-email-format', $result['errors']);
+    $this->assertContainsEquals('Ungültige E-Mail-Adresse: invalid-email-format', $result['errors']);
     }
 
     public function testValidateCsvRowWithInvalidTicketId(): void
@@ -259,7 +259,7 @@ class CsvValidationServiceTest extends TestCase
         $result = $this->service->validateCsvRow($row, $required, 25);
 
         $this->assertFalse($result['valid']);
-        $this->assertContains('Ungültige Ticket-ID: INVALID!@#$%', $result['errors']);
+    $this->assertContainsEquals('Ungültige Ticket-ID: INVALID!@#$%', $result['errors']);
     }
 
     // ========== E-MAIL-VALIDIERUNG (SICHERHEITSKRITISCH) ==========

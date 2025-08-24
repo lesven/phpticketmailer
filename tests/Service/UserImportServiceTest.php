@@ -11,6 +11,7 @@ use App\Service\UserValidator;
 use App\Service\UserCsvHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class UserImportServiceTest extends TestCase
 {
@@ -20,6 +21,7 @@ class UserImportServiceTest extends TestCase
     private $csvValidationService;
     private $userValidator;
     private UserCsvHelper $userCsvHelper;
+    private $eventDispatcher;
     private $userImportService;
 
     protected function setUp(): void
@@ -29,7 +31,8 @@ class UserImportServiceTest extends TestCase
         $this->csvFileReader = $this->createMock(CsvFileReader::class);
         $this->csvValidationService = $this->createMock(CsvValidationService::class);
         $this->userValidator = $this->createMock(UserValidator::class);
-    $this->userCsvHelper = new UserCsvHelper();
+        $this->userCsvHelper = new UserCsvHelper();
+        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         
         $this->userImportService = new UserImportService(
             $this->entityManager,
@@ -37,7 +40,8 @@ class UserImportServiceTest extends TestCase
             $this->csvFileReader,
             $this->csvValidationService,
             $this->userValidator,
-            $this->userCsvHelper
+            $this->userCsvHelper,
+            $this->eventDispatcher
         );
     }
 

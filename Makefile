@@ -99,6 +99,15 @@ console:
 	@echo "==> Running php bin/console in $(PHP_SERVICE): $(ARGS)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console $(ARGS)
 
+## Load application fixtures
+fixtures:
+	@echo "==> Loading data fixtures (no --force)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console app:load-data-fixtures
+
+fixtures-force:
+	@echo "==> Loading data fixtures (--force)"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console app:load-data-fixtures --force
+
 ## Composer helpers (führen Composer im PHP-Container aus)
 composer-install:
 	@echo "==> composer install im $(PHP_SERVICE)"

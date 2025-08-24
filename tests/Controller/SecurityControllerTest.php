@@ -111,7 +111,7 @@ class SecurityControllerTest extends TestCase
             ->willReturn(true);
 
         $adminPassword = new AdminPassword();
-        $adminPassword->setPassword(password_hash('correct_password', PASSWORD_BCRYPT));
+        $adminPassword->setPasswordFromPlaintext('correct_password');
         
         $this->adminPasswordRepository->method('findOneBy')
             ->with([], ['id' => 'ASC'])
@@ -146,7 +146,7 @@ class SecurityControllerTest extends TestCase
             ->willReturn(true);
 
         $adminPassword = new AdminPassword();
-        $adminPassword->setPassword(password_hash('correct_password', PASSWORD_BCRYPT));
+        $adminPassword->setPasswordFromPlaintext('correct_password');
         
         $this->adminPasswordRepository->method('findOneBy')
             ->with([], ['id' => 'ASC'])
@@ -193,7 +193,7 @@ class SecurityControllerTest extends TestCase
     public function testLoginCreatesDefaultPasswordWhenNoneExists(): void
     {
         $request = new Request([], [
-            'password' => 'geheim',
+            'password' => 'DefaultP@ssw0rd123!',
             '_csrf_token' => 'valid_token'
         ]);
         $request->setMethod('POST');
@@ -282,7 +282,7 @@ class SecurityControllerTest extends TestCase
             ->willReturn(true);
 
         $adminPassword = new AdminPassword();
-        $adminPassword->setPassword(password_hash('old_password', PASSWORD_BCRYPT));
+        $adminPassword->setPasswordFromPlaintext('old_password');
         
         $this->adminPasswordRepository->method('findOneBy')
             ->with([], ['id' => 'ASC'])
@@ -304,7 +304,7 @@ class SecurityControllerTest extends TestCase
         $this->assertEquals('<html>Password Changed</html>', $response->getContent());
         
         // Verify the password was actually changed
-        $this->assertTrue(password_verify('new_password_123', $adminPassword->getPassword()));
+        $this->assertTrue($adminPassword->verifyPassword('new_password_123'));
     }
 
     public function testChangePasswordWithShortNewPasswordShowsError(): void
@@ -319,17 +319,24 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
+        $adminPassword = new AdminPassword();
+        $adminPassword->setPasswordFromPlaintext('old_password');
+        
+        $this->adminPasswordRepository->method('findOneBy')
+            ->with([], ['id' => 'ASC'])
+            ->willReturn($adminPassword);
+
         $this->twig->method('render')
-            ->with('security/change_password.html.twig', [
-                'error' => 'Das neue Passwort muss mindestens 8 Zeichen lang sein.',
-                'success' => null,
-            ])
-            ->willReturn('<html>Password Too Short Error</html>');
+            ->with('security/change_password.html.twig', $this->callback(function($context) {
+                return isset($context['error']) && str_contains($context['error'], 'Schwaches Passwort') &&
+                       $context['success'] === null;
+            }))
+            ->willReturn('<html>Password Too Weak Error</html>');
 
         $response = $this->controller->changePassword($request);
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('<html>Password Too Short Error</html>', $response->getContent());
+        $this->assertEquals('<html>Password Too Weak Error</html>', $response->getContent());
     }
 
     public function testChangePasswordWithWrongCurrentPasswordShowsError(): void
@@ -345,7 +352,7 @@ class SecurityControllerTest extends TestCase
             ->willReturn(true);
 
         $adminPassword = new AdminPassword();
-        $adminPassword->setPassword(password_hash('correct_current_password', PASSWORD_BCRYPT));
+        $adminPassword->setPasswordFromPlaintext('correct_current_password');
         
         $this->adminPasswordRepository->method('findOneBy')
             ->with([], ['id' => 'ASC'])

@@ -7,6 +7,7 @@ use App\Repository\EmailSentRepository;
 use App\Service\PaginationService;
 use App\Service\PaginationResult;
 use App\Entity\EmailSent;
+use App\ValueObject\TicketId;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
 use PHPUnit\Framework\TestCase;
@@ -360,7 +361,7 @@ class EmailLogControllerTest extends TestCase
     private function createMockEmailSent(string $ticketId, string $status): EmailSent
     {
         $emailSent = $this->createMock(EmailSent::class);
-        $emailSent->method('getTicketId')->willReturn($ticketId);
+        $emailSent->method('getTicketId')->willReturn(TicketId::fromString($ticketId));
         $emailSent->method('getStatus')->willReturn($status);
         return $emailSent;
     }

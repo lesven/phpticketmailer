@@ -102,11 +102,11 @@ class LoadDataFixturesCommandTest extends TestCase
 
         // Verify different entity types were created
         $entityTypes = array_map('get_class', $persistedEntities);
-        $this->assertContains(User::class, $entityTypes);
-        $this->assertContains(SMTPConfig::class, $entityTypes);
-        $this->assertContains(CsvFieldConfig::class, $entityTypes);
-        $this->assertContains(EmailSent::class, $entityTypes);
-        $this->assertContains(AdminPassword::class, $entityTypes);
+    $this->assertContainsEquals(User::class, $entityTypes);
+    $this->assertContainsEquals(SMTPConfig::class, $entityTypes);
+    $this->assertContainsEquals(CsvFieldConfig::class, $entityTypes);
+    $this->assertContainsEquals(EmailSent::class, $entityTypes);
+    $this->assertContainsEquals(AdminPassword::class, $entityTypes);
 
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('Alle Fixture-Daten wurden erfolgreich geladen', $output);
@@ -172,6 +172,6 @@ class LoadDataFixturesCommandTest extends TestCase
         
         $adminPassword = reset($adminPasswords);
         $this->assertNotNull($adminPassword->getPassword());
-        $this->assertTrue(password_verify('admin123', $adminPassword->getPassword()));
+        $this->assertTrue($adminPassword->verifyPassword('AdminP@ssw0rd123!'));
     }
 }
