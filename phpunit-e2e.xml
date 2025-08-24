@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Separate PHPUnit configuration for E2E tests -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         backupGlobals="false"
+         colors="true"
+         failOnNotice="true"
+         failOnWarning="true"
+         bootstrap="tests/bootstrap.php"
+         cacheDirectory=".phpunit.cache"
+>
+    <php>
+        <ini name="display_errors" value="1" />
+        <ini name="error_reporting" value="-1" />
+        <server name="APP_ENV" value="test" force="true" />
+        <server name="SHELL_VERBOSITY" value="-1" />
+        <!-- Override database for E2E tests -->
+        <server name="DATABASE_URL" value="mysql://ticketuser:password@database:3306/ticket_mailer_db_test?serverVersion=8.0.40&amp;charset=utf8mb4" force="true" />
+        <!-- Suppress Symfony deprecation warnings in E2E tests -->
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="disabled" />
+    </php>
+
+    <testsuites>
+        <testsuite name="Security E2E Tests">
+            <directory>tests/E2E/Security</directory>
+        </testsuite>
+        <testsuite name="All E2E Tests">
+            <directory>tests/E2E</directory>
+        </testsuite>
+    </testsuites>
+
+    <source ignoreSuppressionOfDeprecations="true" restrictNotices="true" restrictWarnings="true">
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+
+    <extensions>
+    </extensions>
+</phpunit>

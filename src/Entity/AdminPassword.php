@@ -3,9 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\AdminPasswordRepository;
+use App\ValueObject\SecurePassword;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\Validator\Constraints as SecurityAssert;
-use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Entity zur Verwaltung des Administrator-Passworts.
@@ -22,25 +21,14 @@ class AdminPassword
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
-    private $id;
+    #[ORM\Column]
+    private ?int $id = null;
 
     /**
-     * Das verschlüsselte Passwort, wie es in der Datenbank gespeichert wird.
+     * Das sichere Passwort als Value Object
      */
-    #[ORM\Column(type: 'string', length: 255)]
-    private $password;
-
-    /**
-     * Das unverschlüsselte Passwort (wird nicht in der Datenbank gespeichert).
-     * Dieses Feld wird nur temporär verwendet, wenn ein neues Passwort gesetzt wird.
-     */
-    #[Assert\NotBlank(message: 'Das Passwort darf nicht leer sein')]
-    #[Assert\Length(
-        min: 8,
-        minMessage: 'Das Passwort muss mindestens {{ limit }} Zeichen enthalten'
-    )]
-    private $plainPassword;
+    #[ORM\Column(type: 'secure_password')]
+    private ?SecurePassword $password = null;
 
     /**
      * Gibt die ID des Passworteintrags zurück.
@@ -53,50 +41,59 @@ class AdminPassword
     }
 
     /**
-     * Gibt das verschlüsselte Passwort zurück.
+     * Gibt das sichere Passwort zurück.
      *
-     * @return string|null Das verschlüsselte Passwort
+     * @return SecurePassword|null Das sichere Passwort
      */
-    public function getPassword(): ?string
+    public function getPassword(): ?SecurePassword
     {
         return $this->password;
     }
 
     /**
-     * Setzt das verschlüsselte Passwort.
+     * Setzt das Passwort von einem Klartext-Passwort.
      *
-     * @param string $password Das verschlüsselte Passwort
+     * @param string $plainPassword Das Klartext-Passwort
      * @return self Instanz dieser Klasse für Method Chaining
      */
-    public function setPassword(string $password): self
+    public function setPasswordFromPlaintext(string $plainPassword): self
     {
-        $this->password = $password;
+        $this->password = SecurePassword::fromPlaintext($plainPassword);
 
         return $this;
     }
-    
+
     /**
-     * Gibt das unverschlüsselte Passwort zurück.
-     * Dieses wird nicht in der Datenbank gespeichert.
+     * Setzt das Passwort von einem Hash.
      *
-     * @return string|null Das unverschlüsselte Passwort
-     */
-    public function getPlainPassword(): ?string
-    {
-        return $this->plainPassword;
-    }
-    
-    /**
-     * Setzt das unverschlüsselte Passwort.
-     * Dieses Feld wird nur temporär verwendet und nicht in der Datenbank gespeichert.
-     *
-     * @param string|null $plainPassword Das unverschlüsselte Passwort
+     * @param string $hash Der Passwort-Hash
      * @return self Instanz dieser Klasse für Method Chaining
      */
-    public function setPlainPassword(?string $plainPassword): self
+    public function setPasswordFromHash(string $hash): self
     {
-        $this->plainPassword = $plainPassword;
-        
+        $this->password = SecurePassword::fromHash($hash);
+
         return $this;
+    }
+
+    /**
+     * Überprüft ein Klartext-Passwort gegen das gespeicherte Passwort.
+     *
+     * @param string $plainPassword Das zu überprüfende Klartext-Passwort
+     * @return bool True wenn das Passwort übereinstimmt
+     */
+    public function verifyPassword(string $plainPassword): bool
+    {
+        return $this->password?->verify($plainPassword) ?? false;
+    }
+
+    /**
+     * Überprüft, ob das Passwort ein Rehashing benötigt.
+     *
+     * @return bool True wenn das Passwort ein Rehashing benötigt
+     */
+    public function needsPasswordRehash(): bool
+    {
+        return $this->password?->needsRehash() ?? false;
     }
 }

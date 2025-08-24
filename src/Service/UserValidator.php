@@ -46,7 +46,7 @@ class UserValidator
         $knownUsernames = [];
         
         foreach ($users as $user) {
-            $knownUsernames[$user->getUsername()] = true;
+            $knownUsernames[(string) $user->getUsername()] = true;
         }
         
         $unknownUsers = [];
@@ -67,7 +67,7 @@ class UserValidator
      */
     public function isKnownUser(string $username): bool
     {
-        return $this->userRepository->findOneByUsername($username) !== null;
+        return $this->userRepository->findByUsername($username) !== null;
     }
     
     /**

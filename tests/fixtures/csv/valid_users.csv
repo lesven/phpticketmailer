@@ -1,0 +1,6 @@
+email,ticket_number,custom_field
+test@example.com,TICKET-001,Projekt Alpha
+user@domain.org,TICKET-002,Projekt Beta
+admin@company.de,TICKET-003,Projekt Gamma
+support@helpdesk.net,TICKET-004,Projekt Delta
+info@business.com,TICKET-005,Projekt Epsilon
