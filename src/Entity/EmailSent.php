@@ -14,6 +14,7 @@ namespace App\Entity;
 use App\Repository\EmailSentRepository;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\TicketId;
+use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -40,8 +41,8 @@ class EmailSent
     /**
      * Benutzername des Empfängers
      */
-    #[ORM\Column(length: 255)]
-    private ?string $username = null;
+    #[ORM\Column(type: 'username')]
+    private ?Username $username = null;
 
     /**
      * E-Mail-Adresse des Empfängers
@@ -119,9 +120,9 @@ class EmailSent
     /**
      * Gibt den Benutzernamen des Empfängers zurück
      * 
-     * @return string|null Der Benutzername
+     * @return Username|null Der Benutzername
      */
-    public function getUsername(): ?string
+    public function getUsername(): ?Username
     {
         return $this->username;
     }
@@ -129,12 +130,16 @@ class EmailSent
     /**
      * Setzt den Benutzernamen des Empfängers
      * 
-     * @param string $username Der Benutzername
+     * @param Username|string $username Der Benutzername
      * @return self Für Method-Chaining
      */
-    public function setUsername(string $username): self
+    public function setUsername(Username|string $username): self
     {
-        $this->username = $username;
+        if (is_string($username)) {
+            $this->username = Username::fromString($username);
+        } else {
+            $this->username = $username;
+        }
 
         return $this;
     }

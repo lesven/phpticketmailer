@@ -389,7 +389,7 @@ class UserValidatorTest extends TestCase
     private function createUser(string $username): User
     {
         $user = $this->createMock(User::class);
-        $user->method('getUsername')->willReturn($username);
+        $user->method('getUsername')->willReturn(\App\ValueObject\Username::fromString($username));
         return $user;
     }
 }

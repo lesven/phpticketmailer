@@ -46,7 +46,7 @@ class UserValidator
         $knownUsernames = [];
         
         foreach ($users as $user) {
-            $knownUsernames[$user->getUsername()] = true;
+            $knownUsernames[(string) $user->getUsername()] = true;
         }
         
         $unknownUsers = [];

@@ -35,7 +35,7 @@ final class EmailSentTest extends TestCase
         $e->setTimestamp($now);
 
         $this->assertEquals(TicketId::fromString('T-123'), $e->getTicketId());
-        $this->assertSame('alice', $e->getUsername());
+        $this->assertEquals(\App\ValueObject\Username::fromString('alice'), $e->getUsername());
         $this->assertEquals(EmailAddress::fromString('a@example.com'), $e->getEmail());
         $this->assertSame('Hello', $e->getSubject());
         $this->assertSame('sent', $e->getStatus());

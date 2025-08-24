@@ -22,7 +22,7 @@ final class SMTPConfigTest extends TestCase
 
         $this->assertSame('smtp.example.local', $c->getHost());
         $this->assertSame(587, $c->getPort());
-        $this->assertSame('user', $c->getUsername());
+        $this->assertEquals(\App\ValueObject\Username::fromString('user'), $c->getUsername());
         $this->assertSame('p@ss', $c->getPassword());
         $this->assertTrue($c->isUseTLS());
         $this->assertFalse($c->getVerifySSL());

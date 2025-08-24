@@ -133,8 +133,8 @@ class UserImportService
         return sprintf(
             "%d,%s,%s\n",
             $user->getId(),
-            $this->escapeCsvField($user->getUsername()),
-            $this->escapeCsvField($user->getEmail())
+            $this->escapeCsvField((string) $user->getUsername()),
+            $this->escapeCsvField((string) $user->getEmail())
         );
     }
 

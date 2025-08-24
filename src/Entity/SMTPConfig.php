@@ -12,6 +12,7 @@
 namespace App\Entity;
 
 use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -47,8 +48,8 @@ class SMTPConfig
     /**
      * Benutzername für die Authentifizierung am SMTP-Server (optional)
      */
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $username = null;
+    #[ORM\Column(type: 'username', nullable: true)]
+    private ?Username $username = null;
 
     /**
      * Passwort für die Authentifizierung am SMTP-Server (optional)
@@ -147,9 +148,9 @@ class SMTPConfig
     /**
      * Gibt den Benutzernamen für die SMTP-Authentifizierung zurück
      * 
-     * @return string|null Der Benutzername
+     * @return Username|null Der Benutzername
      */
-    public function getUsername(): ?string
+    public function getUsername(): ?Username
     {
         return $this->username;
     }
@@ -157,12 +158,16 @@ class SMTPConfig
     /**
      * Setzt den Benutzernamen für die SMTP-Authentifizierung
      * 
-     * @param string|null $username Der Benutzername
+     * @param Username|string|null $username Der Benutzername
      * @return self Für Method-Chaining
      */
-    public function setUsername(?string $username): self
+    public function setUsername(Username|string|null $username): self
     {
-        $this->username = $username;
+        if (is_string($username)) {
+            $this->username = $username ? Username::fromString($username) : null;
+        } else {
+            $this->username = $username;
+        }
 
         return $this;
     }
@@ -318,7 +323,7 @@ class SMTPConfig
         $dsn = 'smtp://';
         
         if ($this->username && $this->password) {
-            $dsn .= urlencode($this->username) . ':' . urlencode($this->password) . '@';
+            $dsn .= urlencode((string) $this->username) . ':' . urlencode($this->password) . '@';
         }
         
         $dsn .= $this->host . ':' . $this->port;

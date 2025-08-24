@@ -12,6 +12,7 @@ doctrine:
             secure_password: App\Doctrine\Type\SecurePasswordType
             email_address: App\Doctrine\Type\EmailAddressType
             ticket_id: App\Doctrine\Type\TicketIdType
+            username: App\Doctrine\Type\UsernameType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

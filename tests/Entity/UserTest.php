@@ -19,7 +19,7 @@ final class UserTest extends TestCase
         $u->setEmail('bob@example.local');
         $u->setExcludedFromSurveys(true);
 
-        $this->assertSame('bob', $u->getUsername());
+        $this->assertEquals(\App\ValueObject\Username::fromString('bob'), $u->getUsername());
         $this->assertEquals(EmailAddress::fromString('bob@example.local'), $u->getEmail());
         $this->assertTrue($u->isExcludedFromSurveys());
     }
