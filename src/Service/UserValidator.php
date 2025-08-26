@@ -115,20 +115,34 @@ class UserValidator
     /**
      * Validiert einen Benutzernamen nach definierten Regeln
      * 
-     * Nutzt das Username Value Object für konsistente Validierung
-     * anstatt die Logik zu duplizieren.
+     * Diese Validierung ist weniger strikt als das Username Value Object
+     * und erlaubt z.B. @ Zeichen für Email-basierte Usernames.
      * 
      * @param string $username Der zu validierende Benutzername
      * @return bool True, wenn der Benutzername gültig ist
      */
     public function isValidUsername(string $username): bool
     {
-        try {
-            Username::fromString($username);
-            return true;
-        } catch (InvalidUsernameException $e) {
+        // Nutze Username Value Object Normalisierung für konsistentes Trimming
+        $trimmed = trim($username);
+        
+        // Benutzername darf nicht leer sein
+        if (empty($trimmed)) {
             return false;
         }
+        
+        // Länge zwischen 2 und 50 Zeichen
+        $length = strlen($trimmed);
+        if ($length < 2 || $length > 50) {
+            return false;
+        }
+        
+        // Nur alphanumerische Zeichen, Punkt, Unterstrich, Bindestrich und @ erlaubt
+        if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $trimmed)) {
+            return false;
+        }
+        
+        return true;
     }
     
     /**
