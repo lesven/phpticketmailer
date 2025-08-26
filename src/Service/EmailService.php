@@ -13,6 +13,7 @@ namespace App\Service;
 
 use App\Entity\EmailSent;
 use App\Entity\SMTPConfig;
+use App\ValueObject\TicketId;
 use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
 use App\Repository\EmailSentRepository;
@@ -284,7 +285,7 @@ class EmailService
         $user = $this->userRepository->findByUsername($ticket['username']);
         
         $emailRecord = new EmailSent();
-        $emailRecord->setTicketId($ticket['ticketId']);
+        $emailRecord->setTicketId(TicketId::fromString($ticket['ticketId']));
         $emailRecord->setUsername($ticket['username']);
         $emailRecord->setEmail($user ? (string) $user->getEmail() : '');
         $emailRecord->setSubject('');
@@ -321,7 +322,7 @@ class EmailService
         
         // Erstelle das E-Mail-Protokoll
         $emailRecord = new EmailSent();
-        $emailRecord->setTicketId($ticket['ticketId']);
+        $emailRecord->setTicketId(TicketId::fromString($ticket['ticketId']));
         $emailRecord->setUsername($ticket['username']);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);

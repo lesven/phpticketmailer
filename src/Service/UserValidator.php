@@ -11,7 +11,11 @@
 
 namespace App\Service;
 
+use App\Exception\InvalidEmailAddressException;
+use App\Exception\InvalidUsernameException;
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 
 class UserValidator
 {
@@ -43,16 +47,30 @@ class UserValidator
         }
         
         $users = $this->userRepository->findMultipleByUsernames(array_keys($usernames));
-        $knownUsernames = [];
+        $foundUsernames = [];
         
+        // Sammle alle gefundenen Username Value Objects
         foreach ($users as $user) {
-            $knownUsernames[(string) $user->getUsername()] = true;
+            if ($user->getUsername()) {
+                $foundUsernames[] = $user->getUsername();
+            }
         }
         
         $unknownUsers = [];
-        foreach (array_keys($usernames) as $username) {
-            if (!isset($knownUsernames[$username])) {
-                $unknownUsers[] = $username;
+        foreach (array_keys($usernames) as $csvUsername) {
+            $csvUsernameObj = Username::fromString($csvUsername);
+            $isKnown = false;
+            
+            // Vergleiche mit allen gefundenen Benutzernamen über Value Object equals()
+            foreach ($foundUsernames as $foundUsername) {
+                if ($csvUsernameObj->equals($foundUsername)) {
+                    $isKnown = true;
+                    break;
+                }
+            }
+            
+            if (!$isKnown) {
+                $unknownUsers[] = $csvUsername;
             }
         }
         
@@ -99,24 +117,30 @@ class UserValidator
     /**
      * Validiert einen Benutzernamen nach definierten Regeln
      * 
+     * Diese Validierung ist weniger strikt als das Username Value Object
+     * und erlaubt z.B. @ Zeichen für Email-basierte Usernames.
+     * 
      * @param string $username Der zu validierende Benutzername
      * @return bool True, wenn der Benutzername gültig ist
      */
     public function isValidUsername(string $username): bool
     {
+        // Nutze Username Value Object Normalisierung für konsistentes Trimming
+        $trimmed = trim($username);
+        
         // Benutzername darf nicht leer sein
-        if (empty(trim($username))) {
+        if (empty($trimmed)) {
             return false;
         }
         
         // Länge zwischen 2 und 50 Zeichen
-        $length = strlen($username);
+        $length = strlen($trimmed);
         if ($length < 2 || $length > 50) {
             return false;
         }
         
         // Nur alphanumerische Zeichen, Punkt, Unterstrich, Bindestrich und @ erlaubt
-        if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $username)) {
+        if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $trimmed)) {
             return false;
         }
         
@@ -125,6 +149,9 @@ class UserValidator
     
     /**
      * Validiert eine E-Mail-Adresse
+     * 
+     * Behält die ursprüngliche, strengere Validierung bei,
+     * um Breaking Changes zu vermeiden.
      * 
      * @param string $email Die zu validierende E-Mail-Adresse
      * @return bool True, wenn die E-Mail-Adresse gültig ist
@@ -136,8 +163,8 @@ class UserValidator
             return false;
         }
         
-        // Maximallänge prüfen
-        if (strlen($email) > 254) {
+        // Maximallänge prüfen (wie EmailAddress Value Object)
+        if (strlen($email) > 320) {
             return false;
         }
         
