@@ -162,7 +162,7 @@ class EmailService
                     $ticket, 
                     $currentTime, 
                     $testMode,
-                    'Nicht versendet – Mehrfaches Vorkommen in derselben CSV-Datei'
+                    EmailStatus::duplicateInCsv()
                 );
                 try {
                     $this->entityManager->persist($emailRecord);

@@ -6,6 +6,7 @@ use App\Controller\DashboardController;
 use App\Repository\EmailSentRepository;
 use App\Entity\EmailSent;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -102,7 +103,7 @@ class DashboardControllerTest extends TestCase
     {
         $emailSent = $this->createMock(EmailSent::class);
         $emailSent->method('getTicketId')->willReturn(TicketId::fromString($ticketId));
-        $emailSent->method('getStatus')->willReturn($status);
+        $emailSent->method('getStatus')->willReturn(EmailStatus::fromString($status));
         $emailSent->method('getEmail')->willReturn(EmailAddress::fromString($email));
         $emailSent->method('getTimestamp')->willReturn(new \DateTime());
         return $emailSent;
