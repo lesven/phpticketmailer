@@ -12,6 +12,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\ValueObject\Username;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -33,18 +34,25 @@ class UserRepository extends ServiceEntityRepository
     }
 
     /**
-     * Findet einen Benutzer anhand seines Benutzernamens
+     * Findet einen Benutzer anhand seines Benutzernamens (case-insensitive mit Username Value Object)
      * 
      * @param string $username Der gesuchte Benutzername
      * @return User|null Der gefundene Benutzer oder null, wenn kein passender Benutzer gefunden wurde
      */
     public function findByUsername(string $username): ?User
     {
-        return $this->findOneBy(['username' => $username]);
+        // Normalisiere den Suchbegriff wie das Username Value Object es tut
+        $normalizedUsername = strtolower(trim($username));
+        
+        return $this->createQueryBuilder('u')
+            ->where('LOWER(u.username) = :username')
+            ->setParameter('username', $normalizedUsername)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
     
     /**
-     * Findet mehrere Benutzer anhand ihrer Benutzernamen
+     * Findet mehrere Benutzer anhand ihrer Benutzernamen (case-insensitive mit Username Value Objects)
      * 
      * Diese Methode ist optimiert, um mehrere Benutzer gleichzeitig zu suchen,
      * anstatt mehrere einzelne Datenbankabfragen durchzuführen. Dies ist besonders
@@ -55,9 +63,18 @@ class UserRepository extends ServiceEntityRepository
      */
     public function findMultipleByUsernames(array $usernames): array
     {
+        if (empty($usernames)) {
+            return [];
+        }
+        
+        // Normalisiere alle Benutzernamen (case-insensitive)
+        $normalizedUsernames = array_map(function($username) {
+            return strtolower(trim($username));
+        }, $usernames);
+        
         return $this->createQueryBuilder('u')
-            ->where('u.username IN (:usernames)')
-            ->setParameter('usernames', $usernames)
+            ->where('LOWER(u.username) IN (:usernames)')
+            ->setParameter('usernames', $normalizedUsernames)
             ->getQuery()
             ->getResult();
     }

@@ -12,6 +12,7 @@
 namespace App\Service;
 
 use App\Repository\UserRepository;
+use App\ValueObject\Username;
 
 class UserValidator
 {
@@ -43,16 +44,30 @@ class UserValidator
         }
         
         $users = $this->userRepository->findMultipleByUsernames(array_keys($usernames));
-        $knownUsernames = [];
+        $foundUsernames = [];
         
+        // Sammle alle gefundenen Username Value Objects
         foreach ($users as $user) {
-            $knownUsernames[(string) $user->getUsername()] = true;
+            if ($user->getUsername()) {
+                $foundUsernames[] = $user->getUsername();
+            }
         }
         
         $unknownUsers = [];
-        foreach (array_keys($usernames) as $username) {
-            if (!isset($knownUsernames[$username])) {
-                $unknownUsers[] = $username;
+        foreach (array_keys($usernames) as $csvUsername) {
+            $csvUsernameObj = Username::fromString($csvUsername);
+            $isKnown = false;
+            
+            // Vergleiche mit allen gefundenen Benutzernamen über Value Object equals()
+            foreach ($foundUsernames as $foundUsername) {
+                if ($csvUsernameObj->equals($foundUsername)) {
+                    $isKnown = true;
+                    break;
+                }
+            }
+            
+            if (!$isKnown) {
+                $unknownUsers[] = $csvUsername;
             }
         }
         
