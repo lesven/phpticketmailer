@@ -41,12 +41,12 @@ class UserRepository extends ServiceEntityRepository
      */
     public function findByUsername(string $username): ?User
     {
-        // Normalisiere den Suchbegriff wie das Username Value Object es tut
-        $normalizedUsername = strtolower(trim($username));
+        // Nutze Username Value Object für konsistente Normalisierung
+        $usernameObj = Username::fromString($username);
         
         return $this->createQueryBuilder('u')
             ->where('LOWER(u.username) = :username')
-            ->setParameter('username', $normalizedUsername)
+            ->setParameter('username', (string) $usernameObj)
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -67,9 +67,9 @@ class UserRepository extends ServiceEntityRepository
             return [];
         }
         
-        // Normalisiere alle Benutzernamen (case-insensitive)
+        // Normalisiere alle Benutzernamen mit Username Value Object
         $normalizedUsernames = array_map(function($username) {
-            return strtolower(trim($username));
+            return (string) Username::fromString($username);
         }, $usernames);
         
         return $this->createQueryBuilder('u')
