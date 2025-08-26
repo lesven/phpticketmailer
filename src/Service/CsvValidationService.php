@@ -4,7 +4,9 @@ namespace App\Service;
 
 use App\Exception\CsvProcessingException;
 use App\Exception\InvalidEmailAddressException;
+use App\Exception\InvalidTicketIdException;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketId;
 
 /**
  * Service für die Validierung von CSV-Daten
@@ -138,12 +140,15 @@ class CsvValidationService
     /**
      * Prüft, ob eine Ticket-ID gültig ist
      * 
+     * Behält die ursprüngliche, strengere Validierung bei,
+     * um Breaking Changes zu vermeiden.
+     * 
      * @param string $ticketId Die zu prüfende Ticket-ID
      * @return bool True, wenn die Ticket-ID gültig ist
      */
     public function isValidTicketId(string $ticketId): bool
     {
-        // Ticket-ID sollte nicht leer sein und alphanumerische Zeichen + Bindestrich enthalten
+        // Ticket-ID sollte nicht leer sein und nur erlaubte Zeichen enthalten
         return !empty($ticketId) && 
                strlen($ticketId) <= 50 && 
                preg_match('/^[a-zA-Z0-9\-_]+$/', $ticketId);

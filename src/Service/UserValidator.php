@@ -11,8 +11,10 @@
 
 namespace App\Service;
 
+use App\Exception\InvalidEmailAddressException;
 use App\Exception\InvalidUsernameException;
 use App\Repository\UserRepository;
+use App\ValueObject\EmailAddress;
 use App\ValueObject\Username;
 
 class UserValidator
@@ -148,6 +150,9 @@ class UserValidator
     /**
      * Validiert eine E-Mail-Adresse
      * 
+     * Behält die ursprüngliche, strengere Validierung bei,
+     * um Breaking Changes zu vermeiden.
+     * 
      * @param string $email Die zu validierende E-Mail-Adresse
      * @return bool True, wenn die E-Mail-Adresse gültig ist
      */
@@ -158,8 +163,8 @@ class UserValidator
             return false;
         }
         
-        // Maximallänge prüfen
-        if (strlen($email) > 254) {
+        // Maximallänge prüfen (wie EmailAddress Value Object)
+        if (strlen($email) > 320) {
             return false;
         }
         
