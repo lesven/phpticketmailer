@@ -8,6 +8,7 @@ use App\Entity\SMTPConfig;
 use App\Entity\CsvFieldConfig;
 use App\Entity\AdminPassword;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketId;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -213,7 +214,7 @@ class LoadDataFixturesCommand extends Command
         
         for ($i = 1; $i <= 15; $i++) {
             $emailSent = new EmailSent();
-            $emailSent->setTicketId(sprintf("FIXTURE-%03d", $i));
+            $emailSent->setTicketId(TicketId::fromString(sprintf("FIXTURE-%03d", $i)));
             $emailSent->setUsername("fixtures_user" . (($i % 10) + 1));
             $emailSent->setEmail(EmailAddress::fromString("user" . (($i % 10) + 1) . "@example.com"));
             $emailSent->setSubject(sprintf("Ticket-Umfrage: FIXTURE-%03d", $i));
