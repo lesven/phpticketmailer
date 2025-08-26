@@ -109,10 +109,11 @@ class EmailSentRepository extends ServiceEntityRepository
 
         $existingTickets = [];
         foreach ($results as $emailSent) {
+            $ticketIdString = (string) $emailSent->getTicketId();
             // Nur das neueste Record pro Ticket-ID behalten
-            if (!isset($existingTickets[$emailSent->getTicketId()]) ||
-                $emailSent->getTimestamp() > $existingTickets[$emailSent->getTicketId()]->getTimestamp()) {
-                $existingTickets[$emailSent->getTicketId()] = $emailSent;
+            if (!isset($existingTickets[$ticketIdString]) ||
+                $emailSent->getTimestamp() > $existingTickets[$ticketIdString]->getTimestamp()) {
+                $existingTickets[$ticketIdString] = $emailSent;
             }
         }
 
