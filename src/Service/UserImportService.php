@@ -202,8 +202,8 @@ class UserImportService
 
         foreach ($userData as $row) {
             try {
-                $username = trim($row['username']);
-                $email = trim($row['email']);
+                $username = $row['username'];
+                $email = trim($row['email']); // Email trimming bleibt, da kein EmailAddress Value Object verwendet wird
 
                 // Prüfen ob Benutzer bereits existiert (nur wenn nicht alle gelöscht wurden)
                 if (!$clearExisting && $this->userRepository->findByUsername($username)) {

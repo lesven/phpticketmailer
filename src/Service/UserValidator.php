@@ -11,6 +11,7 @@
 
 namespace App\Service;
 
+use App\Exception\InvalidUsernameException;
 use App\Repository\UserRepository;
 use App\ValueObject\Username;
 
@@ -114,28 +115,20 @@ class UserValidator
     /**
      * Validiert einen Benutzernamen nach definierten Regeln
      * 
+     * Nutzt das Username Value Object für konsistente Validierung
+     * anstatt die Logik zu duplizieren.
+     * 
      * @param string $username Der zu validierende Benutzername
      * @return bool True, wenn der Benutzername gültig ist
      */
     public function isValidUsername(string $username): bool
     {
-        // Benutzername darf nicht leer sein
-        if (empty(trim($username))) {
+        try {
+            Username::fromString($username);
+            return true;
+        } catch (InvalidUsernameException $e) {
             return false;
         }
-        
-        // Länge zwischen 2 und 50 Zeichen
-        $length = strlen($username);
-        if ($length < 2 || $length > 50) {
-            return false;
-        }
-        
-        // Nur alphanumerische Zeichen, Punkt, Unterstrich, Bindestrich und @ erlaubt
-        if (!preg_match('/^[a-zA-Z0-9._@-]+$/', $username)) {
-            return false;
-        }
-        
-        return true;
     }
     
     /**
