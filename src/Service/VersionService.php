@@ -6,17 +6,31 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * Service zur Verwaltung von Software-Versionsinformationen
+ *
+ * Diese Klasse verwaltet die Versionsinformationen der Anwendung durch
+ * Lesen und Schreiben einer VERSION-Datei im Projekt-Root-Verzeichnis.
  */
 class VersionService
 {
-    private $projectDir;
-    private $version = null;
-    private $updateTimestamp = null;
+    /**
+     * Das Projektverzeichnis
+     */
+    private string $projectDir;
+    
+    /**
+     * Die aktuelle Versionsnummer
+     */
+    private ?string $version = null;
+    
+    /**
+     * Der Zeitstempel des letzten Updates
+     */
+    private ?string $updateTimestamp = null;
     
     /**
      * Konstruktor
      *
-     * @param ParameterBagInterface $parameterBag
+     * @param ParameterBagInterface $parameterBag Der Parameter-Bag für Zugriff auf Konfigurationswerte
      */
     public function __construct(ParameterBagInterface $parameterBag)
     {
@@ -26,6 +40,11 @@ class VersionService
     
     /**
      * Lädt die Versionsinformationen aus der VERSION-Datei
+     *
+     * Diese Methode liest die VERSION-Datei und parst den Inhalt,
+     * der im Format "Version|Zeitstempel" erwartet wird.
+     *
+     * @return void
      */
     private function loadVersionInfo(): void
     {
@@ -48,7 +67,7 @@ class VersionService
     /**
      * Gibt die aktuelle Versionsnummer zurück
      *
-     * @return string|null
+     * @return string|null Die Versionsnummer oder null wenn nicht verfügbar
      */
     public function getVersion(): ?string
     {
@@ -58,7 +77,7 @@ class VersionService
     /**
      * Gibt den Zeitstempel des letzten Updates zurück
      *
-     * @return string|null
+     * @return string|null Der Update-Zeitstempel oder null wenn nicht verfügbar
      */
     public function getUpdateTimestamp(): ?string
     {
@@ -67,8 +86,11 @@ class VersionService
     
     /**
      * Gibt eine formatierte Versionszeichenkette zurück
-     * 
-     * @return string
+     *
+     * Diese Methode erstellt eine benutzerfreundliche Darstellung der
+     * Versionsinformationen basierend auf den verfügbaren Daten.
+     *
+     * @return string Die formatierte Versionszeichenkette
      */
     public function getFormattedVersionString(): string
     {
@@ -89,10 +111,13 @@ class VersionService
     
     /**
      * Aktualisiert die Versionsdaten in der VERSION-Datei
-     * 
-     * @param string $version Neue Versionsnummer (optional)
+     *
+     * Diese Methode aktualisiert die Versionsinformationen und schreibt sie
+     * in die VERSION-Datei. Optional kann nur der Zeitstempel aktualisiert werden.
+     *
+     * @param string|null $version Neue Versionsnummer (optional)
      * @param bool $updateTimestamp Ob der Zeitstempel aktualisiert werden soll
-     * @return bool
+     * @return bool True bei erfolgreichem Schreiben, false bei Fehlern
      */
     public function updateVersionInfo(?string $version = null, bool $updateTimestamp = true): bool
     {

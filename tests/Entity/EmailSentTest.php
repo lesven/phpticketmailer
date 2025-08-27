@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 use App\Entity\EmailSent;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 
 final class EmailSentTest extends TestCase
@@ -27,7 +28,7 @@ final class EmailSentTest extends TestCase
           ->setUsername('alice')
           ->setEmail('a@example.com')
           ->setSubject('Hello')
-          ->setStatus('sent')
+          ->setStatus(EmailStatus::sent())
           ->setTestMode(true)
           ->setTicketName('Ticket A');
 
@@ -38,7 +39,7 @@ final class EmailSentTest extends TestCase
         $this->assertEquals(\App\ValueObject\Username::fromString('alice'), $e->getUsername());
         $this->assertEquals(EmailAddress::fromString('a@example.com'), $e->getEmail());
         $this->assertSame('Hello', $e->getSubject());
-        $this->assertSame('sent', $e->getStatus());
+        $this->assertEquals(EmailStatus::sent(), $e->getStatus());
         $this->assertSame($now, $e->getTimestamp());
         $this->assertTrue($e->getTestMode());
         $this->assertSame('Ticket A', $e->getTicketName());

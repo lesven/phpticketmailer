@@ -1,4 +1,13 @@
 <?php
+/**
+ * UpdateVersionCommand.php
+ *
+ * Dieser Symfony Console Command stellt einen Befehl zur Verfügung, um die
+ * Versionsinformationen der Anwendung zu aktualisieren. Er kann verwendet werden,
+ * um eine neue Versionsnummer zu setzen und den Update-Zeitstempel zu aktualisieren.
+ *
+ * @package App\Command
+ */
 
 namespace App\Command;
 
@@ -11,7 +20,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Befehl zur Aktualisierung der Versionsinformationen
+ * Console Command zur Aktualisierung der Versionsinformationen
+ *
+ * Dieser Command ermöglicht es, die Versionsinformationen der Anwendung
+ * über die Kommandozeile zu aktualisieren. Optional kann eine spezifische
+ * Versionsnummer angegeben werden.
  */
 #[AsCommand(
     name: 'app:update-version',
@@ -19,12 +32,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class UpdateVersionCommand extends Command
 {
-    private $versionService;
+    /**
+     * Service für Versionsverwaltung
+     */
+    private VersionService $versionService;
     
     /**
      * Konstruktor
      *
-     * @param VersionService $versionService
+     * @param VersionService $versionService Service für die Versionsverwaltung
      */
     public function __construct(VersionService $versionService)
     {
@@ -33,7 +49,13 @@ class UpdateVersionCommand extends Command
     }
     
     /**
-     * Konfiguration des Befehls
+     * Konfiguriert die verfügbaren Optionen des Commands
+     *
+     * Definiert die CLI-Optionen:
+     * - --version/-v: Optionale neue Versionsnummer
+     * - --no-timestamp: Verhindert die Aktualisierung des Zeitstempels
+     *
+     * @return void
      */
     protected function configure(): void
     {
@@ -43,11 +65,16 @@ class UpdateVersionCommand extends Command
     }
     
     /**
-     * Ausführung des Befehls
+     * Führt die Aktualisierung der Versionsinformationen aus
      *
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @return int
+     * Diese Methode orchestriert den Aktualisierungsprozess:
+     * 1. Liest die übergebenen Optionen
+     * 2. Delegiert die Aktualisierung an den VersionService
+     * 3. Zeigt das Ergebnis in einer formatierten Tabelle an
+     *
+     * @param InputInterface $input Die Eingabe-Parameter
+     * @param OutputInterface $output Die Ausgabe-Schnittstelle
+     * @return int Command::SUCCESS bei Erfolg, Command::FAILURE bei Fehlern
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

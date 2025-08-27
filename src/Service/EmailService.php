@@ -13,6 +13,7 @@ namespace App\Service;
 
 use App\Entity\EmailSent;
 use App\Entity\SMTPConfig;
+use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
@@ -154,7 +155,7 @@ class EmailService
                     $ticket, 
                     $currentTime, 
                     $testMode,
-                    'Nicht versendet – Mehrfaches Vorkommen in derselben CSV-Datei'
+                    EmailStatus::duplicateInCsv()
                 );
                 try {
                     $this->entityManager->persist($emailRecord);
@@ -169,12 +170,11 @@ class EmailService
             // Prüfe auf bereits verarbeitete Tickets in der Datenbank
             if (!$forceResend && isset($existingTickets[$ticketId])) {
                 $existingEmail = $existingTickets[$ticketId];
-                $formattedDate = $existingEmail->getTimestamp()->format('d.m.Y');
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket,
                     $currentTime,
                     $testMode,
-                    'Nicht versendet – Ticket bereits verarbeitet am ' . $formattedDate
+                    EmailStatus::alreadyProcessed($existingEmail->getTimestamp())
                 );
                 try {
                     $this->entityManager->persist($emailRecord);
@@ -194,7 +194,7 @@ class EmailService
                     $ticket,
                     $currentTime,
                     $testMode,
-                    'Nicht versendet – Von Umfragen ausgeschlossen'
+                    EmailStatus::excludedFromSurvey()
                 );
                 try {
                     $this->entityManager->persist($emailRecord);
@@ -230,7 +230,7 @@ class EmailService
                 $errorRecord->setUsername($emailRecord->getUsername());
                 $errorRecord->setTimestamp($emailRecord->getTimestamp());
                 $errorRecord->setTestMode($emailRecord->getTestMode());
-                $errorRecord->setStatus('error: database save failed - ' . substr($e->getMessage(), 0, 100));
+                $errorRecord->setStatus(EmailStatus::error('database save failed - ' . $e->getMessage()));
                 $errorRecord->setEmail($emailRecord->getEmail());
                 $errorRecord->setSubject($emailRecord->getSubject());
                 $errorRecord->setTicketName($emailRecord->getTicketName());
@@ -280,7 +280,7 @@ class EmailService
      * @param string $status Der Status-Text
      * @return EmailSent Die erstellte EmailSent-Entität
      */
-    private function createSkippedEmailRecord(array $ticket, \DateTime $timestamp, bool $testMode, string $status): EmailSent
+    private function createSkippedEmailRecord(array $ticket, \DateTime $timestamp, bool $testMode, EmailStatus|string $status): EmailSent
     {
         $user = $this->userRepository->findByUsername($ticket['username']);
         
@@ -332,7 +332,7 @@ class EmailService
         if (!$user) {
             $emailRecord->setEmail('');
             $emailRecord->setSubject('');
-            $emailRecord->setStatus('error: no email found');
+            $emailRecord->setStatus(EmailStatus::error('no email found'));
             return $emailRecord;
         }
         
@@ -359,7 +359,7 @@ class EmailService
                 $emailBody,
                 $emailConfig
             );
-            $emailRecord->setStatus('sent');
+            $emailRecord->setStatus(EmailStatus::sent());
             
             // 🔥 EVENT: E-Mail erfolgreich versendet
             $this->eventDispatcher->dispatch(new EmailSentEvent(
@@ -372,7 +372,7 @@ class EmailService
             ));
             
         } catch (\Exception $e) {
-            $emailRecord->setStatus('error: ' . substr($e->getMessage(), 0, 200));
+            $emailRecord->setStatus(EmailStatus::error($e->getMessage()));
             
             // 🔥 EVENT: E-Mail-Versand fehlgeschlagen
             $this->eventDispatcher->dispatch(new EmailFailedEvent(

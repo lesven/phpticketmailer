@@ -4,6 +4,7 @@ namespace App\Tests\Service;
 
 use App\Service\EmailService;
 use App\Entity\EmailSent;
+use App\ValueObject\EmailStatus;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mailer\MailerInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -118,7 +119,7 @@ class EmailServiceTest extends TestCase
     $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], '', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
-        $this->assertEquals('error: no email found', $emailSent->getStatus());
+        $this->assertEquals(EmailStatus::error('no email found'), $emailSent->getStatus());
         $this->assertEquals('', $emailSent->getEmail());
     }
 
@@ -145,7 +146,7 @@ class EmailServiceTest extends TestCase
     $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
-        $this->assertEquals('sent', $emailSent->getStatus());
+        $this->assertEquals(EmailStatus::sent(), $emailSent->getStatus());
         $this->assertStringContainsString('user1@example.com', $emailSent->getEmail());
     }
 
@@ -169,7 +170,7 @@ class EmailServiceTest extends TestCase
     /** @var EmailSent $emailSent */
     $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
 
-        $this->assertStringStartsWith('error:', $emailSent->getStatus());
+        $this->assertStringStartsWith('Fehler:', $emailSent->getStatus()->getValue());
     }
 
     public function testSendTicketEmailsWithDuplicateInCsv(): void
@@ -190,8 +191,8 @@ class EmailServiceTest extends TestCase
 
         $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, false, false);
         $this->assertCount(2, $result);
-        $this->assertSame('sent', $result[0]->getStatus());
-        $this->assertStringContainsString('Mehrfaches Vorkommen', $result[1]->getStatus());
+        $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
+        $this->assertStringContainsString('Mehrfach in CSV', $result[1]->getStatus()->getValue());
     }
 
     public function testSendTicketEmailsWithExistingTicketInDb(): void
@@ -210,8 +211,8 @@ class EmailServiceTest extends TestCase
 
         $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, false, false);
         $this->assertCount(1, $result);
-        $this->assertStringContainsString('bereits verarbeitet', $result[0]->getStatus());
-        $this->assertStringContainsString('02.01.2025', $result[0]->getStatus());
+        $this->assertStringContainsString('Bereits verarbeitet am', $result[0]->getStatus()->getValue());
+        $this->assertStringContainsString('02.01.2025', $result[0]->getStatus()->getValue());
     }
 
     public function testSendTicketEmailsUserExcludedCreatesSkippedRecord(): void
@@ -288,7 +289,7 @@ class EmailServiceTest extends TestCase
 
         $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, false, true);
         $this->assertCount(1, $result);
-        $this->assertSame('sent', $result[0]->getStatus());
+        $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
     }
 
     public function testSendTicketEmailsHandlesPersistFlushExceptionCreatesErrorRecord(): void
@@ -321,7 +322,7 @@ class EmailServiceTest extends TestCase
         $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, false, false);
 
         $this->assertCount(1, $result);
-        $this->assertStringContainsString('error: database save failed', $result[0]->getStatus());
+        $this->assertStringContainsString('Fehler: database save failed', $result[0]->getStatus()->getValue());
     }
 
     public function testGetEmailTemplateReadsHtmlFileIfPresent(): void
@@ -461,6 +462,6 @@ class EmailServiceTest extends TestCase
 
         $result = $this->service->sendTicketEmails($tickets, false);
         $this->assertCount(1, $result);
-        $this->assertSame('sent', $result[0]->getStatus());
+        $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
     }
 }

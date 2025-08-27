@@ -13,13 +13,13 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * und sorgt für eine klare Trennung der Verantwortlichkeiten.
  */
 class CsvUploadOrchestrator
-{    public function __construct(
+{
+    public function __construct(
         private readonly CsvProcessor $csvProcessor,
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly SessionManager $sessionManager,
         private readonly UserCreator $userCreator
-    ) {
-    }
+    ) {}
 
     /**
      * Verarbeitet einen kompletten CSV-Upload-Vorgang
@@ -32,9 +32,9 @@ class CsvUploadOrchestrator
      * @return UploadResult Ergebnis der Verarbeitung mit Weiterleitung und Meldungen
      */
     public function processUpload(
-        UploadedFile $csvFile, 
-        bool $testMode, 
-        bool $forceResend, 
+        UploadedFile $csvFile,
+        bool $testMode,
+        bool $forceResend,
         CsvFieldConfig $csvFieldConfig
     ): UploadResult {
         // 1. CSV-Konfiguration speichern
@@ -49,8 +49,8 @@ class CsvUploadOrchestrator
         // 4. Entscheidung über nächsten Schritt treffen
         if (!empty($processingResult['unknownUsers'])) {
             return UploadResult::redirectToUnknownUsers(
-                $testMode, 
-                $forceResend, 
+                $testMode,
+                $forceResend,
                 count($processingResult['unknownUsers'])
             );
         }
@@ -67,7 +67,7 @@ class CsvUploadOrchestrator
     public function processUnknownUsers(array $emailMappings): UnknownUsersResult
     {
         $unknownUsers = $this->sessionManager->getUnknownUsers();
-        
+
         if (empty($unknownUsers)) {
             return UnknownUsersResult::noUsersFound();
         }
@@ -75,8 +75,18 @@ class CsvUploadOrchestrator
         $newUsersCount = $this->createUsersFromMappings($emailMappings, $unknownUsers);
 
         return UnknownUsersResult::success($newUsersCount);
-    }    /**
+    }
+
+    /**
      * Erstellt neue User-Entitäten aus den E-Mail-Zuordnungen
+     *
+     * Diese private Methode iteriert über alle unbekannten Benutzer und erstellt
+     * für jeden, der eine E-Mail-Zuordnung hat, eine neue User-Entität.
+     * Anschließend werden alle erstellten Benutzer persistiert.
+     *
+     * @param array $emailMappings Assoziatives Array: Benutzername => E-Mail-Adresse
+     * @param array $unknownUsers Liste der unbekannten Benutzernamen
+     * @return int Anzahl der erfolgreich erstellten Benutzer
      */
     private function createUsersFromMappings(array $emailMappings, array $unknownUsers): int
     {

@@ -1,4 +1,13 @@
 <?php
+/**
+ * CsvFieldConfigType.php
+ *
+ * Diese Symfony Form-Klasse definiert das Formular zur Konfiguration der
+ * CSV-Feld-Zuordnungen. Sie ermöglicht es Benutzern, die Namen der CSV-Spalten
+ * anzupassen, die den verschiedenen Datenfeldern entsprechen.
+ *
+ * @package App\Form
+ */
 
 namespace App\Form;
 
@@ -10,8 +19,29 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/**
+ * Symfony Form Type für die CSV-Feld-Konfiguration
+ *
+ * Definiert ein Formular mit drei Textfeldern zur Konfiguration der
+ * CSV-Spalten-Namen für Ticket-ID, Benutzername und Ticket-Namen.
+ */
 class CsvFieldConfigType extends AbstractType
 {
+    /**
+     * Erstellt das Formular mit den benötigten Feldern
+     *
+     * Konfiguriert drei Textfelder für die CSV-Spalten-Zuordnung:
+     * - ticketIdField: Spalte für die Ticket-ID
+     * - usernameField: Spalte für den Benutzernamen
+     * - ticketNameField: Spalte für den Ticket-Namen
+     *
+     * Alle Felder haben eine maximale Länge von 50 Zeichen und sind optional,
+     * da Standardwerte verwendet werden, wenn keine Werte angegeben sind.
+     *
+     * @param FormBuilderInterface $builder Das Formular-Builder-Interface
+     * @param array $options Die Formular-Optionen
+     * @return void
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -56,6 +86,15 @@ class CsvFieldConfigType extends AbstractType
             ]);
     }
 
+    /**
+     * Konfiguriert die Standard-Optionen für das Formular
+     *
+     * Setzt die data_class auf CsvFieldConfig, damit das Formular
+     * automatisch mit CsvFieldConfig-Entitäten arbeiten kann.
+     *
+     * @param OptionsResolver $resolver Der Options-Resolver
+     * @return void
+     */
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
