@@ -3,14 +3,7 @@
  * EmailService.php
  * 
  * Diese Klasse ist verantwortlich für das Versenden von E-Mails an Benutzer
- * mit Informationen zu ihren Tick            // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
-            if (isset($seenTickets[$ticketId])) {
-                $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket,
-                    $currentTime,
-                    $testMode,
-                    EmailStatus::duplicateInCsv()
-                ); kann sowohl im normalen als auch im
+ * mit Informationen zu ihren Tickets. Sie kann sowohl im normalen als auch im
  * Testmodus arbeiten und speichert alle Sendeversuche in der Datenbank.
  * 
  * @package App\Service
