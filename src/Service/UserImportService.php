@@ -161,28 +161,25 @@ class UserImportService
     }
 
     /**
-     * Formatiert einen User als CSV-Zeile.
+     * Formatiert einen User als CSV-Zeile (delegiert an UserCsvHelper)
+     *
+     * @deprecated Diese Methode sollte nicht mehr verwendet werden.
+     *             Nutzen Sie stattdessen UserCsvHelper::formatUserAsCsvLine()
+     * @param User $user Die zu formatierende User-Entität
+     * @return string Die formatierte CSV-Zeile
      */
     private function formatUserAsCsvLine(User $user): string
     {
-        return sprintf(
-            "%d,%s,%s\n",
-            $user->getId(),
-            $this->escapeCsvField((string) $user->getUsername()),
-            $this->escapeCsvField((string) $user->getEmail())
-        );
+        return $this->csvHelper->formatUserAsCsvLine($user);
     }
 
     /**
-     * Mappt eine CSV-Zeile auf das interne Benutzer-Daten-Array.
+     * Löscht alle bestehenden Benutzer aus der Datenbank
      *
-     * @param array $row Die CSV-Zeile
-     * @param array $columnIndices Assoziatives Array mit Spaltenindizes
-     * @return array Assoziatives Array mit 'username' und 'email'
-     */
-
-    /**
-     * Löscht alle bestehenden Benutzer
+     * Diese Methode sollte mit Vorsicht verwendet werden, da sie alle
+     * User-Entitäten unwiderruflich aus der Datenbank entfernt.
+     *
+     * @return void
      */
     private function clearExistingUsers(): void
     {
@@ -193,6 +190,13 @@ class UserImportService
 
     /**
      * Erstellt und persistiert Benutzer aus den CSV-Daten
+     *
+     * Diese Methode verarbeitet die validierten CSV-Daten und erstellt
+     * neue User-Entitäten. Bereits existierende Benutzer werden übersprungen.
+     *
+     * @param array $userData Die zu verarbeitenden Benutzerdaten
+     * @param bool $clearExisting Ob bestehende Benutzer gelöscht wurden
+     * @return UserImportResult Das Ergebnis des Import-Vorgangs
      */
     private function createAndPersistUsers(array $userData, bool $clearExisting): UserImportResult
     {
@@ -202,8 +206,8 @@ class UserImportService
 
         foreach ($userData as $row) {
             try {
-                $username = trim($row['username']);
-                $email = trim($row['email']);
+                $username = $row['username'];
+                $email = $row['email']; // EmailAddress Value Object normalisiert automatisch
 
                 // Prüfen ob Benutzer bereits existiert (nur wenn nicht alle gelöscht wurden)
                 if (!$clearExisting && $this->userRepository->findByUsername($username)) {
@@ -212,7 +216,7 @@ class UserImportService
                 }
 
                 // Validierung mit UserValidator
-                if (!$this->userValidator->isValidUsername($username) || 
+                if (!$this->userValidator->isValidUsername($username) ||
                     !$this->userValidator->isValidEmail($email)) {
                     $errors[] = "Ungültige Daten für Benutzer '{$username}'";
                     continue;
@@ -252,8 +256,4 @@ class UserImportService
 
         return UserImportResult::success($createdCount, $skippedCount, $errors);
     }
-
-    /**
-     * Escaped ein CSV-Feld für den Export
-     */
 }

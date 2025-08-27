@@ -33,7 +33,7 @@ help:
 	@echo "  make logs-php        -> Logs des PHP-Service"
 	@echo "  make exec-php        -> Interaktiv in den PHP-Container (bash)"
 	@echo "  make console         -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
-	@echo "  make deploy          -> Vollständiger Deploy-Flow (GIT_PULL=1, SKIP_MIGRATIONS=1, SKIP_COMPOSER=1 möglich)"
+	@echo "  make deploy          -> Vollständiger Deploy-Flow"
 	@echo "  make composer-install-> composer install im PHP-Container"
 	@echo "  make composer-update -> composer update im PHP-Container"
 	@echo "  make cache-clear     -> Symfony Cache leeren (dev & prod)"
@@ -162,46 +162,11 @@ recreate-db:
 	@$(DC_BASE) $(DC_ARGS) down --volumes --remove-orphans
 	@$(DC_BASE) $(DC_ARGS) up -d $(DB_SERVICE)
 
-## Full fresh flow: rebuild, start, composer install, migrate
-fresh: build up-d composer-install migrate cache-warmup
-
-## Deploy flow: bring new code, ensure containers, run composer, migrations, cache, assets
-# Variables:
-#   GIT_PULL=1           -> run 'git pull' on the host before deploying
-#   SKIP_COMPOSER=1      -> skip composer install
-#   SKIP_MIGRATIONS=1    -> skip doctrine migrations
-#   SKIP_ASSETS=1        -> skip assets:install
 deploy:
-	@bash -lc '
-	set -e
-	echo "==> Deploy flow started"
-	if [ "$(GIT_PULL)" = "1" ]; then
-	  echo "-> Running git pull on host"
-	  git pull || { echo "git pull failed"; exit 1; }
-	fi
-	echo "-> Pulling images and starting services"
-	$(DC_BASE) $(DC_ARGS) pull || true
-	$(DC_BASE) $(DC_ARGS) up -d --build
-	if [ "$(SKIP_COMPOSER)" != "1" ]; then
-	  echo "-> composer install in $(PHP_SERVICE)"
-	  $(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) composer install --no-interaction --prefer-dist --optimize-autoloader || { echo "composer install failed"; exit 1; }
-	else
-	  echo "-> Skipping composer install"
-	fi
-	if [ "$(SKIP_MIGRATIONS)" != "1" ]; then
-	  echo "-> Running doctrine migrations"
-	  $(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console doctrine:migrations:migrate --no-interaction || { echo "migrations failed"; exit 1; }
-	else
-	  echo "-> Skipping migrations"
-	fi
-	echo "-> Clearing and warming cache (prod)"
-	$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console cache:clear --no-warmup || true
-	$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console cache:warmup --env=prod || true
-	if [ "$(SKIP_ASSETS)" != "1" ]; then
-	  echo "-> Installing assets (if symfony/asset available)"
-	  $(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console assets:install --symlink --relative || true
-	else
-	  echo "-> Skipping assets"
-	fi
-	echo "==> Deploy flow finished"
-	'
+	git pull
+	make down
+	make build
+	make up
+	make composer-install
+	make migrate
+	make cache-warmup

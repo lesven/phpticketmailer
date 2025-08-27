@@ -381,6 +381,133 @@ class UserValidatorTest extends TestCase
     }
 
     /**
+     * Test: Case-insensitive Erkennung von bekannten/unbekannten Benutzern
+     * 
+     * Simuliert das ursprüngliche Problem:
+     * - User in DB: "svenmuller" (lowercase normalisiert)
+     * - CSV enthält: "SvenMueller" (mixed case)
+     * - Sollte als "bekannter Benutzer" erkannt werden
+     */
+    public function testFilterKnownAndUnknownUsersCaseInsensitive(): void
+    {
+        // CSV-Daten mit gemischter Schreibweise (wie sie in der Realität vorkamen)
+        $csvRecords = [
+            ['username' => 'SvenMueller', 'email' => 'sven@example.com'],      // DB: svenmueller
+            ['username' => 'JOHNDOE', 'email' => 'john@example.com'],          // DB: johndoe
+            ['username' => 'Jane.Doe', 'email' => 'jane@example.com'],         // DB: jane.doe
+            ['username' => 'UnknownUser', 'email' => 'unknown@example.com'],   // existiert nicht
+            ['username' => '  MaxMuster  ', 'email' => 'max@example.com']      // DB: maxmuster (mit Leerzeichen)
+        ];
+
+        // Mock: Repository gibt Users zurück die lowercase normalisiert sind
+        $knownUsersInDb = [
+            'svenmueller' => $this->createUser('svenmueller'),  // Das ist wichtig! CSV: SvenMueller -> svenmueller
+            'johndoe' => $this->createUser('johndoe'),
+            'jane.doe' => $this->createUser('jane.doe'),
+            'maxmuster' => $this->createUser('maxmuster')
+        ];
+
+        // UserRepository mock konfigurieren für case-insensitive Suche
+        // Da filterKnownAndUnknownUsers intern isKnownUser verwendet und das wiederum findByUsername
+        $this->userRepository->method('findByUsername')
+            ->willReturnCallback(function ($username) use ($knownUsersInDb) {
+                // Simuliert die case-insensitive DB-Suche
+                $normalizedSearch = strtolower(trim($username));
+                return $knownUsersInDb[$normalizedSearch] ?? null;
+            });
+
+        list($knownUsers, $unknownUsers) = $this->userValidator->filterKnownAndUnknownUsers($csvRecords);
+
+        // Erwartete Ergebnisse
+        $expectedKnownUsers = [
+            ['username' => 'SvenMueller', 'email' => 'sven@example.com'],
+            ['username' => 'JOHNDOE', 'email' => 'john@example.com'],
+            ['username' => 'Jane.Doe', 'email' => 'jane@example.com'],
+            ['username' => '  MaxMuster  ', 'email' => 'max@example.com']
+        ];
+
+        $expectedUnknownUsers = [
+            ['username' => 'UnknownUser', 'email' => 'unknown@example.com']
+        ];
+
+        $this->assertCount(4, $knownUsers, 'Sollte 4 bekannte Benutzer finden');
+        $this->assertCount(1, $unknownUsers, 'Sollte 1 unbekannten Benutzer finden');
+        
+        $this->assertEquals($expectedKnownUsers, $knownUsers);
+        $this->assertEquals($expectedUnknownUsers, $unknownUsers);
+    }
+
+    /**
+     * Test: isKnownUser mit case-insensitive Suche
+     */
+    public function testIsKnownUserCaseInsensitive(): void
+    {
+        // Mock User mit normalisiertem Username
+        $user = $this->createUser('svenmuller');
+
+        // Repository soll case-insensitive suchen
+        $this->userRepository->method('findByUsername')
+            ->willReturnCallback(function ($username) use ($user) {
+                // Simuliert case-insensitive DB-Suche
+                $normalized = strtolower(trim($username));
+                return $normalized === 'svenmuller' ? $user : null;
+            });
+
+        // Test verschiedene Schreibweisen
+        $this->assertTrue($this->userValidator->isKnownUser('svenmuller'));
+        $this->assertTrue($this->userValidator->isKnownUser('SvenMuller'));
+        $this->assertTrue($this->userValidator->isKnownUser('SVENMULLER'));
+        $this->assertTrue($this->userValidator->isKnownUser('sVeNmUlLeR'));
+        $this->assertTrue($this->userValidator->isKnownUser('  SvenMuller  '));
+        
+        // Nicht existierender User
+        $this->assertFalse($this->userValidator->isKnownUser('nonexistent'));
+    }
+
+    /**
+     * Test: identifyUnknownUsers mit case-insensitive Logik
+     * 
+     * Testet die Methode die in CSV-Imports verwendet wird um
+     * unbekannte Benutzer zu identifizieren
+     */
+    public function testFindUnknownUsersCaseInsensitive(): void
+    {
+        // CSV-Style Daten mit verschiedenen Schreibweisen
+        $csvUsernames = [
+            'SvenMueller',      // bekannt (DB: svenmueller)
+            'JOHNDOE',          // bekannt (DB: johndoe)  
+            'UnknownUser',      // unbekannt
+            '  JaneDoe  '       // bekannt (DB: janedoe)
+        ];
+
+        // Mock DB Users (normalisiert)
+        $knownUsersInDb = [
+            'svenmueller' => $this->createUser('svenmueller'),
+            'johndoe' => $this->createUser('johndoe'),
+            'janedoe' => $this->createUser('janedoe')
+        ];
+
+        $this->userRepository->method('findMultipleByUsernames')
+            ->willReturnCallback(function (array $usernames) use ($knownUsersInDb) {
+                $results = [];
+                foreach ($usernames as $username) {
+                    $normalized = strtolower(trim($username));
+                    if (isset($knownUsersInDb[$normalized])) {
+                        $results[] = $knownUsersInDb[$normalized];
+                    }
+                }
+                return $results;
+            });
+
+        // identifyUnknownUsers erwartet ein assoziatives Array, nicht ein simples Array
+        $csvData = array_flip($csvUsernames);  // ['SvenMueller' => 0, 'JOHNDOE' => 1, ...]
+        $unknownUsers = $this->userValidator->identifyUnknownUsers($csvData);
+
+        $this->assertCount(1, $unknownUsers, 'Sollte nur 1 unbekannten Benutzer finden');
+        $this->assertEquals(['UnknownUser'], $unknownUsers);
+    }
+
+    /**
      * Hilfsmethode zum Erstellen eines Mock-User-Objekts
      * 
      * @param string $username Der Benutzername für den Mock-User

@@ -13,6 +13,7 @@ namespace App\Entity;
 
 use App\Repository\EmailSentRepository;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use Doctrine\ORM\Mapping as ORM;
@@ -59,8 +60,8 @@ class EmailSent
     /**
      * Status der E-Mail (z.B. 'sent', 'error: ...')
      */
-    #[ORM\Column(length: 50)]
-    private ?string $status = null;
+    #[ORM\Column(type: 'email_status')]
+    private ?EmailStatus $status = null;
 
     /**
      * Zeitpunkt, zu dem die E-Mail gesendet wurde
@@ -202,9 +203,9 @@ class EmailSent
     /**
      * Gibt den Status der E-Mail zurück
      * 
-     * @return string|null Der Status (z.B. 'sent', 'error: ...')
+     * @return EmailStatus|null Der Status
      */
-    public function getStatus(): ?string
+    public function getStatus(): ?EmailStatus
     {
         return $this->status;
     }
@@ -212,11 +213,15 @@ class EmailSent
     /**
      * Setzt den Status der E-Mail
      * 
-     * @param string $status Der Status
+     * @param EmailStatus|string $status Der Status
      * @return self Für Method-Chaining
      */
-    public function setStatus(string $status): self
+    public function setStatus(EmailStatus|string $status): self
     {
+        if (is_string($status)) {
+            $status = EmailStatus::fromString($status);
+        }
+
         $this->status = $status;
 
         return $this;

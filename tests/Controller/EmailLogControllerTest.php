@@ -7,6 +7,7 @@ use App\Repository\EmailSentRepository;
 use App\Service\PaginationService;
 use App\Service\PaginationResult;
 use App\Entity\EmailSent;
+use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
@@ -362,7 +363,7 @@ class EmailLogControllerTest extends TestCase
     {
         $emailSent = $this->createMock(EmailSent::class);
         $emailSent->method('getTicketId')->willReturn(TicketId::fromString($ticketId));
-        $emailSent->method('getStatus')->willReturn($status);
+        $emailSent->method('getStatus')->willReturn(EmailStatus::fromString($status));
         return $emailSent;
     }
 }
