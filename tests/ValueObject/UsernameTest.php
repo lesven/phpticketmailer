@@ -99,6 +99,11 @@ class UsernameTest extends TestCase
             ['user_with_underscores'],
             ['user-with-hyphens'],
             [str_repeat('a', 50)], // Max length
+            // E-Mail-Adressen
+            ['user@example.com'],
+            ['test.email@domain.org'],
+            ['user123@test-domain.co.uk'],
+            ['User@Example.COM'], // Groß-/Kleinschreibung beibehalten
         ];
     }
 
@@ -129,7 +134,6 @@ class UsernameTest extends TestCase
             ['admin', 'is reserved'], // Reserved name
             ['root', 'is reserved'], // Reserved name
             ['system', 'is reserved'], // Reserved name
-            ['user@domain', 'invalid characters'], // Contains @
             ['user space', 'invalid characters'], // Contains space
             ['user<script>', 'invalid characters'], // Contains HTML
             ['user;drop', 'invalid characters'], // SQL injection attempt
@@ -137,6 +141,12 @@ class UsernameTest extends TestCase
             ['../user', 'invalid characters'], // Path traversal
             ['user\\path', 'invalid characters'], // Path traversal
             ['javascript:alert', 'invalid characters'], // XSS
+            // Ungültige E-Mail-Formate
+            ['user@', 'Invalid email address format'], // Unvollständige E-Mail
+            ['@domain.com', 'Invalid email address format'], // Fehlender Local-Part
+            ['user..email@domain.com', 'Invalid email address format'], // Doppelte Punkte
+            ['user@domain', 'Invalid email address format'], // Fehlende TLD
+            ['user@domain..com', 'Invalid email address format'], // Doppelte Punkte in Domain
         ];
     }
 
@@ -150,7 +160,50 @@ class UsernameTest extends TestCase
     public function testNormalizationRemovesConsecutiveSeparators(): void
     {
         $username = Username::fromString('user..name');
-        
+
         $this->assertEquals('user.name', $username->getValue());
+    }
+
+    public function testEmailPreservesCase(): void
+    {
+        $email = Username::fromString('User@Example.COM');
+
+        $this->assertEquals('User@Example.COM', $email->getValue());
+    }
+
+    public function testEmailValidation(): void
+    {
+        $validEmail = Username::fromString('user@example.com');
+        $this->assertInstanceOf(Username::class, $validEmail);
+
+        $this->expectException(InvalidUsernameException::class);
+        $this->expectExceptionMessage('Invalid email address format');
+        Username::fromString('invalid@');
+    }
+
+    public function testReservedNamesDoNotApplyToEmails(): void
+    {
+        // E-Mail-Adressen sollten nicht gegen reservierte Namen geprüft werden
+        $email = Username::fromString('admin@example.com');
+        $this->assertInstanceOf(Username::class, $email);
+        $this->assertFalse($email->isReserved());
+    }
+
+    public function testEmailDisplayName(): void
+    {
+        $email = Username::fromString('user@example.com');
+
+        $this->assertEquals('User@example.com', $email->getDisplayName());
+    }
+
+    public function testEmailEqualityCaseSensitive(): void
+    {
+        $email1 = Username::fromString('user@example.com');
+        $email2 = Username::fromString('User@Example.COM');
+        $email3 = Username::fromString('user@example.com');
+
+        // E-Mail-Adressen sollten case-sensitive sein
+        $this->assertFalse($email1->equals($email2));
+        $this->assertTrue($email1->equals($email3));
     }
 }
