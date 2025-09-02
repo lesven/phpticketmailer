@@ -52,7 +52,7 @@ class UpdateVersionCommand extends Command
      * Konfiguriert die verfügbaren Optionen des Commands
      *
      * Definiert die CLI-Optionen:
-     * - --version/-v: Optionale neue Versionsnummer
+     * - --new-version: Optionale neue Versionsnummer
      * - --no-timestamp: Verhindert die Aktualisierung des Zeitstempels
      *
      * @return void
@@ -60,7 +60,7 @@ class UpdateVersionCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('version', 'v', InputOption::VALUE_OPTIONAL, 'Neue Versionsnummer')
+            ->addOption('new-version', null, InputOption::VALUE_OPTIONAL, 'Neue Versionsnummer')
             ->addOption('no-timestamp', null, InputOption::VALUE_NONE, 'Zeitstempel nicht aktualisieren');
     }
     
@@ -79,7 +79,7 @@ class UpdateVersionCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $version = $input->getOption('version');
+        $version = $input->getOption('new-version');
         $noTimestamp = $input->getOption('no-timestamp');
         
         $result = $this->versionService->updateVersionInfo($version, !$noTimestamp);
