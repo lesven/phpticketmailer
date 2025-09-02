@@ -138,7 +138,7 @@
                             <td>{{ email.email }}</td>                            <td>
                                 {% if email.status starts with 'error' %}
                                     <span class="badge bg-danger">{{ email.status }}</span>
-                                {% elseif email.status starts with 'Nicht versendet' %}
+                                {% elseif email.status starts with 'Nicht versendet' or email.status starts with 'Bereits verarbeitet' %}
                                     <span class="badge bg-warning text-dark">{{ email.status }}</span>
                                 {% else %}
                                     <span class="badge bg-success">{{ email.status }}</span>

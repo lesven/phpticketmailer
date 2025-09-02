@@ -179,6 +179,22 @@ class EmailSentRepository extends ServiceEntityRepository
     }
 
     /**
+     * Zählt die Anzahl übersprungener E-Mail-Versendungen
+     *
+     * @return int Die Anzahl der übersprungenen E-Mails
+     */
+    public function countSkippedEmails(): int
+    {
+        return $this->createQueryBuilder('e')
+            ->select(self::COUNT_SELECT)
+            ->where('e.status LIKE :status OR e.status LIKE :status2')
+            ->setParameter('status', 'Nicht versendet%')
+            ->setParameter('status2', 'Bereits verarbeitet%')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Holt alle E-Mail-Statistiken in einer einzigen Abfrage
      *
      * @return array Assoziatives Array mit allen Statistiken
@@ -189,10 +205,8 @@ class EmailSentRepository extends ServiceEntityRepository
         $total = $this->countTotalEmails();
         $successful = $this->countSuccessfulEmails();
         $failed = $this->countFailedEmails();
+        $skipped = $this->countSkippedEmails();
         $unique = $this->countUniqueRecipients();
-
-        // Berechne zusätzliche Statistiken
-        $skipped = $total - $successful - $failed;
 
         return [
             'total' => $total,
