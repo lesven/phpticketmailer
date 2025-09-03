@@ -130,7 +130,7 @@ class EmailSentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->select(self::COUNT_SELECT)
             ->where('e.status = :status')
-            ->setParameter('status', 'sent')
+            ->setParameter('status', 'Versendet')
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -145,7 +145,7 @@ class EmailSentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->select('COUNT(DISTINCT e.username)')
             ->where('e.status = :status')
-            ->setParameter('status', 'sent')
+            ->setParameter('status', 'Versendet')
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -173,7 +173,7 @@ class EmailSentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->select(self::COUNT_SELECT)
             ->where('e.status LIKE :status')
-            ->setParameter('status', 'error%')
+            ->setParameter('status', 'Fehler:%')
             ->getQuery()
             ->getSingleScalarResult();
     }
