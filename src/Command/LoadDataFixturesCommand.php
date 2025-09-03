@@ -209,7 +209,7 @@ class LoadDataFixturesCommand extends Command
     {
         $io->progressStart(15);
         
-        $statuses = ['sent', 'error: SMTP connection failed', 'error: Invalid email', 'sent', 'sent'];
+        $statuses = ['Versendet', 'Fehler: SMTP connection failed', 'Fehler: Invalid email', 'Versendet', 'Versendet'];
         $testModes = [true, false, true, false, false];
         
         for ($i = 1; $i <= 15; $i++) {

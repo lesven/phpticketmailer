@@ -50,17 +50,17 @@ class EmailLogControllerTest extends TestCase
 
     public function testIndexWithoutSearchShowsPaginatedResults(): void
     {
-        $request = new Request(['filter' => 'sent', 'page' => '2']);
+        $request = new Request(['filter' => 'live', 'page' => '2']);
         
         $emails = [
-            $this->createMockEmailSent('T-001', 'sent'),
-            $this->createMockEmailSent('T-002', 'sent')
+            $this->createMockEmailSent('T-001', 'Versendet'),
+            $this->createMockEmailSent('T-002', 'Versendet')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
         
         $this->emailSentRepository->method('createFilteredQueryBuilder')
-            ->with('sent')
+            ->with('live')
             ->willReturn($queryBuilder);
 
         $paginationResult = new PaginationResult(
@@ -81,7 +81,7 @@ class EmailLogControllerTest extends TestCase
             ->with('email_log/index.html.twig', [
                 'emails' => $emails,
                 'search' => null,
-                'filter' => 'sent',
+                'filter' => 'live',
                 'pagination' => $paginationResult,
                 'currentPage' => 2,
                 'totalPages' => 5,
@@ -99,8 +99,8 @@ class EmailLogControllerTest extends TestCase
         $request = new Request(['search' => 'T-123', 'filter' => 'all']);
         
         $emails = [
-            $this->createMockEmailSent('T-1234', 'sent'),
-            $this->createMockEmailSent('T-12345', 'error')
+            $this->createMockEmailSent('T-1234', 'Versendet'),
+            $this->createMockEmailSent('T-12345', 'Fehler: Connection failed')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -147,7 +147,7 @@ class EmailLogControllerTest extends TestCase
         $request = new Request();
         
         $emails = [
-            $this->createMockEmailSent('T-001', 'sent')
+            $this->createMockEmailSent('T-001', 'Versendet')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -192,7 +192,7 @@ class EmailLogControllerTest extends TestCase
         $request = new Request(['page' => '-3']);
         
         $emails = [
-            $this->createMockEmailSent('T-001', 'sent')
+            $this->createMockEmailSent('T-001', 'Versendet')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -222,19 +222,19 @@ class EmailLogControllerTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testIndexWithErrorFilter(): void
+    public function testIndexWithTestFilter(): void
     {
-        $request = new Request(['filter' => 'error']);
+        $request = new Request(['filter' => 'test']);
         
         $emails = [
-            $this->createMockEmailSent('T-001', 'error: SMTP failed'),
-            $this->createMockEmailSent('T-002', 'error: User not found')
+            $this->createMockEmailSent('T-001', 'Fehler: SMTP failed'),
+            $this->createMockEmailSent('T-002', 'Fehler: User not found')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
         
         $this->emailSentRepository->method('createFilteredQueryBuilder')
-            ->with('error')
+            ->with('test')
             ->willReturn($queryBuilder);
 
         $paginationResult = new PaginationResult(
@@ -255,7 +255,7 @@ class EmailLogControllerTest extends TestCase
             ->with('email_log/index.html.twig', [
                 'emails' => $emails,
                 'search' => null,
-                'filter' => 'error',
+                'filter' => 'test',
                 'pagination' => $paginationResult,
                 'currentPage' => 1,
                 'totalPages' => 1,
@@ -273,7 +273,7 @@ class EmailLogControllerTest extends TestCase
         $request = new Request(['search' => '']);
         
         $emails = [
-            $this->createMockEmailSent('T-001', 'sent')
+            $this->createMockEmailSent('T-001', 'Versendet')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -314,18 +314,18 @@ class EmailLogControllerTest extends TestCase
 
     public function testIndexWithSearchAndFilter(): void
     {
-        $request = new Request(['search' => 'URGENT', 'filter' => 'sent']);
+        $request = new Request(['search' => 'URGENT', 'filter' => 'live']);
         
         $emails = [
-            $this->createMockEmailSent('URGENT-001', 'sent'),
-            $this->createMockEmailSent('URGENT-002', 'sent')
+            $this->createMockEmailSent('URGENT-001', 'Versendet'),
+            $this->createMockEmailSent('URGENT-002', 'Versendet')
         ];
         
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $query = $this->createMock(Query::class);
         
         $this->emailSentRepository->method('createFilteredQueryBuilder')
-            ->with('sent')
+            ->with('live')
             ->willReturn($queryBuilder);
 
         $queryBuilder->method('andWhere')
@@ -346,7 +346,7 @@ class EmailLogControllerTest extends TestCase
             ->with('email_log/index.html.twig', [
                 'emails' => $emails,
                 'search' => 'URGENT',
-                'filter' => 'sent',
+                'filter' => 'live',
                 'pagination' => null,
                 'currentPage' => 1,
                 'totalPages' => 1,
