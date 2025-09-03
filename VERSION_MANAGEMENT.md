@@ -48,11 +48,11 @@ Der Befehl `app:update-version` (in `src/Command/UpdateVersionCommand.php`) kann
 
 Verwendung:
 ```bash
-php bin/console app:update-version --version="1.2.3"
+php bin/console app:update-version --new-version="1.2.3"
 ```
 
 Optionen:
-- `--version=X.Y.Z` oder `-v X.Y.Z`: Setzt eine neue Versionsnummer
+- `--new-version=X.Y.Z`: Setzt eine neue Versionsnummer
 - `--no-timestamp`: Verhindert die Aktualisierung des Zeitstempels
 
 ### Update-Skripte
@@ -91,8 +91,8 @@ Wenn Sie die Version manuell aktualisieren möchten:
 
 ```bash
 # Linux/macOS
-php bin/console app:update-version --version="1.2.3"
+php bin/console app:update-version --new-version="1.2.3"
 
 # Windows
-php bin/console app:update-version --version="1.2.3"
+php bin/console app:update-version --new-version="1.2.3"
 ```
