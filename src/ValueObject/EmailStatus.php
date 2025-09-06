@@ -149,4 +149,54 @@ final class EmailStatus
     {
         return $this->value === $other->value;
     }
+
+    /**
+     * Prüft, ob der Status einen erfolgreichen Versand anzeigt
+     * 
+     * @return bool True, wenn die E-Mail erfolgreich versendet wurde
+     */
+    public function isSent(): bool
+    {
+        return str_starts_with($this->value, 'Versendet');
+    }
+
+    /**
+     * Prüft, ob der Status einen Fehler anzeigt
+     * 
+     * @return bool True, wenn beim Versand ein Fehler aufgetreten ist
+     */
+    public function isError(): bool
+    {
+        return str_starts_with($this->value, 'Fehler:');
+    }
+
+    /**
+     * Prüft, ob der Status anzeigt, dass die E-Mail bereits verarbeitet wurde
+     * 
+     * @return bool True, wenn die E-Mail bereits verarbeitet wurde
+     */
+    public function isAlreadyProcessed(): bool
+    {
+        return str_starts_with($this->value, 'Bereits verarbeitet');
+    }
+
+    /**
+     * Prüft, ob der Status anzeigt, dass die E-Mail aufgrund eines Duplikats übersprungen wurde
+     * 
+     * @return bool True, wenn die E-Mail wegen Duplikat übersprungen wurde
+     */
+    public function isDuplicate(): bool
+    {
+        return str_starts_with($this->value, 'Nicht versendet – Mehrfach in CSV');
+    }
+
+    /**
+     * Prüft, ob der Status anzeigt, dass die E-Mail aufgrund von Umfrage-Ausschluss übersprungen wurde
+     * 
+     * @return bool True, wenn die E-Mail wegen Umfrage-Ausschluss übersprungen wurde
+     */
+    public function isExcludedFromSurvey(): bool
+    {
+        return str_starts_with($this->value, 'Nicht versendet – Von Umfragen ausgeschlossen');
+    }
 }

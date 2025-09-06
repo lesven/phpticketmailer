@@ -9,6 +9,7 @@ use App\Entity\CsvFieldConfig;
 use App\Entity\AdminPassword;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\TicketId;
+use App\ValueObject\EmailStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -209,7 +210,13 @@ class LoadDataFixturesCommand extends Command
     {
         $io->progressStart(15);
         
-        $statuses = ['sent', 'error: SMTP connection failed', 'error: Invalid email', 'sent', 'sent'];
+        $statuses = [
+            EmailStatus::sent(),
+            EmailStatus::error('SMTP connection failed'),
+            EmailStatus::error('Invalid email'),
+            EmailStatus::sent(),
+            EmailStatus::sent()
+        ];
         $testModes = [true, false, true, false, false];
         
         for ($i = 1; $i <= 15; $i++) {

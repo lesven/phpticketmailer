@@ -256,8 +256,8 @@ class EmailService
 
         // 🔥 EVENT: Bulk E-Mail-Versand abgeschlossen
         $endTime = microtime(true);
-        $sentCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'sent')));
-        $failedCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'error')));
+        $sentCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSent()));
+        $failedCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isError()));
         $skippedCount = count($sentEmails) - $sentCount - $failedCount;
 
         $this->eventDispatcher->dispatch(new BulkEmailCompletedEvent(

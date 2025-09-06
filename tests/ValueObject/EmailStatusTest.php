@@ -124,4 +124,71 @@ class EmailStatusTest extends TestCase
         $this->assertEquals(50, strlen($status->getValue()));
         $this->assertEquals($exactlyFiftyChars, $status->getValue());
     }
+
+    public function testIsSentReturnsTrueForSentStatus(): void
+    {
+        $status = EmailStatus::sent();
+        
+        $this->assertTrue($status->isSent());
+        $this->assertFalse($status->isError());
+        $this->assertFalse($status->isAlreadyProcessed());
+        $this->assertFalse($status->isDuplicate());
+        $this->assertFalse($status->isExcludedFromSurvey());
+    }
+
+    public function testIsErrorReturnsTrueForErrorStatus(): void
+    {
+        $status = EmailStatus::error('Test error');
+        
+        $this->assertFalse($status->isSent());
+        $this->assertTrue($status->isError());
+        $this->assertFalse($status->isAlreadyProcessed());
+        $this->assertFalse($status->isDuplicate());
+        $this->assertFalse($status->isExcludedFromSurvey());
+    }
+
+    public function testIsAlreadyProcessedReturnsTrueForAlreadyProcessedStatus(): void
+    {
+        $date = new \DateTime('2025-08-26');
+        $status = EmailStatus::alreadyProcessed($date);
+        
+        $this->assertFalse($status->isSent());
+        $this->assertFalse($status->isError());
+        $this->assertTrue($status->isAlreadyProcessed());
+        $this->assertFalse($status->isDuplicate());
+        $this->assertFalse($status->isExcludedFromSurvey());
+    }
+
+    public function testIsDuplicateReturnsTrueForDuplicateStatus(): void
+    {
+        $status = EmailStatus::duplicateInCsv();
+        
+        $this->assertFalse($status->isSent());
+        $this->assertFalse($status->isError());
+        $this->assertFalse($status->isAlreadyProcessed());
+        $this->assertTrue($status->isDuplicate());
+        $this->assertFalse($status->isExcludedFromSurvey());
+    }
+
+    public function testIsExcludedFromSurveyReturnsTrueForExcludedStatus(): void
+    {
+        $status = EmailStatus::excludedFromSurvey();
+        
+        $this->assertFalse($status->isSent());
+        $this->assertFalse($status->isError());
+        $this->assertFalse($status->isAlreadyProcessed());
+        $this->assertFalse($status->isDuplicate());
+        $this->assertTrue($status->isExcludedFromSurvey());
+    }
+
+    public function testStatusTypeMethodsWithCustomStatus(): void
+    {
+        $customStatus = EmailStatus::fromString('Custom status message');
+        
+        $this->assertFalse($customStatus->isSent());
+        $this->assertFalse($customStatus->isError());
+        $this->assertFalse($customStatus->isAlreadyProcessed());
+        $this->assertFalse($customStatus->isDuplicate());
+        $this->assertFalse($customStatus->isExcludedFromSurvey());
+    }
 }
