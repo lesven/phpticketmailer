@@ -234,4 +234,22 @@ class UserCreatorTest extends TestCase
         $this->assertEquals(2, $result);
         $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
     }
+
+    /**
+     * 🏗️ DDD: Testet die neue User Factory Method
+     */
+    public function testUserFactoryMethodCreatesValidUser(): void
+    {
+        $username = 'testuser';
+        $email = 'test@example.com';
+
+        // Erstelle User über Factory Method
+        $user = \App\Entity\User::create($username, $email);
+
+        $this->assertInstanceOf(\App\Entity\User::class, $user);
+        $this->assertEquals($username, $user->getUsername()->getValue());
+        $this->assertEquals($email, $user->getEmail()->getValue());
+        $this->assertFalse($user->isExcludedFromSurveys());
+        $this->assertTrue($user->isEligibleForEmailNotifications());
+    }
 }

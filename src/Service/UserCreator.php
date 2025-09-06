@@ -32,13 +32,8 @@ class UserCreator
     public function createUser(string $username, string $email): void
     {
         try {
-            // Value Objects erstellen - diese validieren automatisch
-            $usernameObj = Username::fromString($username);
-            $emailAddress = EmailAddress::fromString($email);
-            
-            $user = new User();
-            $user->setUsername($usernameObj->getValue());
-            $user->setEmail($emailAddress);
+            // 🎯 DDD: Verwende Domain Factory Method statt direkter Konstruktion
+            $user = User::create($username, $email);
 
             $this->entityManager->persist($user);
             $this->newUsers[] = $user;
