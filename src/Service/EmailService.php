@@ -28,6 +28,7 @@ use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\ValueObject\EmailAddress;
 
 class EmailService
 {
@@ -147,10 +148,10 @@ class EmailService
         }
         
         foreach ($ticketData as $ticket) {
-            $ticketId = $ticket['ticketId'];
+            $ticketId = TicketId::fromString($ticket['ticketId']);
             
             // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
-            if (isset($processedTicketIds[$ticketId])) {
+            if (isset($processedTicketIds[(string) $ticketId])) {
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket, 
                     $currentTime, 
@@ -168,8 +169,8 @@ class EmailService
             }
             
             // Prüfe auf bereits verarbeitete Tickets in der Datenbank
-            if (!$forceResend && isset($existingTickets[$ticketId])) {
-                $existingEmail = $existingTickets[$ticketId];
+            if (!$forceResend && isset($existingTickets[(string) $ticketId])) {
+                $existingEmail = $existingTickets[(string) $ticketId];
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket,
                     $currentTime,
@@ -183,7 +184,7 @@ class EmailService
                 } catch (\Exception $e) {
                     error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
-                $processedTicketIds[$ticketId] = true;
+                $processedTicketIds[(string) $ticketId] = true;
                 continue;
             }
 
@@ -203,7 +204,7 @@ class EmailService
                 } catch (\Exception $e) {
                     error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
-                $processedTicketIds[$ticketId] = true;
+                $processedTicketIds[(string) $ticketId] = true;
                 continue;
             }
             
@@ -243,7 +244,7 @@ class EmailService
                     error_log('Critical: Could not save error record: ' . $innerE->getMessage());
                 }
             }
-            $processedTicketIds[$ticketId] = true;
+            $processedTicketIds[(string) $ticketId] = true;
         }
 
         // Cleanup: Alle verbleibenden Datensätze (falls welche übrig sind)
@@ -255,8 +256,8 @@ class EmailService
 
         // 🔥 EVENT: Bulk E-Mail-Versand abgeschlossen
         $endTime = microtime(true);
-        $sentCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'sent')));
-        $failedCount = count(array_filter($sentEmails, fn($email) => str_contains($email->getStatus(), 'error')));
+        $sentCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSent()));
+        $failedCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isError()));
         $skippedCount = count($sentEmails) - $sentCount - $failedCount;
 
         $this->eventDispatcher->dispatch(new BulkEmailCompletedEvent(
@@ -287,7 +288,8 @@ class EmailService
         $emailRecord = new EmailSent();
         $emailRecord->setTicketId(TicketId::fromString($ticket['ticketId']));
         $emailRecord->setUsername($ticket['username']);
-        $emailRecord->setEmail($user ? (string) $user->getEmail() : '');
+        // Use EmailAddress VO if available, otherwise null
+        $emailRecord->setEmail($user ? $user->getEmail() : null);
         $emailRecord->setSubject('');
         $emailRecord->setStatus($status);
         $emailRecord->setTimestamp(clone $timestamp);
@@ -330,14 +332,15 @@ class EmailService
         
         // Wenn kein Benutzer gefunden wurde
         if (!$user) {
-            $emailRecord->setEmail('');
+            $emailRecord->setEmail(null);
             $emailRecord->setSubject('');
             $emailRecord->setStatus(EmailStatus::error('no email found'));
             return $emailRecord;
         }
         
         // E-Mail-Einstellungen
-        $recipientEmail = $testMode ? $emailConfig['testEmail'] : (string) $user->getEmail();
+        // prefer EmailAddress instances in config; keep union types for compatibility
+        $recipientEmail = $testMode ? $emailConfig['testEmail'] : $user->getEmail();
         $subject = str_replace('{{ticketId}}', $ticket['ticketId'], $emailConfig['subject']);
         $emailRecord->setEmail($recipientEmail);
         $emailRecord->setSubject($subject);
@@ -446,15 +449,18 @@ class EmailService
      * @param string $content Der Inhalt der E-Mail
      * @param array $config Die E-Mail-Konfiguration
      */
+    /**
+     * @param EmailAddress|string $recipient
+     */
     private function sendEmail(
-        string $recipient,
+        EmailAddress|string $recipient,
         string $subject,
         string $content,
         array $config
     ): void {
         $email = (new Email())
-            ->from(new Address($config['senderEmail'], $config['senderName']))
-            ->to($recipient)
+            ->from(new Address((string) ($config['senderEmail'] ?? 'noreply@example.com'), $config['senderName']))
+            ->to((string) $recipient)
             ->subject($subject);
         
         // Prüfen, ob der Inhalt HTML ist
@@ -486,21 +492,22 @@ class EmailService
         $config = $this->smtpConfigRepository->getConfig();
         
         $emailConfig = [
-            'subject' => $this->params->get('app.email_subject', 'Ihre Rückmeldung zu Ticket {{ticketId}}'),
-            'ticketBaseUrl' => $this->params->get('app.ticket_base_url', 'https://www.ticket.de'),
-            'testEmail' => $this->params->get('app.test_email', 'test@example.com'),
+            'subject' => $this->params->get('app.email_subject') ?? 'Feedback zu Ticket {{ticketId}}',
+            'ticketBaseUrl' => $this->params->get('app.ticket_base_url') ?? 'https://www.ticket.de',
+            'testEmail' => $this->params->get('app.test_email') ?? 'test@example.com',
             'useCustomSMTP' => false,
         ];
           // Wenn eine Konfiguration vorhanden ist, verwende sie
         if ($config) {
-            $emailConfig['senderEmail'] = (string) $config->getSenderEmail();
+            // Keep EmailAddress instance for senderEmail
+            $emailConfig['senderEmail'] = $config->getSenderEmail();
             $emailConfig['senderName'] = $config->getSenderName();
             $emailConfig['ticketBaseUrl'] = $config->getTicketBaseUrl();
             $emailConfig['useCustomSMTP'] = true;
             $emailConfig['smtpDSN'] = $config->getDSN();
         } else {
-            $emailConfig['senderEmail'] = $this->params->get('app.sender_email', 'noreply@example.com');
-            $emailConfig['senderName'] = $this->params->get('app.sender_name', 'Ticket-System');
+            $emailConfig['senderEmail'] = $this->params->get('app.sender_email') ?? 'noreply@example.com';
+            $emailConfig['senderName'] = $this->params->get('app.sender_name') ?? 'Ticket-System';
         }
         
         return $emailConfig;

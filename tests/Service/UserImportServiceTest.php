@@ -7,7 +7,6 @@ use App\Repository\UserRepository;
 use App\Service\UserImportService;
 use App\Service\CsvFileReader;
 use App\Service\CsvValidationService;
-use App\Service\UserValidator;
 use App\Service\UserCsvHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +18,6 @@ class UserImportServiceTest extends TestCase
     private $entityManager;
     private $csvFileReader;
     private $csvValidationService;
-    private $userValidator;
     private UserCsvHelper $userCsvHelper;
     private $eventDispatcher;
     private $userImportService;
@@ -30,7 +28,6 @@ class UserImportServiceTest extends TestCase
         $this->userRepository = $this->createMock(UserRepository::class);
         $this->csvFileReader = $this->createMock(CsvFileReader::class);
         $this->csvValidationService = $this->createMock(CsvValidationService::class);
-        $this->userValidator = $this->createMock(UserValidator::class);
         $this->userCsvHelper = new UserCsvHelper();
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         
@@ -39,7 +36,6 @@ class UserImportServiceTest extends TestCase
             $this->userRepository,
             $this->csvFileReader,
             $this->csvValidationService,
-            $this->userValidator,
             $this->userCsvHelper,
             $this->eventDispatcher
         );
@@ -189,9 +185,6 @@ class UserImportServiceTest extends TestCase
                 return [];
             });
 
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
 
         // Mock QueryBuilder and Query used in clearExistingUsers()
         $qb = $this->getMockBuilder(\Doctrine\ORM\QueryBuilder::class)
@@ -252,9 +245,6 @@ class UserImportServiceTest extends TestCase
 
         $this->csvValidationService->method('validateCsvRow')->willReturn(['valid' => true, 'errors' => []]);
         $this->csvValidationService->method('removeDuplicates')->willReturnArgument(0);
-
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
 
         // make persist throw an exception to simulate DB error
         $this->entityManager->expects($this->once())

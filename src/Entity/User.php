@@ -14,6 +14,8 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\Username;
+use App\Exception\InvalidEmailAddressException;
+use App\Exception\InvalidUsernameException;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -138,5 +140,151 @@ class User
         $this->excludedFromSurveys = $excludedFromSurveys;
 
         return $this;
+    }
+
+    // ========================================
+    // 🏗️ DOMAIN LOGIC (DDD Rich Model)
+    // ========================================
+
+    /**
+     * Factory Method: Erstellt einen neuen User mit Validierung
+     * 
+     * @param string|Username $username Der Benutzername
+     * @param string|EmailAddress $email Die E-Mail-Adresse
+     * @return self Neue User-Instanz
+     * @throws InvalidEmailAddressException|InvalidUsernameException Bei ungültigen Daten
+     */
+    public static function create(string|Username $username, string|EmailAddress $email): self
+    {
+        $user = new self();
+        $user->setUsername($username);
+        $user->setEmail($email);
+        
+        return $user;
+    }
+
+    /**
+     * Geschäftsregel: Prüft ob der Benutzer für E-Mail-Versand berechtigt ist
+     * 
+     * @return bool True wenn E-Mails versendet werden dürfen
+     */
+    public function isEligibleForEmailNotifications(): bool
+    {
+        return !$this->excludedFromSurveys && $this->email !== null;
+    }
+
+    /**
+     * Geschäftsregel: Schließt den Benutzer von Umfragen aus
+     * 
+     * @param string|null $reason Optionaler Grund für den Ausschluss
+     * @return self Für Method-Chaining
+     */
+    public function excludeFromSurveys(?string $reason = null): self
+    {
+        $this->excludedFromSurveys = true;
+        // TODO: Später können wir excludedReason und excludedAt Felder hinzufügen
+        
+        return $this;
+    }
+
+    /**
+     * Geschäftsregel: Inkludiert den Benutzer wieder in Umfragen
+     * 
+     * @return self Für Method-Chaining
+     */
+    public function includeInSurveys(): self
+    {
+        $this->excludedFromSurveys = false;
+        
+        return $this;
+    }
+
+    /**
+     * Geschäftsregel: Aktualisiert die E-Mail-Adresse mit Geschäftslogik
+     * 
+     * @param string|EmailAddress $newEmail Die neue E-Mail-Adresse
+     * @return self Für Method-Chaining
+     */
+    public function updateEmail(string|EmailAddress $newEmail): self
+    {
+        // Normalisiere zu EmailAddress Value Object
+        $emailAddress = is_string($newEmail) ? EmailAddress::fromString($newEmail) : $newEmail;
+        
+        // Geschäftsregel: Keine Änderung wenn E-Mail gleich ist
+        if ($this->email && $this->email->equals($emailAddress)) {
+            return $this; // Keine Änderung nötig
+        }
+        
+        $this->email = $emailAddress;
+        
+        return $this;
+    }
+
+    /**
+     * Geschäftsregel: Aktualisiert den Benutzernamen mit Geschäftslogik
+     * 
+     * @param string|Username $newUsername Der neue Benutzername
+     * @return self Für Method-Chaining
+     */
+    public function updateUsername(string|Username $newUsername): self
+    {
+        // Normalisiere zu Username Value Object
+        $usernameObj = is_string($newUsername) ? Username::fromString($newUsername) : $newUsername;
+        
+        // Geschäftsregel: Keine Änderung wenn Username gleich ist
+        if ($this->username && $this->username->equals($usernameObj)) {
+            return $this; // Keine Änderung nötig
+        }
+        
+        $this->username = $usernameObj;
+        
+        return $this;
+    }
+
+    /**
+     * Geschäftsregel: Prüft ob der User den gleichen Username hat (case-insensitive)
+     * 
+     * @param string|Username $username Der zu vergleichende Username
+     * @return bool True wenn Username übereinstimmt
+     */
+    public function hasUsername(string|Username $username): bool
+    {
+        if ($this->username === null) {
+            return false;
+        }
+        
+        $usernameObj = is_string($username) ? Username::fromString($username) : $username;
+        
+        return $this->username->equals($usernameObj);
+    }
+
+    /**
+     * Geschäftsregel: Prüft ob der User die gleiche E-Mail hat
+     * 
+     * @param string|EmailAddress $email Die zu vergleichende E-Mail
+     * @return bool True wenn E-Mail übereinstimmt
+     */
+    public function hasEmail(string|EmailAddress $email): bool
+    {
+        if ($this->email === null) {
+            return false;
+        }
+        
+        $emailObj = is_string($email) ? EmailAddress::fromString($email) : $email;
+        
+        return $this->email->equals($emailObj);
+    }
+
+    /**
+     * Domain-Information: Gibt eine String-Repräsentation des Users zurück
+     * 
+     * @return string Benutzer-Information
+     */
+    public function __toString(): string
+    {
+        $username = $this->username ? $this->username->getValue() : 'N/A';
+        $email = $this->email ? $this->email->getValue() : 'N/A';
+        
+        return "User[{$username}, {$email}]";
     }
 }

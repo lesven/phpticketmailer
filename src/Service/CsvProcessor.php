@@ -12,6 +12,7 @@
 namespace App\Service;
 
 use App\Entity\CsvFieldConfig;
+use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -23,9 +24,9 @@ class CsvProcessor
     private CsvFileReader $csvFileReader;
     
     /**
-     * @var UserValidator
+     * @var UserRepository
      */
-    private UserValidator $userValidator;
+    private UserRepository $userRepository;
     
     /**
      * @var RequestStack
@@ -37,11 +38,11 @@ class CsvProcessor
      */
     public function __construct(
         CsvFileReader $csvFileReader,
-        UserValidator $userValidator,
+        UserRepository $userRepository,
         RequestStack $requestStack
     ) {
         $this->csvFileReader = $csvFileReader;
-        $this->userValidator = $userValidator;
+        $this->userRepository = $userRepository;
         $this->requestStack = $requestStack;
     }
       /**
@@ -102,7 +103,7 @@ class CsvProcessor
             
             $result['validTickets'] = $validTickets;
             $result['invalidRows'] = $invalidRows;
-            $result['unknownUsers'] = $this->userValidator->identifyUnknownUsers($uniqueUsernames);
+            $result['unknownUsers'] = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
             
             // Speichere die gültigen Tickets in der Session für späteren Zugriff
             $this->storeTicketsInSession($validTickets);

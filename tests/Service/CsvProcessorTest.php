@@ -3,7 +3,7 @@ namespace App\Tests\Service;
 
 use App\Service\CsvProcessor;
 use App\Service\CsvFileReader;
-use App\Service\UserValidator;
+use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -49,8 +49,8 @@ class CsvProcessorTest extends TestCase
         public function closeHandle($handle): void { if (is_resource($handle)) { fclose($handle); } }
     };
 
-        $userValidator = $this->createMock(UserValidator::class);
-        $userValidator->method('identifyUnknownUsers')->willReturn(['user3']);
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->method('identifyUnknownUsers')->willReturn(['user3']);
 
     $requestStack = $this->createMock(RequestStack::class);
     $store = [];
@@ -62,7 +62,7 @@ class CsvProcessorTest extends TestCase
         $cfg = $this->createMock(CsvFieldConfig::class);
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
 
-        $processor = new CsvProcessor($reader, $userValidator, $requestStack);
+        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
 
         $this->assertArrayHasKey('validTickets', $res);
@@ -85,11 +85,11 @@ class CsvProcessorTest extends TestCase
         $reader = $this->createMock(CsvFileReader::class);
         $reader->method('openCsvFile')->willThrowException(new \Exception('CSV-Datei konnte nicht geöffnet werden'));
 
-        $userValidator = $this->createMock(UserValidator::class);
+        $userRepository = $this->createMock(UserRepository::class);
         $requestStack = $this->createMock(RequestStack::class);
         $cfg = $this->createMock(CsvFieldConfig::class);
 
-        $processor = new CsvProcessor($reader, $userValidator, $requestStack);
+        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $this->expectException(\Exception::class);
         $processor->process($uploaded, $cfg);
         @unlink($tmp);
@@ -118,10 +118,10 @@ class CsvProcessorTest extends TestCase
             }
             public function closeHandle($handle): void { if (is_resource($handle)) { fclose($handle); } }
         };
-        $userValidator = $this->createMock(UserValidator::class);
+        $userRepository = $this->createMock(UserRepository::class);
         $requestStack = $this->createMock(RequestStack::class);
         $cfg = $this->createMock(CsvFieldConfig::class);
-        $processor = new CsvProcessor($reader, $userValidator, $requestStack);
+        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $this->assertCount(0, $res['validTickets']);
         $this->assertCount(0, $res['invalidRows']);
@@ -156,12 +156,12 @@ class CsvProcessorTest extends TestCase
             }
             public function closeHandle($handle): void { if (is_resource($handle)) { fclose($handle); } }
         };
-        $userValidator = $this->createMock(UserValidator::class);
-        $userValidator->method('identifyUnknownUsers')->willReturn([]);
+        $userRepository = $this->createMock(UserRepository::class);
+        $userRepository->method('identifyUnknownUsers')->willReturn([]);
         $requestStack = $this->createMock(RequestStack::class);
         $cfg = $this->createMock(CsvFieldConfig::class);
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
-        $processor = new CsvProcessor($reader, $userValidator, $requestStack);
+        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $ticketIds = array_column($res['validTickets'], 'ticketId');
     $this->assertContainsEquals('1', $ticketIds);
