@@ -4,7 +4,9 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 use App\Exception\InvalidEmailAddressException;
+use App\Exception\InvalidUsernameException;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -16,8 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class UserCreator
 {
     private array $newUsers = [];    public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly UserValidator $userValidator
+        private readonly EntityManagerInterface $entityManager
     ) {
     }
 
@@ -30,27 +31,23 @@ class UserCreator
      */
     public function createUser(string $username, string $email): void
     {
-        // Validierung der Eingabedaten
-        if (!$this->userValidator->isValidUsername($username)) {
-            throw new \InvalidArgumentException("Ungültiger Benutzername: {$username}");
-        }
-
-        if (!$this->userValidator->isValidEmail($email)) {
-            throw new \InvalidArgumentException("Ungültige E-Mail-Adresse: {$email}");
-        }
-
         try {
+            // Value Objects erstellen - diese validieren automatisch
+            $usernameObj = Username::fromString($username);
             $emailAddress = EmailAddress::fromString($email);
+            
+            $user = new User();
+            $user->setUsername($usernameObj->getValue());
+            $user->setEmail($emailAddress);
+
+            $this->entityManager->persist($user);
+            $this->newUsers[] = $user;
+            
+        } catch (InvalidUsernameException $e) {
+            throw new \InvalidArgumentException("Ungültiger Benutzername: {$username} - " . $e->getMessage());
         } catch (InvalidEmailAddressException $e) {
             throw new \InvalidArgumentException("Ungültige E-Mail-Adresse: {$email} - " . $e->getMessage());
         }
-
-        $user = new User();
-        $user->setUsername($username);
-        $user->setEmail($emailAddress);
-
-        $this->entityManager->persist($user);
-        $this->newUsers[] = $user;
     }
 
     /**

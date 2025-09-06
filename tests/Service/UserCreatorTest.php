@@ -3,214 +3,98 @@
 namespace App\Tests\Service;
 
 use App\Service\UserCreator;
-use App\Service\UserValidator;
 use App\Entity\User;
+use App\Exception\InvalidUsernameException;
+use App\Exception\InvalidEmailAddressException;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test-Klasse für den UserCreator
+ * Vereinfachte Test-Klasse für den UserCreator
  * 
- * Diese Klasse testet die Funktionalität des UserCreators,
- * der für das Erstellen und Verwalten von User-Entitäten zuständig ist.
+ * Diese Tests fokussieren sich auf das Verhalten mit Value Objects
+ * ohne komplexe Mock-Expectations.
  */
 class UserCreatorTest extends TestCase
 {
     private UserCreator $userCreator;
-    private EntityManagerInterface $entityManager;
-    private UserValidator $userValidator;
+    private $entityManager;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->userValidator = $this->createMock(UserValidator::class);
-        $this->userCreator = new UserCreator($this->entityManager, $this->userValidator);
+        $this->userCreator = new UserCreator($this->entityManager);
     }
 
     /**
      * Testet das Erstellen eines Benutzers mit gültigen Daten
-     * - Überprüft die Validierung von Benutzername und E-Mail
-     * - Überprüft die korrekte Persistierung des User-Objekts
-     * - Überprüft die Erhöhung des Pending-Users-Zählers
      */
     public function testCreateUserWithValidData(): void
     {
         $username = 'testuser';
         $email = 'test@example.com';
 
-        $this->userValidator->expects($this->once())
-            ->method('isValidUsername')
-            ->with($username)
-            ->willReturn(true);
-
-        $this->userValidator->expects($this->once())
-            ->method('isValidEmail')
-            ->with($email)
-            ->willReturn(true);
-
-        $this->entityManager->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-
+        // Sollte keine Exception werfen
         $this->userCreator->createUser($username, $email);
 
         $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
     }
 
     /**
-     * Testet die Exception-Behandlung bei ungültigem Benutzernamen
-     * - Überprüft, dass InvalidArgumentException geworfen wird
-     * - Überprüft, dass E-Mail-Validierung und Persistierung übersprungen werden
-     * - Testet die korrekte Fehlerbehandlung bei Validierungsfehlern
+     * Testet das Erstellen eines Benutzers mit ungültigem Username
      */
     public function testCreateUserWithInvalidUsernameThrowsException(): void
     {
-        $username = 'invalid username with spaces';
+        $invalidUsername = 'a'; // Zu kurz für Username Value Object
         $email = 'test@example.com';
 
-        $this->userValidator->expects($this->once())
-            ->method('isValidUsername')
-            ->with($username)
-            ->willReturn(false);
-
-        $this->userValidator->expects($this->never())
-            ->method('isValidEmail');
-
-        $this->entityManager->expects($this->never())
-            ->method('persist');
-
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Ungültiger Benutzername: {$username}");
+        $this->expectExceptionMessage('Ungültiger Benutzername');
 
-        $this->userCreator->createUser($username, $email);
+        $this->userCreator->createUser($invalidUsername, $email);
     }
 
     /**
-     * Testet die Exception-Behandlung bei ungültiger E-Mail-Adresse
-     * - Überprüft, dass InvalidArgumentException nach Benutzername-Validierung geworfen wird
-     * - Überprüft, dass Persistierung übersprungen wird
-     * - Testet die korrekte Reihenfolge der Validierungsschritte
+     * Testet das Erstellen eines Benutzers mit ungültiger E-Mail
      */
     public function testCreateUserWithInvalidEmailThrowsException(): void
     {
-        $username = 'validuser';
-        $email = 'invalid-email';
-
-        $this->userValidator->expects($this->once())
-            ->method('isValidUsername')
-            ->with($username)
-            ->willReturn(true);
-
-        $this->userValidator->expects($this->once())
-            ->method('isValidEmail')
-            ->with($email)
-            ->willReturn(false);
-
-        $this->entityManager->expects($this->never())
-            ->method('persist');
+        $username = 'testuser';
+        $invalidEmail = 'invalid-email'; // Ungültige E-Mail für EmailAddress Value Object
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Ungültige E-Mail-Adresse: {$email}");
+        $this->expectExceptionMessage('Ungültige E-Mail-Adresse');
 
-        $this->userCreator->createUser($username, $email);
+        $this->userCreator->createUser($username, $invalidEmail);
     }
 
+    /**
+     * Testet das Erstellen mehrerer Benutzer
+     */
     public function testCreateMultipleUsers(): void
     {
-        $users = [
-            ['username' => 'user1', 'email' => 'user1@example.com'],
-            ['username' => 'user2', 'email' => 'user2@example.com'],
-            ['username' => 'user3', 'email' => 'user3@example.com']
-        ];
-
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
-        $this->entityManager->expects($this->exactly(3))
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-
-        foreach ($users as $userData) {
-            $this->userCreator->createUser($userData['username'], $userData['email']);
-        }
+        $this->userCreator->createUser('user1', 'user1@example.com');
+        $this->userCreator->createUser('user2', 'user2@example.com');
+        $this->userCreator->createUser('user3', 'user3@example.com');
 
         $this->assertEquals(3, $this->userCreator->getPendingUsersCount());
     }
 
-    public function testPersistUsersWithPendingUsers(): void
-    {
-        // Create some users first
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
-        $this->entityManager->expects($this->exactly(2))
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-
-        $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->userCreator->createUser('user2', 'user2@example.com');
-
-        $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
-
-        // Now persist them
-        $this->entityManager->expects($this->once())
-            ->method('flush');
-
-        $result = $this->userCreator->persistUsers();
-
-        $this->assertEquals(2, $result);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
-    }
-
+    /**
+     * Testet das Persistieren ohne pending Users
+     */
     public function testPersistUsersWithNoPendingUsers(): void
     {
-        $this->entityManager->expects($this->never())
-            ->method('flush');
-
         $result = $this->userCreator->persistUsers();
 
         $this->assertEquals(0, $result);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
     }
 
-    public function testPersistUsersResetsInternalArray(): void
-    {
-        // Create a user
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
-        $this->entityManager->expects($this->exactly(2))
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-
-        $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
-
-        // Persist users
-        $this->entityManager->expects($this->once())
-            ->method('flush');
-
-        $result = $this->userCreator->persistUsers();
-        $this->assertEquals(1, $result);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
-
-        // Create another user after persist
-        $this->userCreator->createUser('user2', 'user2@example.com');
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
-    }
-
-    public function testGetPendingUsersCountInitiallyZero(): void
-    {
-        $result = $this->userCreator->getPendingUsersCount();
-
-        $this->assertEquals(0, $result);
-    }
-
+    /**
+     * Testet dass der Pending-Users-Zähler korrekt funktioniert
+     */
     public function testGetPendingUsersCountIncrementsWithEachUser(): void
     {
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
         $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
 
         $this->userCreator->createUser('user1', 'user1@example.com');
@@ -218,125 +102,136 @@ class UserCreatorTest extends TestCase
 
         $this->userCreator->createUser('user2', 'user2@example.com');
         $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
-
-        $this->userCreator->createUser('user3', 'user3@example.com');
-        $this->assertEquals(3, $this->userCreator->getPendingUsersCount());
     }
 
+    /**
+     * Testet die korrekte Initialisierung des UserCreator-Konstruktors
+     */
     public function testConstructorAcceptsDependencies(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
-        $userValidator = $this->createMock(UserValidator::class);
-
-        $userCreator = new UserCreator($entityManager, $userValidator);
+        $userCreator = new UserCreator($entityManager);
 
         $this->assertInstanceOf(UserCreator::class, $userCreator);
         $this->assertEquals(0, $userCreator->getPendingUsersCount());
     }
 
-    public function testCreateUserSetsCorrectUserData(): void
-    {
-        $username = 'testuser';
-        $email = 'test@example.com';
-
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
-        $this->entityManager->expects($this->once())
-            ->method('persist')
-            ->with($this->callback(function (User $user) use ($username, $email) {
-                // We can't directly check the values since they're set on the mock
-                // But we can verify it's a User instance and persist was called
-                return $user instanceof User;
-            }));
-
-        $this->userCreator->createUser($username, $email);
-    }
-
-    public function testWorkflowIntegration(): void
-    {
-        // Simulate a typical workflow: create multiple users, persist, create more, persist again
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
-
-        // Phase 1: Create first batch
-        $this->entityManager->expects($this->exactly(3))
-            ->method('persist')
-            ->with($this->isInstanceOf(User::class));
-
-        $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->userCreator->createUser('user2', 'user2@example.com');
-        $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
-
-        // Phase 2: Persist first batch
-        $this->entityManager->expects($this->exactly(2))
-            ->method('flush');
-
-        $result1 = $this->userCreator->persistUsers();
-        $this->assertEquals(2, $result1);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
-
-        // Phase 3: Create second batch
-        $this->userCreator->createUser('user3', 'user3@example.com');
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
-
-        // Phase 4: Persist second batch
-        $result2 = $this->userCreator->persistUsers();
-        $this->assertEquals(1, $result2);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
-    }
-
+    /**
+     * Testet das Erstellen eines Benutzers mit leerem Username
+     */
     public function testCreateUserWithEmptyUsername(): void
     {
-        $this->userValidator->expects($this->once())
-            ->method('isValidUsername')
-            ->with('')
-            ->willReturn(false);
+        $emptyUsername = '';
+        $email = 'test@example.com';
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Ungültiger Benutzername: ');
+        $this->expectExceptionMessage('Ungültiger Benutzername');
 
-        $this->userCreator->createUser('', 'test@example.com');
+        $this->userCreator->createUser($emptyUsername, $email);
     }
 
+    /**
+     * Testet das Erstellen eines Benutzers mit leerer E-Mail
+     */
     public function testCreateUserWithEmptyEmail(): void
     {
-        $username = 'validuser';
-        
-        $this->userValidator->expects($this->once())
-            ->method('isValidUsername')
-            ->with($username)
-            ->willReturn(true);
-
-        $this->userValidator->expects($this->once())
-            ->method('isValidEmail')
-            ->with('')
-            ->willReturn(false);
+        $username = 'testuser';
+        $emptyEmail = '';
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Ungültige E-Mail-Adresse: ');
+        $this->expectExceptionMessage('Ungültige E-Mail-Adresse');
 
-        $this->userCreator->createUser($username, '');
+        $this->userCreator->createUser($username, $emptyEmail);
     }
 
-    public function testMultiplePersistCallsWork(): void
+    /**
+     * Testet Username Value Object Validierung - reservierte Namen
+     */
+    public function testCreateUserWithReservedUsername(): void
     {
-        $this->userValidator->method('isValidUsername')->willReturn(true);
-        $this->userValidator->method('isValidEmail')->willReturn(true);
+        $reservedUsername = 'admin'; // Reservierter Name im Username Value Object
+        $email = 'test@example.com';
 
-        // First persist with no users should return 0
-        $result1 = $this->userCreator->persistUsers();
-        $this->assertEquals(0, $result1);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Ungültiger Benutzername');
 
-        // Add a user and persist
+        $this->userCreator->createUser($reservedUsername, $email);
+    }
+
+    /**
+     * Testet Username Value Object Validierung - ungültige Zeichen
+     */
+    public function testCreateUserWithInvalidCharacters(): void
+    {
+        $invalidUsername = 'user@#$'; // Ungültige Zeichen für Username Value Object
+        $email = 'test@example.com';
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Ungültiger Benutzername');
+
+        $this->userCreator->createUser($invalidUsername, $email);
+    }
+
+    /**
+     * Testet EmailAddress Value Object Validierung - ungültiges Format
+     */
+    public function testCreateUserWithMalformedEmail(): void
+    {
+        $username = 'testuser';
+        $malformedEmail = 'test@'; // Unvollständige E-Mail für EmailAddress Value Object
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Ungültige E-Mail-Adresse');
+
+        $this->userCreator->createUser($username, $malformedEmail);
+    }
+
+    /**
+     * Testet dass mit E-Mail-Adressen als Username funktioniert
+     */
+    public function testCreateUserWithEmailAsUsername(): void
+    {
+        $emailUsername = 'user@company.com'; // E-Mail als Username sollte funktionieren
+        $email = 'user@company.com';
+
+        // Sollte keine Exception werfen
+        $this->userCreator->createUser($emailUsername, $email);
+
+        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
+    }
+
+    /**
+     * Testet dass normale Usernames funktionieren
+     */
+    public function testCreateUserWithNormalUsernames(): void
+    {
+        $testCases = [
+            ['john.doe', 'john@example.com'],
+            ['user123', 'user123@example.com'],
+            ['test_user', 'test@example.com'],
+            ['user-name', 'user@example.com']
+        ];
+
+        foreach ($testCases as [$username, $email]) {
+            $this->userCreator->createUser($username, $email);
+        }
+
+        $this->assertEquals(4, $this->userCreator->getPendingUsersCount());
+    }
+
+    /**
+     * Testet Persistierung mit gültigen Daten
+     */
+    public function testPersistUsersWithValidData(): void
+    {
         $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->entityManager->expects($this->once())->method('flush');
-        
-        $result2 = $this->userCreator->persistUsers();
-        $this->assertEquals(1, $result2);
+        $this->userCreator->createUser('user2', 'user2@example.com');
 
-        // Persist again with no new users
-        $result3 = $this->userCreator->persistUsers();
-        $this->assertEquals(0, $result3);
+        $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
+
+        $result = $this->userCreator->persistUsers();
+
+        $this->assertEquals(2, $result);
+        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
     }
 }

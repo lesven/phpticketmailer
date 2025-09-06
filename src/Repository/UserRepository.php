@@ -162,4 +162,84 @@ class UserRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('u')
             ->orderBy('u.' . $sortField, $sortDirection);
     }
+
+    /**
+     * Identifiziert unbekannte Benutzer anhand der Benutzernamen
+     * 
+     * @param array $usernames Liste der zu prüfenden Benutzernamen (assoziatives Array)
+     * @return array Liste der unbekannten Benutzernamen
+     */
+    public function identifyUnknownUsers(array $usernames): array
+    {
+        if (empty($usernames)) {
+            return [];
+        }
+        
+        $users = $this->findMultipleByUsernames(array_keys($usernames));
+        $foundUsernames = [];
+        
+        // Sammle alle gefundenen Username Value Objects
+        foreach ($users as $user) {
+            if ($user->getUsername()) {
+                $foundUsernames[] = $user->getUsername();
+            }
+        }
+        
+        $unknownUsers = [];
+        foreach (array_keys($usernames) as $csvUsername) {
+            $csvUsernameObj = Username::fromString($csvUsername);
+            $isKnown = false;
+            
+            // Vergleiche mit allen gefundenen Benutzernamen über Value Object equals()
+            foreach ($foundUsernames as $foundUsername) {
+                if ($csvUsernameObj->equals($foundUsername)) {
+                    $isKnown = true;
+                    break;
+                }
+            }
+            
+            if (!$isKnown) {
+                $unknownUsers[] = $csvUsername;
+            }
+        }
+        
+        return $unknownUsers;
+    }
+
+    /**
+     * Prüft, ob ein Benutzername in der Datenbank existiert
+     * 
+     * @param string $username Der zu prüfende Benutzername
+     * @return bool True, wenn der Benutzer existiert, sonst False
+     */
+    public function userExists(string $username): bool
+    {
+        return $this->findByUsername($username) !== null;
+    }
+
+    /**
+     * Filtert eine Liste von Benutzer-Datensätzen nach bekannten und unbekannten Benutzern
+     * 
+     * @param array $records Array mit Benutzer-Datensätzen, jeder mit einem "username"-Schlüssel
+     * @return array Zwei Arrays: [knownUserRecords, unknownUserRecords]
+     */
+    public function filterKnownAndUnknownUsers(array $records): array
+    {
+        $knownUsers = [];
+        $unknownUsers = [];
+        
+        foreach ($records as $record) {
+            if (!isset($record['username'])) {
+                continue;
+            }
+            
+            if ($this->userExists($record['username'])) {
+                $knownUsers[] = $record;
+            } else {
+                $unknownUsers[] = $record;
+            }
+        }
+        
+        return [$knownUsers, $unknownUsers];
+    }
 }
