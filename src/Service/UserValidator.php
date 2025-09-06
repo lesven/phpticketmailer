@@ -150,24 +150,19 @@ class UserValidator
     /**
      * Validiert eine E-Mail-Adresse
      * 
-     * Behält die ursprüngliche, strengere Validierung bei,
-     * um Breaking Changes zu vermeiden.
+     * Verwendet das EmailAddress Value Object für eine umfassende Validierung
+     * inklusive Normalisierung, Sicherheitsprüfungen und RFC-Konformität.
      * 
      * @param string $email Die zu validierende E-Mail-Adresse
      * @return bool True, wenn die E-Mail-Adresse gültig ist
      */
     public function isValidEmail(string $email): bool
     {
-        // Grundlegende PHP-Filter-Validierung
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        try {
+            EmailAddress::fromString($email);
+            return true;
+        } catch (InvalidEmailAddressException $e) {
             return false;
         }
-        
-        // Maximallänge prüfen (wie EmailAddress Value Object)
-        if (strlen($email) > 320) {
-            return false;
-        }
-        
-        return true;
     }
 }

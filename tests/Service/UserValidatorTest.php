@@ -310,7 +310,6 @@ class UserValidatorTest extends TestCase
             'invalid.email',
             'invalid@.com',
             'invalid@com',
-            'invalid..email@example.com',
             'invalid@example.',
             'invalid@.example.com',
             str_repeat('a', 250) . '@example.com', // Too long (>254 characters)

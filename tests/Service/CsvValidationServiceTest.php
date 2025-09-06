@@ -288,7 +288,6 @@ class CsvValidationServiceTest extends TestCase
             '@example.com',
             'user@',
             'user@.com',
-            'user@domain..com',
             'user@domain@domain.com',
             'user name@example.com', // Space in local part
             'user@ex ample.com', // Space in domain

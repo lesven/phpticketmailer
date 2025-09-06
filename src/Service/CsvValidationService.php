@@ -127,14 +127,20 @@ class CsvValidationService
     /**
      * Prüft, ob eine E-Mail-Adresse gültig ist
      * 
-     * Behält die ursprüngliche Validierung bei um Breaking Changes zu vermeiden.
+     * Verwendet das EmailAddress Value Object für eine umfassende Validierung
+     * inklusive Normalisierung, Sicherheitsprüfungen und RFC-Konformität.
      * 
      * @param string $email Die zu prüfende E-Mail-Adresse
      * @return bool True, wenn die E-Mail gültig ist
      */
     public function isValidEmail(string $email): bool
     {
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false && strlen($email) <= 320;
+        try {
+            EmailAddress::fromString($email);
+            return true;
+        } catch (InvalidEmailAddressException $e) {
+            return false;
+        }
     }
 
     /**
