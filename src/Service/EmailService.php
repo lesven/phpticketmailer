@@ -148,10 +148,10 @@ class EmailService
         }
         
         foreach ($ticketData as $ticket) {
-            $ticketId = $ticket['ticketId'];
+            $ticketId = TicketId::fromString($ticket['ticketId']);
             
             // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
-            if (isset($processedTicketIds[$ticketId])) {
+            if (isset($processedTicketIds[(string) $ticketId])) {
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket, 
                     $currentTime, 
@@ -169,8 +169,8 @@ class EmailService
             }
             
             // Prüfe auf bereits verarbeitete Tickets in der Datenbank
-            if (!$forceResend && isset($existingTickets[$ticketId])) {
-                $existingEmail = $existingTickets[$ticketId];
+            if (!$forceResend && isset($existingTickets[(string) $ticketId])) {
+                $existingEmail = $existingTickets[(string) $ticketId];
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket,
                     $currentTime,
@@ -184,7 +184,7 @@ class EmailService
                 } catch (\Exception $e) {
                     error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
-                $processedTicketIds[$ticketId] = true;
+                $processedTicketIds[(string) $ticketId] = true;
                 continue;
             }
 
@@ -204,7 +204,7 @@ class EmailService
                 } catch (\Exception $e) {
                     error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
-                $processedTicketIds[$ticketId] = true;
+                $processedTicketIds[(string) $ticketId] = true;
                 continue;
             }
             
@@ -244,7 +244,7 @@ class EmailService
                     error_log('Critical: Could not save error record: ' . $innerE->getMessage());
                 }
             }
-            $processedTicketIds[$ticketId] = true;
+            $processedTicketIds[(string) $ticketId] = true;
         }
 
         // Cleanup: Alle verbleibenden Datensätze (falls welche übrig sind)

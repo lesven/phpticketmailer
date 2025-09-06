@@ -146,18 +146,20 @@ class CsvValidationService
     /**
      * Prüft, ob eine Ticket-ID gültig ist
      * 
-     * Behält die ursprüngliche, strengere Validierung bei,
-     * um Breaking Changes zu vermeiden.
+     * Verwendet das TicketId Value Object für eine umfassende Validierung
+     * inklusive Format- und Längenvalidierung.
      * 
      * @param string $ticketId Die zu prüfende Ticket-ID
      * @return bool True, wenn die Ticket-ID gültig ist
      */
     public function isValidTicketId(string $ticketId): bool
     {
-        // Ticket-ID sollte nicht leer sein und nur erlaubte Zeichen enthalten
-        return !empty($ticketId) && 
-               strlen($ticketId) <= 50 && 
-               preg_match('/^[a-zA-Z0-9\-_]+$/', $ticketId);
+        try {
+            TicketId::fromString($ticketId);
+            return true;
+        } catch (InvalidTicketIdException $e) {
+            return false;
+        }
     }
 
     /**

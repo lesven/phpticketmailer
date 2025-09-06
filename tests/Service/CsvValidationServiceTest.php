@@ -323,6 +323,7 @@ class CsvValidationServiceTest extends TestCase
             'TICKET_001',
             'Project-Feature-123',
             'a1b2c3',
+            'TICKET.123', // Dots are allowed
             str_repeat('A', 50) // Exactly 50 chars (limit)
         ];
 
@@ -339,7 +340,6 @@ class CsvValidationServiceTest extends TestCase
             'TICKET!@#$%', // Special characters
             'TICKET äöü', // Unicode/umlauts
             'TICKET 123', // Space
-            'TICKET.123', // Dot not allowed
             'TICKET/123', // Slash not allowed
             str_repeat('A', 51) // Too long (>50 chars)
         ];
