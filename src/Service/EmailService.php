@@ -20,6 +20,7 @@ use App\Repository\UserRepository;
 use App\Repository\EmailSentRepository;
 use App\Event\Email\EmailSentEvent;
 use App\Event\Email\EmailFailedEvent;
+use App\Event\Email\EmailSkippedEvent;
 use App\Event\Email\BulkEmailCompletedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -170,6 +171,16 @@ class EmailService
                     $this->entityManager->persist($emailRecord);
                     $this->entityManager->flush();
                     $sentEmails[] = $emailRecord;
+                    
+                    // 🔥 EVENT: E-Mail übersprungen (Duplikat in CSV)
+                    $this->eventDispatcher->dispatch(new EmailSkippedEvent(
+                        $emailRecord->getTicketId(),
+                        $emailRecord->getUsername(),
+                        $emailRecord->getEmail(),
+                        $emailRecord->getStatus(),
+                        $emailRecord->getTestMode(),
+                        $emailRecord->getTicketName()
+                    ));
                 } catch (\Exception $e) {
                     error_log('Error saving duplicate record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
@@ -189,6 +200,16 @@ class EmailService
                     $this->entityManager->persist($emailRecord);
                     $this->entityManager->flush();
                     $sentEmails[] = $emailRecord;
+                    
+                    // 🔥 EVENT: E-Mail übersprungen (bereits verarbeitet)
+                    $this->eventDispatcher->dispatch(new EmailSkippedEvent(
+                        $emailRecord->getTicketId(),
+                        $emailRecord->getUsername(),
+                        $emailRecord->getEmail(),
+                        $emailRecord->getStatus(),
+                        $emailRecord->getTestMode(),
+                        $emailRecord->getTicketName()
+                    ));
                 } catch (\Exception $e) {
                     error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
@@ -209,6 +230,16 @@ class EmailService
                     $this->entityManager->persist($emailRecord);
                     $this->entityManager->flush();
                     $sentEmails[] = $emailRecord;
+                    
+                    // 🔥 EVENT: E-Mail übersprungen (Benutzer ausgeschlossen)
+                    $this->eventDispatcher->dispatch(new EmailSkippedEvent(
+                        $emailRecord->getTicketId(),
+                        $emailRecord->getUsername(),
+                        $emailRecord->getEmail(),
+                        $emailRecord->getStatus(),
+                        $emailRecord->getTestMode(),
+                        $emailRecord->getTicketName()
+                    ));
                 } catch (\Exception $e) {
                     error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
                 }
@@ -343,6 +374,17 @@ class EmailService
             $emailRecord->setEmail(null);
             $emailRecord->setSubject('');
             $emailRecord->setStatus(EmailStatus::error('no email found'));
+            
+            // 🔥 EVENT: E-Mail übersprungen (kein Benutzer gefunden)
+            $this->eventDispatcher->dispatch(new EmailSkippedEvent(
+                $emailRecord->getTicketId(),
+                $emailRecord->getUsername(),
+                $emailRecord->getEmail(),
+                $emailRecord->getStatus(),
+                $emailRecord->getTestMode(),
+                $emailRecord->getTicketName()
+            ));
+            
             return $emailRecord;
         }
         
