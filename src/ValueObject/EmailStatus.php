@@ -209,7 +209,6 @@ final class EmailStatus
     {
         return $this->isAlreadyProcessed() 
             || $this->isDuplicate() 
-            || $this->isExcludedFromSurvey()
-            || str_starts_with($this->value, 'Nicht versendet');
+            || $this->isExcludedFromSurvey();
     }
 }
