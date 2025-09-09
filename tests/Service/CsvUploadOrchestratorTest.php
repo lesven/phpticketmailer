@@ -12,6 +12,7 @@ use App\Service\UnknownUsersResult;
 use App\Entity\CsvFieldConfig;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use PHPUnit\Framework\TestCase;
+use App\ValueObject\TicketData;
 
 class CsvUploadOrchestratorTest extends TestCase
 {
@@ -44,7 +45,7 @@ class CsvUploadOrchestratorTest extends TestCase
         $processingResult = [
             'unknownUsers' => ['user1', 'user2', 'user3'],
             'validTickets' => [
-                ['ticketId' => 'T-001', 'username' => 'known_user']
+                TicketData::fromStrings('T-001', 'known_user')
             ]
         ];
 
@@ -78,8 +79,8 @@ class CsvUploadOrchestratorTest extends TestCase
         $processingResult = [
             'unknownUsers' => [],
             'validTickets' => [
-                ['ticketId' => 'T-001', 'username' => 'known_user1'],
-                ['ticketId' => 'T-002', 'username' => 'known_user2']
+                TicketData::fromStrings('T-001', 'known_user1'),
+                TicketData::fromStrings('T-002', 'known_user2')
             ]
         ];
 
