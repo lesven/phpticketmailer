@@ -14,6 +14,7 @@ namespace App\Service;
 use App\Entity\EmailSent;
 use App\Entity\SMTPConfig;
 use App\ValueObject\EmailStatus;
+use App\ValueObject\TicketData;
 use App\ValueObject\TicketId;
 use App\Repository\SMTPConfigRepository;
 use App\Repository\UserRepository;
@@ -30,7 +31,6 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use App\ValueObject\EmailAddress;
-use App\ValueObject\TicketName;
 
 class EmailService
 {
@@ -107,12 +107,8 @@ class EmailService
     
     /**
      * Sendet E-Mails für alle übergebenen Ticket-Datensätze
-     * 
-     * Diese Methode iteriert über alle Ticket-Datensätze und sendet
-     * für jeden eine E-Mail an den zugehörigen Benutzer. Alle E-Mail-Sendungen
-     * werden protokolliert und in der Datenbank gespeichert.
-     * 
-     * @param array $ticketData Array mit Ticket-Daten (ticketId, username, ticketName)
+     *
+     * @param TicketData[] $ticketData Liste der zu verarbeitenden Tickets
      * @param bool $testMode Gibt an, ob die E-Mails im Testmodus gesendet werden sollen
      * @param string|null $customTestEmail Optionale Test-E-Mail-Adresse für den Testmodus
      * @return array Array mit allen erstellten EmailSent-Entitäten
@@ -128,8 +124,8 @@ class EmailService
      * Diese Methode iteriert über alle Ticket-Datensätze und sendet
      * für jeden eine E-Mail an den zugehörigen Benutzer. Optional wird geprüft,
      * ob für eine Ticket-ID bereits eine E-Mail gesendet wurde.
-     * 
-     * @param array $ticketData Array mit Ticket-Daten (ticketId, username, ticketName)
+     *
+     * @param TicketData[] $ticketData Liste der Ticket-Daten
      * @param bool $testMode Gibt an, ob die E-Mails im Testmodus gesendet werden sollen
      * @param bool $forceResend Gibt an, ob bereits verarbeitete Tickets erneut versendet werden sollen
      * @param string|null $customTestEmail Optionale Test-E-Mail-Adresse für den Testmodus
@@ -153,18 +149,18 @@ class EmailService
         // Prüfe bereits verarbeitete Tickets in der Datenbank, wenn forceResend deaktiviert ist
         $existingTickets = [];
         if (!$forceResend) {
-            $ticketIds = array_map(fn($ticket) => $ticket['ticketId'], $ticketData);
+            $ticketIds = array_map(fn(TicketData $ticket) => (string) $ticket->ticketId, $ticketData);
             $existingTickets = $this->emailSentRepository->findExistingTickets($ticketIds);
         }
         
         foreach ($ticketData as $ticket) {
-            $ticketId = TicketId::fromString($ticket['ticketId']);
+            $ticketId = $ticket->ticketId;
             
             // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
             if (isset($processedTicketIds[(string) $ticketId])) {
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket, 
-                    $currentTime, 
+                    $ticket,
+                    $currentTime,
                     $testMode,
                     EmailStatus::duplicateInCsv()
                 );
@@ -219,7 +215,7 @@ class EmailService
             }
 
             // Prüfe, ob der Benutzer von Umfragen ausgeschlossen ist
-            $user = $this->userRepository->findByUsername($ticket['username']);
+            $user = $this->userRepository->findByUsername((string) $ticket->username);
             if ($user && $user->isExcludedFromSurveys()) {
                 $emailRecord = $this->createSkippedEmailRecord(
                     $ticket,
@@ -263,7 +259,7 @@ class EmailService
                 $this->entityManager->flush();
                 $sentEmails[] = $emailRecord;
             } catch (\Exception $e) {
-                error_log('Error saving email record for ticket ' . $ticket['ticketId'] . ': ' . $e->getMessage());
+                error_log('Error saving email record for ticket ' . (string) $ticket->ticketId . ': ' . $e->getMessage());
                 // Erstelle einen Fehler-Datensatz stattdessen
                 $errorRecord = new EmailSent();
                 // Copy relevant fields from $emailRecord to $errorRecord
@@ -314,67 +310,50 @@ class EmailService
 
     /**
      * Erstellt ein EmailSent-Record für übersprungene Tickets
-     * 
-     * @param array $ticket Der Ticket-Datensatz
-     * @param \DateTime $timestamp Der Zeitstempel
-     * @param bool $testMode Testmodus-Flag
-     * @param string $status Der Status-Text
-     * @return EmailSent Die erstellte EmailSent-Entität
      */
-    private function createSkippedEmailRecord(array $ticket, \DateTime $timestamp, bool $testMode, EmailStatus|string $status): EmailSent
+    private function createSkippedEmailRecord(TicketData $ticket, \DateTime $timestamp, bool $testMode, EmailStatus|string $status): EmailSent
     {
-        $user = $this->userRepository->findByUsername($ticket['username']);
-        
+        $user = $this->userRepository->findByUsername((string) $ticket->username);
+
         $emailRecord = new EmailSent();
-        $emailRecord->setTicketId(TicketId::fromString($ticket['ticketId']));
-        $emailRecord->setUsername($ticket['username']);
+        $emailRecord->setTicketId($ticket->ticketId);
+        $emailRecord->setUsername((string) $ticket->username);
         // Use EmailAddress VO if available, otherwise null
         $emailRecord->setEmail($user ? $user->getEmail() : null);
         $emailRecord->setSubject('');
         $emailRecord->setStatus($status);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
-        $ticketName = isset($ticket['ticketName']) && $ticket['ticketName'] !== ''
-            ? TicketName::fromString($ticket['ticketName'])
-            : null;
-        $emailRecord->setTicketName($ticketName);
-        
+        $emailRecord->setTicketName($ticket->ticketName);
+
         return $emailRecord;
     }
     
     /**
-     * Verarbeitet einen einzelnen Ticket-Datensatz und versendet die E-Mail
-     * 
-     * Diese Methode findet den Benutzer, erstellt die E-Mail, sendet sie
-     * und protokolliert den Versand. Bei Fehlern wird der Fehlerstatus
-     * in der protokollierten Entität gespeichert.
-     * 
-     * @param array $ticket Der Ticket-Datensatz (ticketId, username, ticketName)
-     * @param array $emailConfig Die E-Mail-Konfiguration
-     * @param string $templateContent Der Inhalt der E-Mail-Vorlage
-     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
-     * @param \DateTime $timestamp Der Zeitstempel der Sendung
-     * @return EmailSent Die erstellte EmailSent-Entität
+     * Verarbeitet einen einzelnen Ticket-Datensatz und versendet die E-Mail.
+     *
+     * @param TicketData $ticket    Der Ticket-Datensatz
+     * @param array      $emailConfig Die E-Mail-Konfiguration
+     * @param string     $templateContent Der Inhalt der E-Mail-Vorlage
+     * @param bool       $testMode  Gibt an, ob im Testmodus gesendet wird
+     * @param \DateTime  $timestamp Der Zeitstempel der Sendung
      */
     private function processTicketEmail(
-        array $ticket,
+        TicketData $ticket,
         array $emailConfig,
         string $templateContent,
         bool $testMode,
         \DateTime $timestamp
     ): EmailSent {
-        $user = $this->userRepository->findByUsername($ticket['username']);
-        
+        $user = $this->userRepository->findByUsername((string) $ticket->username);
+
         // Erstelle das E-Mail-Protokoll
         $emailRecord = new EmailSent();
-        $emailRecord->setTicketId(TicketId::fromString($ticket['ticketId']));
-        $emailRecord->setUsername($ticket['username']);
+        $emailRecord->setTicketId($ticket->ticketId);
+        $emailRecord->setUsername((string) $ticket->username);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
-        $ticketName = isset($ticket['ticketName']) && $ticket['ticketName'] !== ''
-            ? TicketName::fromString($ticket['ticketName'])
-            : null;
-        $emailRecord->setTicketName($ticketName);
+        $emailRecord->setTicketName($ticket->ticketName);
         
         // Wenn kein Benutzer gefunden wurde
         if (!$user) {
@@ -398,18 +377,14 @@ class EmailService
         // E-Mail-Einstellungen
         // prefer EmailAddress instances in config; keep union types for compatibility
         $recipientEmail = $testMode ? $emailConfig['testEmail'] : $user->getEmail();
-        $subject = str_replace('{{ticketId}}', $ticket['ticketId'], $emailConfig['subject']);
+        $subject = str_replace('{{ticketId}}', (string) $ticket->ticketId, $emailConfig['subject']);
         $emailRecord->setEmail($recipientEmail);
         $emailRecord->setSubject($subject);
-        
+
         // E-Mail-Inhalt vorbereiten
         $emailBody = $this->prepareEmailContent(
             $templateContent,
-            [
-                'ticketId' => $ticket['ticketId'],
-                'username' => $ticket['username'],
-                'ticketName' => $ticketName,
-            ],
+            $ticket,
             $user,
             $emailConfig['ticketBaseUrl'],
             $testMode
@@ -460,26 +435,26 @@ class EmailService
      * durch die tatsächlichen Werte aus dem Ticket-Datensatz.
      * Im Testmodus wird außerdem ein Hinweis an den Anfang der E-Mail gesetzt.
      * 
-     * @param string $template Die E-Mail-Vorlage
-     * @param array $ticket Der Ticket-Datensatz
-     * @param mixed $user Der Benutzer-Datensatz
-     * @param string $ticketBaseUrl Die Basis-URL für Ticket-Links
-     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
-     * @return string Der vorbereitete E-Mail-Inhalt
+     * @param string    $template       Die E-Mail-Vorlage
+     * @param TicketData $ticket        Der Ticket-Datensatz
+     * @param mixed     $user           Der Benutzer-Datensatz
+     * @param string    $ticketBaseUrl  Die Basis-URL für Ticket-Links
+     * @param bool      $testMode       Gibt an, ob im Testmodus gesendet wird
+     * @return string   Der vorbereitete E-Mail-Inhalt
      */
     private function prepareEmailContent(
         string $template,
-        array $ticket,
+        TicketData $ticket,
         $user,
         string $ticketBaseUrl,
         bool $testMode
     ): string {
-        $ticketLink = rtrim($ticketBaseUrl, '/') . '/' . $ticket['ticketId'];
+        $ticketLink = rtrim($ticketBaseUrl, '/') . '/' . (string) $ticket->ticketId;
         $emailBody = $template;
-        $emailBody = str_replace('{{ticketId}}', $ticket['ticketId'], $emailBody);
+        $emailBody = str_replace('{{ticketId}}', (string) $ticket->ticketId, $emailBody);
         $emailBody = str_replace('{{ticketLink}}', $ticketLink, $emailBody);
-        $emailBody = str_replace('{{ticketName}}', isset($ticket['ticketName']) ? (string) $ticket['ticketName'] : '', $emailBody);
-        $emailBody = str_replace('{{username}}', $ticket['username'], $emailBody);
+        $emailBody = str_replace('{{ticketName}}', $ticket->ticketName ? (string) $ticket->ticketName : '', $emailBody);
+        $emailBody = str_replace('{{username}}', (string) $ticket->username, $emailBody);
         
         // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
         $dueDate = new \DateTime();

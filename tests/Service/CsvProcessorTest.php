@@ -6,6 +6,7 @@ use App\Service\CsvFileReader;
 use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
 use PHPUnit\Framework\TestCase;
+use App\ValueObject\TicketData;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -163,9 +164,9 @@ class CsvProcessorTest extends TestCase
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
-        $ticketIds = array_column($res['validTickets'], 'ticketId');
-    $this->assertContainsEquals('1', $ticketIds);
-    $this->assertContainsEquals('2', $ticketIds);
+        $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res['validTickets']);
+        $this->assertContainsEquals('1', $ticketIds);
+        $this->assertContainsEquals('2', $ticketIds);
         @unlink($tmp);
     }
 }

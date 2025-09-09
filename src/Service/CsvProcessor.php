@@ -13,7 +13,7 @@ namespace App\Service;
 
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
-use App\ValueObject\TicketName;
+use App\ValueObject\TicketData;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -132,26 +132,21 @@ class CsvProcessor
     }
     
     /**
-     * Erstellt ein Ticket-Array aus einer CSV-Zeile
-     * 
+     * Erstellt ein TicketData-Objekt aus einer CSV-Zeile
+     *
      * @param array $row Die CSV-Zeile
      * @param array $columnIndices Die Indizes der benötigten Spalten
      * @param array $fieldMapping Die Zuordnung der logischen zu physischen Feldnamen
-     * @return array Das Ticket als assoziatives Array
      */
-    private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): array
+    private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): TicketData
     {
-        $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? '';
-        $ticketName = null;
-        if (trim($ticketNameRaw) !== '') {
-            $ticketName = TicketName::fromString($ticketNameRaw)->getValue();
-        }
+        $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
 
-        return [
-            'ticketId' => $row[$columnIndices[$fieldMapping['ticketId']]],
-            'username' => $row[$columnIndices[$fieldMapping['username']]],
-            'ticketName' => $ticketName,
-        ];
+        return TicketData::fromStrings(
+            $row[$columnIndices[$fieldMapping['ticketId']]],
+            $row[$columnIndices[$fieldMapping['username']]],
+            $ticketNameRaw
+        );
     }
     
     /**

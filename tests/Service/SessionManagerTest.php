@@ -6,6 +6,7 @@ use App\Service\SessionManager;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use PHPUnit\Framework\TestCase;
+use App\ValueObject\TicketData;
 
 /**
  * Test-Klasse für den SessionManager
@@ -40,8 +41,8 @@ class SessionManagerTest extends TestCase
         $processingResult = [
             'unknownUsers' => ['user1', 'user2', 'user3'],
             'validTickets' => [
-                ['ticketId' => 'T-001', 'username' => 'john', 'ticketName' => 'Issue 1'],
-                ['ticketId' => 'T-002', 'username' => 'jane', 'ticketName' => 'Issue 2']
+                TicketData::fromStrings('T-001', 'john', 'Issue 1'),
+                TicketData::fromStrings('T-002', 'jane', 'Issue 2')
             ]
         ];
 
@@ -124,8 +125,8 @@ class SessionManagerTest extends TestCase
     public function testGetValidTicketsReturnsStoredData(): void
     {
         $expectedTickets = [
-            ['ticketId' => 'T-001', 'username' => 'john', 'ticketName' => 'Test Issue'],
-            ['ticketId' => 'T-002', 'username' => 'jane', 'ticketName' => 'Another Issue']
+            TicketData::fromStrings('T-001', 'john', 'Test Issue'),
+            TicketData::fromStrings('T-002', 'jane', 'Another Issue')
         ];
 
         $this->session->expects($this->once())
@@ -172,7 +173,7 @@ class SessionManagerTest extends TestCase
         // Test that the same keys are used in store and get operations
         $processingResult = [
             'unknownUsers' => ['test_user'],
-            'validTickets' => [['ticketId' => 'T-123']]
+            'validTickets' => [TicketData::fromStrings('T-123', 'user')]
         ];
 
         // Store data
@@ -188,7 +189,7 @@ class SessionManagerTest extends TestCase
                     return ['test_user'];
                 }
                 if ($key === 'valid_tickets') {
-                    return [['ticketId' => 'T-123']];
+                    return [TicketData::fromStrings('T-123', 'user')];
                 }
                 return $default;
             });
@@ -197,7 +198,7 @@ class SessionManagerTest extends TestCase
         $validTickets = $this->sessionManager->getValidTickets();
 
         $this->assertEquals(['test_user'], $unknownUsers);
-        $this->assertEquals([['ticketId' => 'T-123']], $validTickets);
+        $this->assertEquals([TicketData::fromStrings('T-123', 'user')], $validTickets);
     }
 
     public function testMultipleStoreOperationsOverwritePreviousData(): void
@@ -205,7 +206,7 @@ class SessionManagerTest extends TestCase
         // First store operation
         $firstResult = [
             'unknownUsers' => ['user1'],
-            'validTickets' => [['ticketId' => 'T-001']]
+            'validTickets' => [TicketData::fromStrings('T-001', 'user1')]
         ];
 
         $this->session->expects($this->exactly(4))
@@ -217,8 +218,8 @@ class SessionManagerTest extends TestCase
         $secondResult = [
             'unknownUsers' => ['user2', 'user3'],
             'validTickets' => [
-                ['ticketId' => 'T-002'],
-                ['ticketId' => 'T-003']
+                TicketData::fromStrings('T-002', 'user2'),
+                TicketData::fromStrings('T-003', 'user3')
             ]
         ];
 
@@ -231,7 +232,7 @@ class SessionManagerTest extends TestCase
         $processingResult = [
             'unknownUsers' => ['unknown1', 'unknown2'],
             'validTickets' => [
-                ['ticketId' => 'T-100', 'username' => 'known_user', 'ticketName' => 'Valid Ticket']
+                TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')
             ]
         ];
 
@@ -248,7 +249,7 @@ class SessionManagerTest extends TestCase
                     return ['unknown1', 'unknown2'];
                 }
                 if ($key === 'valid_tickets') {
-                    return [['ticketId' => 'T-100', 'username' => 'known_user', 'ticketName' => 'Valid Ticket']];
+                    return [TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')];
                 }
                 return $default;
             });
@@ -258,7 +259,7 @@ class SessionManagerTest extends TestCase
         $unknownUsersAgain = $this->sessionManager->getUnknownUsers();
 
         $this->assertEquals(['unknown1', 'unknown2'], $unknownUsers);
-        $this->assertEquals([['ticketId' => 'T-100', 'username' => 'known_user', 'ticketName' => 'Valid Ticket']], $validTickets);
+        $this->assertEquals([TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')], $validTickets);
         $this->assertEquals(['unknown1', 'unknown2'], $unknownUsersAgain);
 
         $this->sessionManager->clearUploadData();
