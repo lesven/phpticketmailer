@@ -13,6 +13,7 @@ namespace App\Service;
 
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
+use App\ValueObject\TicketName;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -141,11 +142,15 @@ class CsvProcessor
     private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): array
     {
         $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? '';
-        $ticketName = mb_substr($ticketNameRaw, 0, 50);
+        $ticketName = null;
+        if (trim($ticketNameRaw) !== '') {
+            $ticketName = TicketName::fromString($ticketNameRaw)->getValue();
+        }
+
         return [
             'ticketId' => $row[$columnIndices[$fieldMapping['ticketId']]],
             'username' => $row[$columnIndices[$fieldMapping['username']]],
-            'ticketName' => $ticketName ?: null,
+            'ticketName' => $ticketName,
         ];
     }
     

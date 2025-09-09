@@ -16,6 +16,7 @@ use App\ValueObject\EmailAddress;
 use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
+use App\ValueObject\TicketName;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -78,8 +79,8 @@ class EmailSent
     /**
      * Optional: Name oder Beschreibung des Tickets
      */
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $ticketName = null;
+    #[ORM\Column(type: 'ticket_name', length: 50, nullable: true)]
+    private ?TicketName $ticketName = null;
 
     /**
      * Gibt die ID der E-Mail-Protokollierung zurück
@@ -290,20 +291,25 @@ class EmailSent
      * 
      * @return string|null Der Name des Tickets
      */
-    public function getTicketName(): ?string
+    public function getTicketName(): ?TicketName
     {
         return $this->ticketName;
     }
 
     /**
      * Setzt den Namen oder die Beschreibung des Tickets
-     * 
-     * @param string|null $ticketName Der Name des Tickets
+     *
+     * @param TicketName|string|null $ticketName Der Name des Tickets
      * @return self Für Method-Chaining
      */
-    public function setTicketName(?string $ticketName): self
+    public function setTicketName(TicketName|string|null $ticketName): self
     {
-        $this->ticketName = $ticketName;
+        if (is_string($ticketName)) {
+            $ticketName = trim($ticketName);
+            $this->ticketName = $ticketName === '' ? null : TicketName::fromString($ticketName);
+        } else {
+            $this->ticketName = $ticketName;
+        }
 
         return $this;
     }

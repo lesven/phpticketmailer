@@ -94,7 +94,7 @@ class FileLogEventHandler
             'email' => (string) $event->email,
             'subject' => $event->subject,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName,
+            'ticket_name' => $event->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
 
@@ -120,7 +120,7 @@ class FileLogEventHandler
             'subject' => $event->subject,
             'error_message' => $event->errorMessage,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName,
+            'ticket_name' => $event->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
     }

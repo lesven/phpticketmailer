@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use App\ValueObject\TicketName;
 
 #[Route('/template')]
 class TemplateController extends AbstractController
@@ -33,7 +34,7 @@ class TemplateController extends AbstractController
         // Beispieldaten für die Vorschau
         $previewData = [
             'ticketId' => 'TICKET-12345',
-            'ticketName' => 'Beispiel Support-Anfrage',
+            'ticketName' => TicketName::fromString('Beispiel Support-Anfrage'),
             'username' => 'max.mustermann',
             'ticketLink' => 'https://www.ticket.de/TICKET-12345'
         ];
@@ -162,7 +163,7 @@ class TemplateController extends AbstractController
         
         $placeholders = [
             '{{ticketId}}' => $data['ticketId'] ?? 'TICKET-ID',
-            '{{ticketName}}' => $data['ticketName'] ?? 'Ticket-Name',
+            '{{ticketName}}' => isset($data['ticketName']) ? (string) $data['ticketName'] : 'Ticket-Name',
             '{{username}}' => $data['username'] ?? 'Benutzername',
             '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id',
             '{{dueDate}}' => $data['dueDate'] ?? $formattedDueDate

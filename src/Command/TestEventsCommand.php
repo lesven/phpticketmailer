@@ -8,6 +8,7 @@ use App\Event\Email\EmailSentEvent;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketName;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -60,7 +61,7 @@ class TestEventsCommand extends Command
             EmailAddress::fromString('test@example.com'),
             'Your Ticket Update',
             true, // test mode
-            'System Issue Fix'
+            TicketName::fromString('System Issue Fix')
         ));
 
         // Test 3: Direct Logger Test

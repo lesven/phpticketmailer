@@ -6,6 +6,7 @@ use App\Event\AbstractDomainEvent;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketName;
 
 /**
  * Event: E-Mail-Versand ist fehlgeschlagen
@@ -23,7 +24,7 @@ class EmailFailedEvent extends AbstractDomainEvent
         public readonly string $subject,
         public readonly string $errorMessage,
         public readonly bool $testMode = false,
-        public readonly ?string $ticketName = null
+        public readonly ?TicketName $ticketName = null
     ) {
         parent::__construct();
     }

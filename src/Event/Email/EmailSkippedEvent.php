@@ -7,6 +7,7 @@ use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\EmailStatus;
+use App\ValueObject\TicketName;
 
 /**
  * Event: Eine E-Mail wurde übersprungen
@@ -27,7 +28,7 @@ class EmailSkippedEvent extends AbstractDomainEvent
         public readonly ?EmailAddress $email,
         public readonly EmailStatus $status,
         public readonly bool $testMode = false,
-        public readonly ?string $ticketName = null
+        public readonly ?TicketName $ticketName = null
     ) {
         parent::__construct();
     }
