@@ -199,4 +199,17 @@ final class EmailStatus
     {
         return str_starts_with($this->value, 'Nicht versendet – Von Umfragen ausgeschlossen');
     }
+
+    /**
+     * Prüft, ob der Status anzeigt, dass die E-Mail übersprungen wurde (alle Skip-Szenarien)
+     * 
+     * @return bool True, wenn die E-Mail aus irgendeinem Grund übersprungen wurde
+     */
+    public function isSkipped(): bool
+    {
+        return $this->isAlreadyProcessed() 
+            || $this->isDuplicate() 
+            || $this->isExcludedFromSurvey()
+            || str_starts_with($this->value, 'Nicht versendet');
+    }
 }
