@@ -10,10 +10,10 @@ class CsvProcessorSimpleTest extends TestCase
     {
         // Dummy-Objekte für die Abhängigkeiten
         $reader = $this->createMock(\App\Service\CsvFileReader::class);
-        $validator = $this->createMock(\App\Service\UserValidator::class);
+        $userRepository = $this->createMock(\App\Repository\UserRepository::class);
         $requestStack = $this->createMock(\Symfony\Component\HttpFoundation\RequestStack::class);
 
-        $processor = new CsvProcessor($reader, $validator, $requestStack);
+        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
 
         $row = [0 => '123', 1 => 'user', 2 => str_repeat('X', 60)];
         $columnIndices = ['ticketId' => 0, 'username' => 1, 'ticketName' => 2];
