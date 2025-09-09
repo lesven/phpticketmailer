@@ -464,4 +464,75 @@ class EmailServiceTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
     }
+
+    public function testSendTicketEmailsWithCustomTestEmail(): void
+    {
+        $ticket = ['ticketId' => 'T-123', 'username' => 'jsmith', 'ticketName' => 'Problem'];
+        $tickets = [$ticket];
+        $customTestEmail = 'custom-test@example.com';
+
+        $this->emailSentRepo->method('findExistingTickets')->willReturn([]);
+        
+        $user = new \App\Entity\User();
+        $user->setEmail('jsmith@example.com');
+        $user->setUsername('jsmith');
+        $this->userRepo->method('findByUsername')->willReturn($user);
+
+        // Capture the email sent to verify it uses custom test email
+        $sentEmail = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function($email) use (&$sentEmail) {
+                $sentEmail = $email;
+            });
+
+        $this->entityManager->expects($this->once())->method('persist');
+        $this->entityManager->expects($this->atLeastOnce())->method('flush');
+
+        $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, true, false, $customTestEmail);
+        
+        $this->assertCount(1, $result);
+        $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
+        
+        // Verify that the custom test email was used
+        $this->assertNotNull($sentEmail);
+        $recipients = $sentEmail->getTo();
+        $this->assertCount(1, $recipients);
+        $this->assertEquals($customTestEmail, array_values($recipients)[0]->getAddress());
+    }
+
+    public function testSendTicketEmailsUsesDefaultTestEmailWhenCustomIsEmpty(): void
+    {
+        $ticket = ['ticketId' => 'T-123', 'username' => 'jsmith', 'ticketName' => 'Problem'];
+        $tickets = [$ticket];
+
+        $this->emailSentRepo->method('findExistingTickets')->willReturn([]);
+        
+        $user = new \App\Entity\User();
+        $user->setEmail('jsmith@example.com');
+        $user->setUsername('jsmith');
+        $this->userRepo->method('findByUsername')->willReturn($user);
+
+        // Capture the email sent to verify it uses default test email
+        $sentEmail = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function($email) use (&$sentEmail) {
+                $sentEmail = $email;
+            });
+
+        $this->entityManager->expects($this->once())->method('persist');
+        $this->entityManager->expects($this->atLeastOnce())->method('flush');
+
+        $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, true, false, '');
+        
+        $this->assertCount(1, $result);
+        $this->assertEquals(EmailStatus::sent(), $result[0]->getStatus());
+        
+        // Verify that the default test email was used (from params)
+        $this->assertNotNull($sentEmail);
+        $recipients = $sentEmail->getTo();
+        $this->assertCount(1, $recipients);
+        $this->assertEquals('test@example.com', array_values($recipients)[0]->getAddress());
+    }
 }

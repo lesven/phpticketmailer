@@ -112,11 +112,12 @@ class EmailService
      * 
      * @param array $ticketData Array mit Ticket-Daten (ticketId, username, ticketName)
      * @param bool $testMode Gibt an, ob die E-Mails im Testmodus gesendet werden sollen
+     * @param string|null $customTestEmail Optionale Test-E-Mail-Adresse für den Testmodus
      * @return array Array mit allen erstellten EmailSent-Entitäten
      */
-    public function sendTicketEmails(array $ticketData, bool $testMode = false): array
+    public function sendTicketEmails(array $ticketData, bool $testMode = false, ?string $customTestEmail = null): array
     {
-        return $this->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, true);
+        return $this->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, true, $customTestEmail);
     }
 
     /**
@@ -129,15 +130,22 @@ class EmailService
      * @param array $ticketData Array mit Ticket-Daten (ticketId, username, ticketName)
      * @param bool $testMode Gibt an, ob die E-Mails im Testmodus gesendet werden sollen
      * @param bool $forceResend Gibt an, ob bereits verarbeitete Tickets erneut versendet werden sollen
+     * @param string|null $customTestEmail Optionale Test-E-Mail-Adresse für den Testmodus
      * @return array Array mit allen erstellten EmailSent-Entitäten
      */
-    public function sendTicketEmailsWithDuplicateCheck(array $ticketData, bool $testMode = false, bool $forceResend = false): array
+    public function sendTicketEmailsWithDuplicateCheck(array $ticketData, bool $testMode = false, bool $forceResend = false, ?string $customTestEmail = null): array
     {
         $startTime = microtime(true);
         $sentEmails = [];
         $processedTicketIds = []; // Für innerhalb der CSV-Datei
         $currentTime = new \DateTime();
         $emailConfig = $this->getEmailConfiguration();
+        
+        // Custom test email verwenden, wenn im Testmodus bereitgestellt
+        if ($testMode && $customTestEmail !== null && !empty(trim($customTestEmail))) {
+            $emailConfig['testEmail'] = trim($customTestEmail);
+        }
+        
         $templateContent = $this->getEmailTemplate();
 
         // Prüfe bereits verarbeitete Tickets in der Datenbank, wenn forceResend deaktiviert ist

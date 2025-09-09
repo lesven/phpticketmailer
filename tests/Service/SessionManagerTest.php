@@ -152,7 +152,7 @@ class SessionManagerTest extends TestCase
 
     public function testClearUploadDataRemovesBothKeys(): void
     {
-        $this->session->expects($this->exactly(2))
+        $this->session->expects($this->exactly(3))
             ->method('remove')
 ;
 
@@ -261,10 +261,70 @@ class SessionManagerTest extends TestCase
         $this->assertEquals([['ticketId' => 'T-100', 'username' => 'known_user', 'ticketName' => 'Valid Ticket']], $validTickets);
         $this->assertEquals(['unknown1', 'unknown2'], $unknownUsersAgain);
 
-        // 3. Clear data
-        $this->session->expects($this->exactly(2))
-            ->method('remove');
-
         $this->sessionManager->clearUploadData();
+    }
+
+    public function testStoreTestEmailWithValidEmail(): void
+    {
+        $testEmail = 'test@example.com';
+        
+        $this->session->expects($this->once())
+            ->method('set')
+            ->with('test_email', $testEmail);
+
+        $this->sessionManager->storeTestEmail($testEmail);
+    }
+
+    public function testStoreTestEmailWithEmptyString(): void
+    {
+        $this->session->expects($this->once())
+            ->method('remove')
+            ->with('test_email');
+
+        $this->sessionManager->storeTestEmail('');
+    }
+
+    public function testStoreTestEmailWithNull(): void
+    {
+        $this->session->expects($this->once())
+            ->method('remove')
+            ->with('test_email');
+
+        $this->sessionManager->storeTestEmail(null);
+    }
+
+    public function testStoreTestEmailTrimsWhitespace(): void
+    {
+        $testEmail = '  test@example.com  ';
+        
+        $this->session->expects($this->once())
+            ->method('set')
+            ->with('test_email', 'test@example.com');
+
+        $this->sessionManager->storeTestEmail($testEmail);
+    }
+
+    public function testGetTestEmailReturnsStoredValue(): void
+    {
+        $testEmail = 'test@example.com';
+        
+        $this->session->method('get')
+            ->with('test_email')
+            ->willReturn($testEmail);
+
+        $result = $this->sessionManager->getTestEmail();
+        
+        $this->assertEquals($testEmail, $result);
+    }
+
+    public function testGetTestEmailReturnsNullWhenNotSet(): void
+    {
+        $this->session->method('get')
+            ->with('test_email')
+            ->willReturn(null);
+
+        $result = $this->sessionManager->getTestEmail();
+        
+        $this->assertNull($result);
     }
 }

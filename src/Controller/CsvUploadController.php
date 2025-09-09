@@ -16,6 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * Controller für das Hochladen und Verarbeiten von CSV-Dateien mit Ticketdaten
@@ -32,7 +33,8 @@ class CsvUploadController extends AbstractController
         private readonly SessionManager $sessionManager,
         private readonly EmailService $emailService,
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
-        private readonly EmailNormalizer $emailNormalizer
+        private readonly EmailNormalizer $emailNormalizer,
+        private readonly ParameterBagInterface $params
     ) {
     }
       /**
@@ -46,11 +48,22 @@ class CsvUploadController extends AbstractController
         
         $form = $this->createForm(CsvUploadType::class);
         $form->get('csvFieldConfig')->setData($csvFieldConfig);
+        
+        // Standard-Test-E-Mail als Vorgabe setzen
+        $defaultTestEmail = $this->params->get('app.test_email') ?? 'test@example.com';
+        $form->get('testEmail')->setData($defaultTestEmail);
+        
         $form->handleRequest($request);        if ($form->isSubmitted() && $form->isValid()) {
             $csvFile = $form->get('csvFile')->getData();
             $testMode = $form->get('testMode')->getData();
             $forceResend = $form->get('forceResend')->getData();
+            $testEmail = $form->get('testEmail')->getData();
             $updatedConfig = $form->get('csvFieldConfig')->getData();
+            
+            // Test-E-Mail in Session speichern für spätere Verwendung
+            if ($testMode) {
+                $this->sessionManager->storeTestEmail($testEmail);
+            }
             
             try {
                 $result = $this->csvUploadOrchestrator->processUpload(
@@ -120,6 +133,7 @@ class CsvUploadController extends AbstractController
     {
         $testMode = (bool)$request->query->get('testMode', 0);
         $forceResend = (bool)$request->query->get('forceResend', 0);
+        $testEmail = $this->sessionManager->getTestEmail();
         $ticketData = $this->sessionManager->getValidTickets();
         
         if (empty($ticketData)) {
@@ -128,7 +142,7 @@ class CsvUploadController extends AbstractController
         }
         
         try {
-            $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend);
+            $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend, $testEmail);
             
             $this->addFlash('success', sprintf(
                 'Es wurden %d E-Mails %sversandt', 

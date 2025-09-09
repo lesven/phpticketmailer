@@ -28,6 +28,7 @@ class CsvUploadTypeTest extends TestCase
         $this->assertTrue($form->has('csvFile'));
         $this->assertTrue($form->has('csvFieldConfig'));
         $this->assertTrue($form->has('testMode'));
+        $this->assertTrue($form->has('testEmail'));
         $this->assertTrue($form->has('forceResend'));
     }
 
