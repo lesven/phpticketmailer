@@ -190,5 +190,24 @@ class EmailStatusTest extends TestCase
         $this->assertFalse($customStatus->isAlreadyProcessed());
         $this->assertFalse($customStatus->isDuplicate());
         $this->assertFalse($customStatus->isExcludedFromSurvey());
+        $this->assertFalse($customStatus->isSkipped());
+    }
+
+    public function testIsSkippedMethodDetectsAllSkipScenarios(): void
+    {
+        $alreadyProcessed = EmailStatus::alreadyProcessed(new \DateTime());
+        $duplicate = EmailStatus::duplicateInCsv();
+        $excluded = EmailStatus::excludedFromSurvey();
+        $sent = EmailStatus::sent();
+        $error = EmailStatus::error('Test error');
+        
+        // Übersprungene Status sollten true zurückgeben
+        $this->assertTrue($alreadyProcessed->isSkipped());
+        $this->assertTrue($duplicate->isSkipped());
+        $this->assertTrue($excluded->isSkipped());
+        
+        // Nicht übersprungene Status sollten false zurückgeben
+        $this->assertFalse($sent->isSkipped());
+        $this->assertFalse($error->isSkipped());
     }
 }
