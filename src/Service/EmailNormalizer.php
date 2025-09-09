@@ -2,6 +2,9 @@
 
 namespace App\Service;
 
+use App\Exception\InvalidEmailAddressException;
+use App\ValueObject\EmailAddress;
+
 /**
  * Service für die Normalisierung von E-Mail-Adressen
  * 
@@ -34,20 +37,22 @@ class EmailNormalizer
         if (preg_match('/<([^<>]+)>/', $emailInput, $matches)) {
             $extractedEmail = trim($matches[1]);
             
-            // Validieren der extrahierten E-Mail
-            if (filter_var($extractedEmail, FILTER_VALIDATE_EMAIL)) {
-                return $extractedEmail;
-            } else {
+            // Validieren der extrahierten E-Mail mit EmailAddress VO
+            try {
+                $emailAddress = EmailAddress::fromString($extractedEmail);
+                return $emailAddress->getValue();
+            } catch (InvalidEmailAddressException $e) {
                 throw new \InvalidArgumentException("Ungültige E-Mail-Adresse in spitzen Klammern gefunden: {$extractedEmail}");
             }
         }
         
-        // Standard-E-Mail-Format prüfen
-        if (filter_var($emailInput, FILTER_VALIDATE_EMAIL)) {
-            return $emailInput;
+        // Standard-E-Mail-Format prüfen mit EmailAddress VO
+        try {
+            $emailAddress = EmailAddress::fromString($emailInput);
+            return $emailAddress->getValue();
+        } catch (InvalidEmailAddressException $e) {
+            throw new \InvalidArgumentException("Ungültiges E-Mail-Format: {$emailInput}");
         }
-        
-        throw new \InvalidArgumentException("Ungültiges E-Mail-Format: {$emailInput}");
     }
     
     /**
@@ -69,7 +74,12 @@ class EmailNormalizer
      */
     public function isStandardEmailFormat(string $emailInput): bool
     {
-        return filter_var(trim($emailInput), FILTER_VALIDATE_EMAIL) !== false;
+        try {
+            EmailAddress::fromString(trim($emailInput));
+            return true;
+        } catch (InvalidEmailAddressException $e) {
+            return false;
+        }
     }
     
     /**

@@ -15,10 +15,12 @@ use App\Entity\CsvFieldConfig;
 use App\Form\CsvFieldConfigType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\Email;
 
 /**
  * Formular für den Upload von CSV-Dateien mit Ticket-Informationen
@@ -70,6 +72,19 @@ class CsvUploadType extends AbstractType
                 'required' => false, // Checkbox ist optional
                 'data' => false, // Standardmäßig deaktiviert, da Live-Versand häufiger verwendet wird
                 'attr' => ['class' => 'form-check-input'], // Bootstrap-Styling
+            ])
+            // E-Mail-Adresse für den Testmodus
+            ->add('testEmail', EmailType::class, [
+                'label' => 'Test-E-Mail-Adresse',
+                'required' => false, // Optional, da nur im Testmodus benötigt
+                'mapped' => false, // Nicht an eine Entitätseigenschaft gebunden
+                'attr' => ['class' => 'form-control'], // Bootstrap-Styling
+                'help' => 'E-Mail-Adresse für den Testversand. Falls leer, wird die Standard-Test-E-Mail verwendet.',
+                'constraints' => [
+                    new Email([
+                        'message' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+                    ])
+                ],
             ])
             // Checkbox für Erneut-Versenden bei bereits verarbeiteten Tickets
             ->add('forceResend', CheckboxType::class, [

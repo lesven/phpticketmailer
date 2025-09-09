@@ -20,6 +20,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Twig\Environment;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class CsvUploadControllerTest extends TestCase
 {
@@ -32,6 +33,7 @@ class CsvUploadControllerTest extends TestCase
     private FormFactoryInterface $formFactory;
     private Environment $twig;
     private UrlGeneratorInterface $urlGenerator;
+    private ParameterBagInterface $params;
 
     protected function setUp(): void
     {
@@ -43,13 +45,15 @@ class CsvUploadControllerTest extends TestCase
         $this->formFactory = $this->createMock(FormFactoryInterface::class);
         $this->twig = $this->createMock(Environment::class);
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
+        $this->params = $this->createMock(ParameterBagInterface::class);
 
         $this->controller = new CsvUploadController(
             $this->csvUploadOrchestrator,
             $this->sessionManager,
             $this->emailService,
             $this->csvFieldConfigRepository,
-            $this->emailNormalizer
+            $this->emailNormalizer,
+            $this->params
         );
 
         // Inject mocked services using reflection
@@ -84,12 +88,20 @@ class CsvUploadControllerTest extends TestCase
         $form = $this->createMock(FormInterface::class);
         $formView = $this->createMock(FormView::class);
         $csvFieldConfigForm = $this->createMock(FormInterface::class);
+        $testEmailForm = $this->createMock(FormInterface::class);
         
-        $form->method('get')->with('csvFieldConfig')->willReturn($csvFieldConfigForm);
+        $form->method('get')->willReturnMap([
+            ['csvFieldConfig', $csvFieldConfigForm],
+            ['testEmail', $testEmailForm]
+        ]);
         $csvFieldConfigForm->method('setData')->with($csvFieldConfig);
+        $testEmailForm->method('setData')->with('test@example.com');
         $form->method('handleRequest')->with($request);
         $form->method('isSubmitted')->willReturn(false);
         $form->method('createView')->willReturn($formView);
+
+        // Mock the params service to return default test email
+        $this->params->method('get')->with('app.test_email')->willReturn('test@example.com');
 
         $this->formFactory->method('create')
             ->with(CsvUploadType::class)

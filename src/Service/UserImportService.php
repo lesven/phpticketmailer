@@ -5,7 +5,9 @@ namespace App\Service;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\Username;
 use App\Exception\InvalidEmailAddressException;
+use App\Exception\InvalidUsernameException;
 use App\Event\User\UserImportStartedEvent;
 use App\Event\User\UserImportedEvent;
 use App\Event\User\UserImportCompletedEvent;
@@ -26,7 +28,6 @@ class UserImportService
         private readonly UserRepository $userRepository,
         private readonly CsvFileReader $csvFileReader,
         private readonly CsvValidationService $csvValidationService,
-        private readonly UserValidator $userValidator,
         private readonly UserCsvHelper $csvHelper,
         private readonly EventDispatcherInterface $eventDispatcher
     ) {
@@ -206,33 +207,22 @@ class UserImportService
 
         foreach ($userData as $row) {
             try {
-                $username = $row['username'];
-                $email = $row['email']; // EmailAddress Value Object normalisiert automatisch
+                // 🎯 DDD: Value Objects für Domain-Validierung verwenden
+                $username = Username::fromString($row['username']);
+                $emailAddress = EmailAddress::fromString($row['email']);
 
                 // Prüfen ob Benutzer bereits existiert (nur wenn nicht alle gelöscht wurden)
-                if (!$clearExisting && $this->userRepository->findByUsername($username)) {
+                if (!$clearExisting && $this->userRepository->findByUsername($username->getValue())) {
                     $skippedCount++;
                     continue;
                 }
 
-                // Validierung mit UserValidator
-                if (!$this->userValidator->isValidUsername($username) ||
-                    !$this->userValidator->isValidEmail($email)) {
-                    $errors[] = "Ungültige Daten für Benutzer '{$username}'";
-                    continue;
-                }
+                // 🎯 DDD: Validierung bereits durch Value Objects erfolgt - kein UserValidator mehr nötig!
 
                 // Benutzer erstellen
                 $user = new User();
-                $user->setUsername($username);
-                
-                try {
-                    $emailAddress = EmailAddress::fromString($email);
-                    $user->setEmail($emailAddress);
-                } catch (InvalidEmailAddressException $e) {
-                    $errors[] = "Ungültige E-Mail für Benutzer '{$username}': " . $e->getMessage();
-                    continue;
-                }
+                $user->setUsername($username->getValue());
+                $user->setEmail($emailAddress);
 
                 $this->entityManager->persist($user);
                 $createdCount++;
@@ -244,6 +234,10 @@ class UserImportService
                     $user->isExcludedFromSurveys()
                 ));
 
+            } catch (InvalidUsernameException $e) {
+                $errors[] = "Ungültiger Username '{$row['username']}': " . $e->getMessage();
+            } catch (InvalidEmailAddressException $e) {
+                $errors[] = "Ungültige E-Mail '{$row['email']}': " . $e->getMessage();
             } catch (\Exception $e) {
                 $errors[] = "Fehler beim Erstellen von Benutzer '{$row['username']}': " . $e->getMessage();
             }

@@ -34,7 +34,8 @@ class CsvUploadControllerWebTest extends TestCase
             $this->createMock(\App\Service\SessionManager::class),
             $this->createMock(\App\Service\EmailService::class),
             $this->createMock(\App\Repository\CsvFieldConfigRepository::class),
-            $this->createMock(\App\Service\EmailNormalizer::class)
+            $this->createMock(\App\Service\EmailNormalizer::class),
+            $this->createMock(\Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface::class)
         );
         
         $this->assertTrue(method_exists($controller, 'upload'));
