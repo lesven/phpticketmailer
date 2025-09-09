@@ -5,6 +5,7 @@ use App\Entity\EmailSent;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
+use App\ValueObject\TicketName;
 
 final class EmailSentTest extends TestCase
 {
@@ -42,7 +43,7 @@ final class EmailSentTest extends TestCase
         $this->assertEquals(EmailStatus::sent(), $e->getStatus());
         $this->assertSame($now, $e->getTimestamp());
         $this->assertTrue($e->getTestMode());
-        $this->assertSame('Ticket A', $e->getTicketName());
+        $this->assertEquals(TicketName::fromString('Ticket A'), $e->getTicketName());
 
         $this->assertSame('2025-08-20 12:34:56', $e->getFormattedTimestamp());
     }

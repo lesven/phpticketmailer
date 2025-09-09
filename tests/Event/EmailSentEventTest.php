@@ -6,6 +6,7 @@ use App\Event\Email\EmailSentEvent;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketName;
 use PHPUnit\Framework\TestCase;
 
 class EmailSentEventTest extends TestCase
@@ -17,7 +18,7 @@ class EmailSentEventTest extends TestCase
         $email = EmailAddress::fromString('john@example.com');
         $subject = 'Your Ticket Update';
         $testMode = true;
-        $ticketName = 'System Issue';
+        $ticketName = TicketName::fromString('System Issue');
         
         $event = new EmailSentEvent(
             $ticketId,

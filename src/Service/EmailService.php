@@ -30,6 +30,7 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketName;
 
 class EmailService
 {
@@ -333,7 +334,10 @@ class EmailService
         $emailRecord->setStatus($status);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
-        $emailRecord->setTicketName($ticket['ticketName'] ?? '');
+        $ticketName = isset($ticket['ticketName']) && $ticket['ticketName'] !== ''
+            ? TicketName::fromString($ticket['ticketName'])
+            : null;
+        $emailRecord->setTicketName($ticketName);
         
         return $emailRecord;
     }
@@ -367,7 +371,10 @@ class EmailService
         $emailRecord->setUsername($ticket['username']);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
-        $emailRecord->setTicketName($ticket['ticketName'] ?? '');
+        $ticketName = isset($ticket['ticketName']) && $ticket['ticketName'] !== ''
+            ? TicketName::fromString($ticket['ticketName'])
+            : null;
+        $emailRecord->setTicketName($ticketName);
         
         // Wenn kein Benutzer gefunden wurde
         if (!$user) {
@@ -377,13 +384,13 @@ class EmailService
             
             // 🔥 EVENT: E-Mail übersprungen (kein Benutzer gefunden)
             $this->eventDispatcher->dispatch(new EmailSkippedEvent(
-                $emailRecord->getTicketId(),
-                $emailRecord->getUsername(),
-                $emailRecord->getEmail(),
-                $emailRecord->getStatus(),
-                $emailRecord->getTestMode(),
-                $emailRecord->getTicketName()
-            ));
+            $emailRecord->getTicketId(),
+            $emailRecord->getUsername(),
+            $emailRecord->getEmail(),
+            $emailRecord->getStatus(),
+            $emailRecord->getTestMode(),
+            $emailRecord->getTicketName()
+        ));
             
             return $emailRecord;
         }
@@ -398,7 +405,11 @@ class EmailService
         // E-Mail-Inhalt vorbereiten
         $emailBody = $this->prepareEmailContent(
             $templateContent,
-            $ticket, 
+            [
+                'ticketId' => $ticket['ticketId'],
+                'username' => $ticket['username'],
+                'ticketName' => $ticketName,
+            ],
             $user,
             $emailConfig['ticketBaseUrl'],
             $testMode
@@ -467,7 +478,7 @@ class EmailService
         $emailBody = $template;
         $emailBody = str_replace('{{ticketId}}', $ticket['ticketId'], $emailBody);
         $emailBody = str_replace('{{ticketLink}}', $ticketLink, $emailBody);
-        $emailBody = str_replace('{{ticketName}}', $ticket['ticketName'] ?? '', $emailBody);
+        $emailBody = str_replace('{{ticketName}}', isset($ticket['ticketName']) ? (string) $ticket['ticketName'] : '', $emailBody);
         $emailBody = str_replace('{{username}}', $ticket['username'], $emailBody);
         
         // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format

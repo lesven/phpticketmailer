@@ -6,6 +6,7 @@ use App\Event\AbstractDomainEvent;
 use App\ValueObject\TicketId;
 use App\ValueObject\Username;
 use App\ValueObject\EmailAddress;
+use App\ValueObject\TicketName;
 
 /**
  * Event: Eine E-Mail wurde erfolgreich versendet
@@ -21,7 +22,7 @@ class EmailSentEvent extends AbstractDomainEvent
         public readonly EmailAddress $email,
         public readonly string $subject,
         public readonly bool $testMode = false,
-        public readonly ?string $ticketName = null
+        public readonly ?TicketName $ticketName = null
     ) {
         parent::__construct();
     }
