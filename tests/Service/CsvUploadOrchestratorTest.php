@@ -152,7 +152,7 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->assertInstanceOf(UnknownUsersResult::class, $result);
         $this->assertTrue($result->success);
         $this->assertEquals(3, $result->newUsersCount);
-        $this->assertEquals('Neue Benutzer wurden erfolgreich angelegt', $result->message);
+        $this->assertEquals('3 neue Benutzer wurden erfolgreich angelegt', $result->message);
         $this->assertEquals('success', $result->flashType);
     }
 

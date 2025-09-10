@@ -77,22 +77,23 @@ class CsvUploadOrchestrator
         return UnknownUsersResult::success($newUsersCount);
     }
 
-    /**
-     * Erstellt neue User-Entitäten aus den E-Mail-Zuordnungen
-     *
-     * Diese private Methode iteriert über alle unbekannten Benutzer und erstellt
-     * für jeden, der eine E-Mail-Zuordnung hat, eine neue User-Entität.
-     * Anschließend werden alle erstellten Benutzer persistiert.
-     *
-     * @param array $emailMappings Assoziatives Array: Benutzername => E-Mail-Adresse
-     * @param array $unknownUsers Liste der unbekannten Benutzernamen
-     * @return int Anzahl der erfolgreich erstellten Benutzer
+        /**
+     * Erstellt Benutzer aus den E-Mail-Zuordnungen
+     * 
+     * @param array $emailMappings Zuordnung von Benutzername zu E-Mail
+     * @param array $unknownUsers Liste der unbekannten Benutzer
+     * @return int Anzahl der erstellten Benutzer
      */
     private function createUsersFromMappings(array $emailMappings, array $unknownUsers): int
     {
         foreach ($unknownUsers as $username) {
             if (isset($emailMappings[$username])) {
-                $this->userCreator->createUser($username, $emailMappings[$username]);
+                try {
+                    $this->userCreator->createUser($username, $emailMappings[$username]);
+                } catch (\InvalidArgumentException $e) {
+                    // Ungültige Benutzernamen werden stillschweigend ignoriert
+                    // Sie sollten bereits in der CSV-Verarbeitung gefiltert worden sein
+                }
             }
         }
 

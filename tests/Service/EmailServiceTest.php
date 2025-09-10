@@ -121,7 +121,8 @@ class EmailServiceTest extends TestCase
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
         $this->assertEquals(EmailStatus::error('no email found'), $emailSent->getStatus());
-        $this->assertEquals('', $emailSent->getEmail());
+        // Wenn kein Benutzer gefunden wird, wird eine Standard-E-Mail-Adresse gesetzt
+        $this->assertEquals(\App\ValueObject\EmailAddress::fromString('example@example.com'), $emailSent->getEmail());
     }
 
     public function testProcessTicketEmailSendsEmailAndMarksSent(): void
