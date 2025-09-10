@@ -205,7 +205,6 @@ class UserRepository extends ServiceEntityRepository
             } catch (\App\Exception\InvalidUsernameException $e) {
                 // Ungültige Benutzernamen werden stillschweigend ignoriert
                 // Sie sollten bereits in der CSV-Verarbeitung als ungültig markiert worden sein
-                error_log("Invalid username skipped in identifyUnknownUsers: '{$csvUsername}' - " . $e->getMessage());
             }
         }
         

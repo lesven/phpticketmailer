@@ -22,43 +22,47 @@ class UserRepositoryIdentifyUnknownUsersTest extends TestCase
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->registry = $this->createMock(ManagerRegistry::class);
+        
+        // Mock ClassMetadata für Doctrine
+        $classMetadata = $this->createMock(\Doctrine\ORM\Mapping\ClassMetadata::class);
+        $classMetadata->name = User::class;
+        
         $this->registry->method('getManagerForClass')->willReturn($this->entityManager);
-        $this->repository = new UserRepository($this->registry);
+        $this->entityManager->method('getClassMetadata')->willReturn($classMetadata);
+        
+        // Create a partial mock that allows us to test identifyUnknownUsers while mocking findMultipleByUsernames
+        $this->repository = $this->getMockBuilder(UserRepository::class)
+            ->setConstructorArgs([$this->registry])
+            ->onlyMethods(['findMultipleByUsernames'])
+            ->getMock();
     }
 
     /**
-     * Test für das ursprüngliche Problem: identifyUnknownUsers crasht bei ungültigen Benutzernamen
+     * Test für den Fall, dass ungültige Benutzernamen dabei sind
+     * Diese sollten stillschweigend ignoriert werden
      */
     public function testIdentifyUnknownUsersWithInvalidUsernamesDoesNotCrash(): void
     {
         $usernames = [
-            'valid.user' => true,
-            '.invalid' => true,        // Punkt am Anfang - sollte ignoriert werden
-            'invalid.' => true,        // Punkt am Ende - sollte ignoriert werden  
-            'user space' => true,      // Leerzeichen - sollte ignoriert werden
-            'normal_user' => true,     // gültig
+            'valid.user' => true,      // Gültiger Username
+            'normal_user' => true,     // Gültiger Username
+            '.invalid.start' => true,  // Ungültiger Username (startet mit Punkt)
+            'invalid.end.' => true,    // Ungültiger Username (endet mit Punkt)
+            'user space' => true,      // Ungültiger Username (Leerzeichen)
         ];
 
         // Mock findMultipleByUsernames to return empty array (keine Benutzer gefunden)
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $query = $this->createMock(AbstractQuery::class);
-        
-        $this->entityManager->method('createQueryBuilder')->willReturn($queryBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('setParameter')->willReturnSelf();
-        $queryBuilder->method('getQuery')->willReturn($query);
-        $query->method('getResult')->willReturn([]);
+        $this->repository->method('findMultipleByUsernames')->willReturn([]);
 
         // Dies sollte nicht crashen, sondern nur die gültigen Benutzernamen zurückgeben
+        // Ungültige Benutzernamen werden stillschweigend ignoriert
         $result = $this->repository->identifyUnknownUsers($usernames);
 
         // Nur die gültigen Benutzernamen sollten als unbekannt identifiziert werden
         $this->assertContains('valid.user', $result);
         $this->assertContains('normal_user', $result);
-        $this->assertNotContains('.invalid', $result);
-        $this->assertNotContains('invalid.', $result);
+        $this->assertNotContains('.invalid.start', $result);
+        $this->assertNotContains('invalid.end.', $result);
         $this->assertNotContains('user space', $result);
         
         // Stelle sicher, dass genau 2 gültige Benutzernamen zurückgegeben werden
@@ -67,29 +71,22 @@ class UserRepositoryIdentifyUnknownUsersTest extends TestCase
 
     /**
      * Test für den Fall, dass alle Benutzernamen ungültig sind
+     * Sollte ein leeres Array zurückgeben, nicht crashen
      */
     public function testIdentifyUnknownUsersWithOnlyInvalidUsernames(): void
     {
         $usernames = [
-            '.invalid1' => true,
-            'invalid2.' => true,
-            'user space' => true,
-            'user<script>' => true,
+            '.invalid1' => true,       // Startet mit Punkt
+            'invalid2.' => true,       // Endet mit Punkt
+            'user space' => true,      // Enthält Leerzeichen
+            'user<script>' => true,    // Enthält ungültige Zeichen
         ];
 
         // Mock findMultipleByUsernames
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $query = $this->createMock(AbstractQuery::class);
-        
-        $this->entityManager->method('createQueryBuilder')->willReturn($queryBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('setParameter')->willReturnSelf();
-        $queryBuilder->method('getQuery')->willReturn($query);
-        $query->method('getResult')->willReturn([]);
+        $this->repository->method('findMultipleByUsernames')->willReturn([]);
 
-        // Sollte ein leeres Array zurückgeben, nicht crashen
+        // Sollte ein leeres Array zurückgeben, da alle Benutzernamen ungültig sind
+        // und stillschweigend ignoriert werden
         $result = $this->repository->identifyUnknownUsers($usernames);
         
         $this->assertEmpty($result);
@@ -107,16 +104,7 @@ class UserRepositoryIdentifyUnknownUsersTest extends TestCase
         ];
 
         // Mock findMultipleByUsernames
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $query = $this->createMock(AbstractQuery::class);
-        
-        $this->entityManager->method('createQueryBuilder')->willReturn($queryBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('setParameter')->willReturnSelf();
-        $queryBuilder->method('getQuery')->willReturn($query);
-        $query->method('getResult')->willReturn([]);
+        $this->repository->method('findMultipleByUsernames')->willReturn([]);
 
         // Alle sollten als unbekannt identifiziert werden
         $result = $this->repository->identifyUnknownUsers($usernames);
