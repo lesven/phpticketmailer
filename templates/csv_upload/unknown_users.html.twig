@@ -34,14 +34,15 @@
                         <tbody>
                             {% for username in unknownUsers %}
                                 <tr>
-                                    <td>{{ username }}</td>
+                                    <td>{{ username|e }}</td>
                                     <td>
                                         <input type="text" 
-                                               name="email_{{ username }}" 
-                                               id="email_{{ username }}"
+                                               name="email_{{ username|e('html_attr') }}" 
+                                               id="email_{{ username|e('html_attr') }}"
                                                class="form-control email-input" 
                                                placeholder="beispiel@domain.de oder 'Name &lt;beispiel@domain.de&gt;'"
-                                               required>
+                                               required
+                                               data-username="{{ username|e('html_attr') }}">
                                         <div class="invalid-feedback"></div>
                                         <small class="form-text text-muted email-preview" style="display: none;">
                                             Erkannte E-Mail: <span class="email-preview-text"></span>

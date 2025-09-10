@@ -126,4 +126,60 @@ class CsvUploadControllerTest extends TestCase
         $this->assertTrue(true); // Simple test to verify setup
     }
 
+    public function testExtractEmailMappingsFromRequestHandlesUsernamesWithDots(): void
+    {
+        // Test for the specific issue where usernames containing dots are converted to underscores in HTML
+        $unknownUsers = ['h.asakura', 'normal.user', 'user_without_dots'];
+        
+        $request = new Request();
+        // Simulate form data with underscores (as HTML would generate them)
+        $request->request->set('email_h_asakura', 'h.asakura@example.com');
+        $request->request->set('email_normal_user', 'normal.user@example.com');
+        $request->request->set('email_user_without_dots', 'user@example.com');
+        
+        // Mock email normalizer to return input as-is for simplicity
+        $this->emailNormalizer->method('normalizeEmail')
+            ->willReturnCallback(function($email) {
+                return $email;
+            });
+        
+        // Use reflection to access the private method
+        $reflectionClass = new \ReflectionClass($this->controller);
+        $method = $reflectionClass->getMethod('extractEmailMappingsFromRequest');
+        $method->setAccessible(true);
+        
+        $result = $method->invoke($this->controller, $request, $unknownUsers);
+        
+        // Verify that all usernames are correctly mapped despite dots being converted to underscores
+        $this->assertArrayHasKey('h.asakura', $result);
+        $this->assertArrayHasKey('normal.user', $result);
+        $this->assertArrayHasKey('user_without_dots', $result);
+        
+        $this->assertEquals('h.asakura@example.com', $result['h.asakura']);
+        $this->assertEquals('normal.user@example.com', $result['normal.user']);
+        $this->assertEquals('user@example.com', $result['user_without_dots']);
+    }
+
+    public function testConvertUsernameForHtmlAttributeReplacesDotsWithUnderscores(): void
+    {
+        // Test the helper method that ensures consistency with Twig's html_attr escaping
+        $reflectionClass = new \ReflectionClass($this->controller);
+        $method = $reflectionClass->getMethod('convertUsernameForHtmlAttribute');
+        $method->setAccessible(true);
+        
+        // Test various usernames with dots
+        $testCases = [
+            'h.asakura' => 'h_asakura',
+            'normal.user' => 'normal_user',
+            'user.with.multiple.dots' => 'user_with_multiple_dots',
+            'user_without_dots' => 'user_without_dots',
+            'user' => 'user'
+        ];
+        
+        foreach ($testCases as $input => $expected) {
+            $result = $method->invoke($this->controller, $input);
+            $this->assertEquals($expected, $result, "Failed to convert '$input' to '$expected'");
+        }
+    }
+
 }

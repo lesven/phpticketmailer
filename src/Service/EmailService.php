@@ -357,7 +357,7 @@ class EmailService
         
         // Wenn kein Benutzer gefunden wurde
         if (!$user) {
-            $emailRecord->setEmail(null);
+            $emailRecord->setEmail(new EmailAddress('example@example.com'));
             $emailRecord->setSubject('');
             $emailRecord->setStatus(EmailStatus::error('no email found'));
             

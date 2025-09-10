@@ -92,7 +92,12 @@ class CsvUploadOrchestrator
     {
         foreach ($unknownUsers as $username) {
             if (isset($emailMappings[$username])) {
-                $this->userCreator->createUser($username, $emailMappings[$username]);
+                try {
+                    $this->userCreator->createUser($username, $emailMappings[$username]);
+                } catch (\InvalidArgumentException $e) {
+                    // Log ungültige Benutzernamen, aber lass den Prozess weiterlaufen
+                    error_log("Invalid username skipped in createUsersFromMappings: '{$username}' - " . $e->getMessage());
+                }
             }
         }
 
