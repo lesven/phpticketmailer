@@ -81,7 +81,7 @@ class EmailServiceTest extends TestCase
     {
         // Prepare template
         $template = "Hallo {{username}},\nTicket: {{ticketId}}\nLink: {{ticketLink}}\nFällig: {{dueDate}}\n{{ticketName}}";
-        $ticket = TicketData::fromStrings('T-123', 'jsmith', 'Problem');
+        $ticketData = \App\ValueObject\TicketData::fromStrings('T-123', 'jsmith', 'Problem');
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('jsmith@example.com'));
@@ -91,7 +91,7 @@ class EmailServiceTest extends TestCase
         $method = $ref->getMethod('prepareEmailContent');
         $method->setAccessible(true);
 
-        $result = $method->invoke($this->service, $template, $ticket, $user, 'https://tickets.example', true);
+        $result = $method->invoke($this->service, $template, $ticketData, $user, 'https://tickets.example', true);
 
         // Test mode prefix present and contains user's email
         $this->assertStringContainsString('*** TESTMODUS - E-Mail wäre an jsmith@example.com gegangen ***', $result);
@@ -108,7 +108,7 @@ class EmailServiceTest extends TestCase
 
     public function testProcessTicketEmailWhenUserNotFound(): void
     {
-        $ticket = TicketData::fromStrings('T-999', 'nouser', 'Missing');
+        $ticketData = \App\ValueObject\TicketData::fromStrings('T-999', 'nouser', 'Missing');
 
         $this->userRepo->method('findByUsername')->with('nouser')->willReturn(null);
 
@@ -117,7 +117,7 @@ class EmailServiceTest extends TestCase
         $method->setAccessible(true);
 
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], '', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], '', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
         $this->assertEquals(EmailStatus::error('no email found'), $emailSent->getStatus());
@@ -127,7 +127,7 @@ class EmailServiceTest extends TestCase
 
     public function testProcessTicketEmailSendsEmailAndMarksSent(): void
     {
-        $ticket = TicketData::fromStrings('T-001', 'user1', 'Demo');
+        $ticketData = \App\ValueObject\TicketData::fromStrings('T-001', 'user1', 'Demo');
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user1@example.com'));
@@ -145,7 +145,7 @@ class EmailServiceTest extends TestCase
         $method->setAccessible(true);
 
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
         $this->assertEquals(EmailStatus::sent(), $emailSent->getStatus());
@@ -154,7 +154,7 @@ class EmailServiceTest extends TestCase
 
     public function testProcessTicketEmailWhenMailerThrowsSetsErrorStatus(): void
     {
-        $ticket = TicketData::fromStrings('T-002', 'user2', 'Demo2');
+        $ticketData = \App\ValueObject\TicketData::fromStrings('T-002', 'user2', 'Demo2');
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('user2@example.com'));
@@ -170,7 +170,7 @@ class EmailServiceTest extends TestCase
         $method->setAccessible(true);
 
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticket, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
 
         $this->assertStringStartsWith('Fehler:', $emailSent->getStatus()->getValue());
     }
@@ -359,7 +359,7 @@ class EmailServiceTest extends TestCase
         $m = $ref->getMethod('prepareEmailContent');
         $m->setAccessible(true);
 
-        $out = $m->invoke($this->service, $template, TicketData::fromStrings('ZZZ-001','bob'), $user, 'https://base', false);
+        $out = $m->invoke($this->service, $template, \App\ValueObject\TicketData::fromStrings('ZZZ-001','bob','Test Ticket'), $user, 'https://base', false);
         $this->assertStringNotContainsString('*** TESTMODUS', $out);
         $this->assertStringContainsString('ZZZ-001', $out);
     }
@@ -402,7 +402,7 @@ class EmailServiceTest extends TestCase
 
     public function testCreateSkippedEmailRecordWithAndWithoutUser(): void
     {
-        $ticket = TicketData::fromStrings('SKP-001', 'suser', 'Skip');
+        $ticketData = \App\ValueObject\TicketData::fromStrings('SKP-001', 'suser', 'Skip');
         // Case 1: user present
         $user = new \App\Entity\User();
         $user->setEmail('s@example.com');
@@ -415,7 +415,7 @@ class EmailServiceTest extends TestCase
 
         $now = new \DateTime();
         /** @var \App\Entity\EmailSent $rec */
-        $rec = $m->invoke($this->service, $ticket, $now, false, 'Status text');
+        $rec = $m->invoke($this->service, $ticketData, $now, false, 'Status text');
         $this->assertInstanceOf(\App\Entity\EmailSent::class, $rec);
         $this->assertEquals(\App\ValueObject\TicketId::fromString('SKP-001'), $rec->getTicketId());
         $this->assertEquals('suser', $rec->getUsername());
@@ -442,7 +442,7 @@ class EmailServiceTest extends TestCase
         $m2 = $ref2->getMethod('createSkippedEmailRecord');
         $m2->setAccessible(true);
 
-        $rec2 = $m2->invoke($svc2, $ticket, $now, true, 'Other');
+        $rec2 = $m2->invoke($svc2, $ticketData, $now, true, 'Other');
         $this->assertEquals('', $rec2->getEmail());
         $this->assertEquals('Other', $rec2->getStatus());
         $this->assertTrue($rec2->getTestMode());

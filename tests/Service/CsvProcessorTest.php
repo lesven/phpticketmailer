@@ -15,7 +15,7 @@ class CsvProcessorTest extends TestCase
 {
     public function testProcessReturnsValidAndInvalidRowsAndUnknownUsers(): void
     {
-        $content = "ticketId,username,ticketName\nABC123,user1,Name1\n,missing,Name2\nDEF456,user3,Name3\n";
+        $content = "ticketId,username,ticketName\nT-001,user1,Name1\n,missing,Name2\nT-003,user3,Name3\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
 
@@ -131,7 +131,7 @@ class CsvProcessorTest extends TestCase
 
     public function testProcessWithDuplicateTicketIds(): void
     {
-        $content = "ticketId,username,ticketName\nABC123,user1,Name1\nABC123,user2,Name2\nDEF456,user3,Name3\n";
+        $content = "ticketId,username,ticketName\nT-001,user1,Name1\nT-001,user2,Name2\nT-002,user3,Name3\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
         $uploaded = new UploadedFile($tmp, 'dupes.csv', null, null, true);
@@ -165,8 +165,8 @@ class CsvProcessorTest extends TestCase
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res['validTickets']);
-        $this->assertContainsEquals('ABC123', $ticketIds);
-        $this->assertContainsEquals('DEF456', $ticketIds);
+        $this->assertContainsEquals('T-001', $ticketIds);
+        $this->assertContainsEquals('T-002', $ticketIds);
         @unlink($tmp);
     }
 }

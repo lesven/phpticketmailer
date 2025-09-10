@@ -3,10 +3,8 @@
 namespace App\Event\Email;
 
 use App\Event\AbstractDomainEvent;
-use App\ValueObject\TicketId;
-use App\ValueObject\Username;
+use App\ValueObject\TicketData;
 use App\ValueObject\EmailAddress;
-use App\ValueObject\TicketName;
 
 /**
  * Event: E-Mail-Versand ist fehlgeschlagen
@@ -18,14 +16,28 @@ use App\ValueObject\TicketName;
 class EmailFailedEvent extends AbstractDomainEvent
 {
     public function __construct(
-        public readonly TicketId $ticketId,
-        public readonly Username $username,
+        public readonly TicketData $ticketData,
         public readonly EmailAddress $email,
         public readonly string $subject,
         public readonly string $errorMessage,
-        public readonly bool $testMode = false,
-        public readonly ?TicketName $ticketName = null
+        public readonly bool $testMode = false
     ) {
         parent::__construct();
+    }
+    
+    // Convenience getters for backward compatibility (können später entfernt werden)
+    public function getTicketId(): \App\ValueObject\TicketId
+    {
+        return $this->ticketData->ticketId;
+    }
+    
+    public function getUsername(): \App\ValueObject\Username
+    {
+        return $this->ticketData->username;
+    }
+    
+    public function getTicketName(): ?\App\ValueObject\TicketName
+    {
+        return $this->ticketData->ticketName;
     }
 }

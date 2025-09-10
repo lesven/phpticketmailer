@@ -89,12 +89,12 @@ class FileLogEventHandler
     {
         $this->writeLog('audit.log', 'Email sent', [
             'event' => 'email_sent',
-            'ticket_id' => (string) $event->ticketId,
-            'username' => (string) $event->username,
+            'ticket_id' => (string) $event->ticketData->ticketId,
+            'username' => (string) $event->ticketData->username,
             'email' => (string) $event->email,
             'subject' => $event->subject,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName?->getValue(),
+            'ticket_name' => $event->ticketData->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
 
@@ -114,13 +114,13 @@ class FileLogEventHandler
     {
         $this->writeLog('audit.log', 'Email failed', [
             'event' => 'email_failed',
-            'ticket_id' => (string) $event->ticketId,
-            'username' => (string) $event->username,
+            'ticket_id' => (string) $event->ticketData->ticketId,
+            'username' => (string) $event->ticketData->username,
             'email' => (string) $event->email,
             'subject' => $event->subject,
             'error_message' => $event->errorMessage,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName?->getValue(),
+            'ticket_name' => $event->ticketData->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
     }
