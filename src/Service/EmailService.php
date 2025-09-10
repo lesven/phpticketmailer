@@ -149,18 +149,31 @@ class EmailService
         // Prüfe bereits verarbeitete Tickets in der Datenbank, wenn forceResend deaktiviert ist
         $existingTickets = [];
         if (!$forceResend) {
-            $ticketIds = array_map(fn(TicketData $ticket) => (string) $ticket->ticketId, $ticketData);
+            $ticketIds = array_map(function($ticket) {
+                return is_array($ticket) ? $ticket['ticketId'] : (string) $ticket->ticketId;
+            }, $ticketData);
             $existingTickets = $this->emailSentRepository->findExistingTickets($ticketIds);
         }
         
         foreach ($ticketData as $ticket) {
-            $ticketId = $ticket->ticketId;
+            // Normalisiere Ticket zu TicketData falls es ein Array ist
+            if (is_array($ticket)) {
+                $ticketObj = TicketData::fromStrings(
+                    $ticket['ticketId'],
+                    $ticket['username'],
+                    $ticket['ticketName'] ?? ''
+                );
+            } else {
+                $ticketObj = $ticket;
+            }
+            
+            $ticketId = $ticketObj->ticketId;
             
             // Prüfe auf Duplikate innerhalb der aktuellen CSV-Datei
             if (isset($processedTicketIds[(string) $ticketId])) {
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket,
-                    $currentTime,
+                    $ticketObj, 
+                    $currentTime, 
                     $testMode,
                     EmailStatus::duplicateInCsv()
                 );
@@ -171,12 +184,10 @@ class EmailService
                     
                     // 🔥 EVENT: E-Mail übersprungen (Duplikat in CSV)
                     $this->eventDispatcher->dispatch(new EmailSkippedEvent(
-                        $emailRecord->getTicketId(),
-                        $emailRecord->getUsername(),
+                        $ticketObj,
                         $emailRecord->getEmail(),
                         $emailRecord->getStatus(),
-                        $emailRecord->getTestMode(),
-                        $emailRecord->getTicketName()
+                        $emailRecord->getTestMode()
                     ));
                 } catch (\Exception $e) {
                     error_log('Error saving duplicate record for ticket ' . $ticketId . ': ' . $e->getMessage());
@@ -188,7 +199,7 @@ class EmailService
             if (!$forceResend && isset($existingTickets[(string) $ticketId])) {
                 $existingEmail = $existingTickets[(string) $ticketId];
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket,
+                    $ticketObj,
                     $currentTime,
                     $testMode,
                     EmailStatus::alreadyProcessed($existingEmail->getTimestamp())
@@ -200,12 +211,10 @@ class EmailService
                     
                     // 🔥 EVENT: E-Mail übersprungen (bereits verarbeitet)
                     $this->eventDispatcher->dispatch(new EmailSkippedEvent(
-                        $emailRecord->getTicketId(),
-                        $emailRecord->getUsername(),
+                        $ticketObj,
                         $emailRecord->getEmail(),
                         $emailRecord->getStatus(),
-                        $emailRecord->getTestMode(),
-                        $emailRecord->getTicketName()
+                        $emailRecord->getTestMode()
                     ));
                 } catch (\Exception $e) {
                     error_log('Error saving existing ticket record for ticket ' . $ticketId . ': ' . $e->getMessage());
@@ -215,10 +224,10 @@ class EmailService
             }
 
             // Prüfe, ob der Benutzer von Umfragen ausgeschlossen ist
-            $user = $this->userRepository->findByUsername((string) $ticket->username);
+            $user = $this->userRepository->findByUsername((string) $ticketObj->username);
             if ($user && $user->isExcludedFromSurveys()) {
                 $emailRecord = $this->createSkippedEmailRecord(
-                    $ticket,
+                    $ticketObj,
                     $currentTime,
                     $testMode,
                     EmailStatus::excludedFromSurvey()
@@ -230,12 +239,10 @@ class EmailService
                     
                     // 🔥 EVENT: E-Mail übersprungen (Benutzer ausgeschlossen)
                     $this->eventDispatcher->dispatch(new EmailSkippedEvent(
-                        $emailRecord->getTicketId(),
-                        $emailRecord->getUsername(),
+                        $ticketObj,
                         $emailRecord->getEmail(),
                         $emailRecord->getStatus(),
-                        $emailRecord->getTestMode(),
-                        $emailRecord->getTicketName()
+                        $emailRecord->getTestMode()
                     ));
                 } catch (\Exception $e) {
                     error_log('Error saving excluded user record for ticket ' . $ticketId . ': ' . $e->getMessage());
@@ -246,7 +253,7 @@ class EmailService
             
             // Normaler E-Mail-Versand (User existiert und ist nicht ausgeschlossen)
             $emailRecord = $this->processTicketEmail(
-                $ticket, 
+                $ticketObj, 
                 $emailConfig, 
                 $templateContent, 
                 $testMode, 
@@ -297,7 +304,7 @@ class EmailService
         $skippedCount = count($sentEmails) - $sentCount - $failedCount;
 
         $this->eventDispatcher->dispatch(new BulkEmailCompletedEvent(
-            count($ticketData),
+            count($ticketData), // $ticketData ist das ursprüngliche Array der Tickets
             $sentCount,
             $failedCount,
             $skippedCount,
@@ -310,33 +317,53 @@ class EmailService
 
     /**
      * Erstellt ein EmailSent-Record für übersprungene Tickets
+     * 
+     * @param TicketData $ticketData Die Ticket-Daten
+     * @param \DateTime $timestamp Der Zeitstempel
+     * @param bool $testMode Testmodus-Flag
+     * @param string $status Der Status-Text
+     * @return EmailSent Die erstellte EmailSent-Entität
      */
-    private function createSkippedEmailRecord(TicketData $ticket, \DateTime $timestamp, bool $testMode, EmailStatus|string $status): EmailSent
+    private function createSkippedEmailRecord(TicketData $ticketData, \DateTime $timestamp, bool $testMode, EmailStatus|string $status): EmailSent
     {
-        $user = $this->userRepository->findByUsername((string) $ticket->username);
-
+        $user = $this->userRepository->findByUsername((string) $ticketData->username);
+        
         $emailRecord = new EmailSent();
-        $emailRecord->setTicketId($ticket->ticketId);
-        $emailRecord->setUsername((string) $ticket->username);
+        $emailRecord->setTicketId($ticketData->ticketId);
+        $emailRecord->setUsername((string) $ticketData->username);
         // Use EmailAddress VO if available, otherwise null
         $emailRecord->setEmail($user ? $user->getEmail() : null);
         $emailRecord->setSubject('');
         $emailRecord->setStatus($status);
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
-        $emailRecord->setTicketName($ticket->ticketName);
+        $emailRecord->setTicketName($ticketData->ticketName);
 
         return $emailRecord;
     }
     
     /**
-     * Verarbeitet einen einzelnen Ticket-Datensatz und versendet die E-Mail.
-     *
-     * @param TicketData $ticket    Der Ticket-Datensatz
-     * @param array      $emailConfig Die E-Mail-Konfiguration
-     * @param string     $templateContent Der Inhalt der E-Mail-Vorlage
-     * @param bool       $testMode  Gibt an, ob im Testmodus gesendet wird
-     * @param \DateTime  $timestamp Der Zeitstempel der Sendung
+     * Verarbeitet einen einzelnen Ticket-Datensatz und versendet die E-Mail
+     * 
+     * Diese Methode findet den Benutzer, erstellt die E-Mail, sendet sie
+     * und protokolliert den Versand. Bei Fehlern wird der Fehlerstatus
+     * in der protokollierten Entität gespeichert.
+     * 
+     * @param TicketData $ticket Der Ticket-Datensatz
+     * @param array $emailConfig Die E-Mail-Konfiguration
+     * @param string $templateContent Der Inhalt der E-Mail-Vorlage
+     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
+     * @param \DateTime $timestamp Der Zeitstempel der Sendung
+     * @return EmailSent Die erstellte EmailSent-Entität
+     * und protokolliert den Versand. Bei Fehlern wird der Fehlerstatus
+     * in der protokollierten Entität gespeichert.
+     * 
+     * @param TicketData $ticket Der Ticket-Datensatz
+     * @param array $emailConfig Die E-Mail-Konfiguration
+     * @param string $templateContent Der Inhalt der E-Mail-Vorlage
+     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
+     * @param \DateTime $timestamp Der Zeitstempel der Sendung
+     * @return EmailSent Die erstellte EmailSent-Entität
      */
     private function processTicketEmail(
         TicketData $ticket,
@@ -346,7 +373,7 @@ class EmailService
         \DateTime $timestamp
     ): EmailSent {
         $user = $this->userRepository->findByUsername((string) $ticket->username);
-
+        
         // Erstelle das E-Mail-Protokoll
         $emailRecord = new EmailSent();
         $emailRecord->setTicketId($ticket->ticketId);
@@ -363,13 +390,11 @@ class EmailService
             
             // 🔥 EVENT: E-Mail übersprungen (kein Benutzer gefunden)
             $this->eventDispatcher->dispatch(new EmailSkippedEvent(
-            $emailRecord->getTicketId(),
-            $emailRecord->getUsername(),
-            $emailRecord->getEmail(),
-            $emailRecord->getStatus(),
-            $emailRecord->getTestMode(),
-            $emailRecord->getTicketName()
-        ));
+                $ticket,
+                $emailRecord->getEmail(),
+                $emailRecord->getStatus(),
+                $emailRecord->getTestMode()
+            ));
             
             return $emailRecord;
         }
@@ -402,12 +427,10 @@ class EmailService
             
             // 🔥 EVENT: E-Mail erfolgreich versendet
             $this->eventDispatcher->dispatch(new EmailSentEvent(
-                $emailRecord->getTicketId(),
-                $emailRecord->getUsername(),
+                $ticket,
                 $emailRecord->getEmail(),
                 $emailRecord->getSubject(),
-                $emailRecord->getTestMode(),
-                $emailRecord->getTicketName()
+                $emailRecord->getTestMode()
             ));
             
         } catch (\Exception $e) {
@@ -415,13 +438,11 @@ class EmailService
             
             // 🔥 EVENT: E-Mail-Versand fehlgeschlagen
             $this->eventDispatcher->dispatch(new EmailFailedEvent(
-                $emailRecord->getTicketId(),
-                $emailRecord->getUsername(),
+                $ticket,
                 $emailRecord->getEmail(),
                 $emailRecord->getSubject(),
                 $e->getMessage(),
-                $emailRecord->getTestMode(),
-                $emailRecord->getTicketName()
+                $emailRecord->getTestMode()
             ));
         }
         
@@ -429,32 +450,31 @@ class EmailService
     }
     
     /**
-     * Bereitet den E-Mail-Inhalt vor und ersetzt alle Platzhalter
+     * Bereitet den E-Mail-Inhalt vor, indem Platzhalter ersetzt werden
      * 
      * Ersetzt alle Platzhalter wie {{ticketId}}, {{ticketLink}}, etc.
      * durch die tatsächlichen Werte aus dem Ticket-Datensatz.
      * Im Testmodus wird außerdem ein Hinweis an den Anfang der E-Mail gesetzt.
-     * 
-     * @param string    $template       Die E-Mail-Vorlage
-     * @param TicketData $ticket        Der Ticket-Datensatz
-     * @param mixed     $user           Der Benutzer-Datensatz
-     * @param string    $ticketBaseUrl  Die Basis-URL für Ticket-Links
-     * @param bool      $testMode       Gibt an, ob im Testmodus gesendet wird
-     * @return string   Der vorbereitete E-Mail-Inhalt
+     * @param string $template Die E-Mail-Vorlage
+     * @param TicketData $ticketData Die Ticket-Daten
+     * @param mixed $user Der Benutzer-Datensatz
+     * @param string $ticketBaseUrl Die Basis-URL für Ticket-Links
+     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
+     * @return string Der vorbereitete E-Mail-Inhalt
      */
     private function prepareEmailContent(
         string $template,
-        TicketData $ticket,
+        TicketData $ticketData,
         $user,
         string $ticketBaseUrl,
         bool $testMode
     ): string {
-        $ticketLink = rtrim($ticketBaseUrl, '/') . '/' . (string) $ticket->ticketId;
+        $ticketLink = rtrim($ticketBaseUrl, '/') . '/' . (string) $ticketData->ticketId;
         $emailBody = $template;
-        $emailBody = str_replace('{{ticketId}}', (string) $ticket->ticketId, $emailBody);
+        $emailBody = str_replace('{{ticketId}}', (string) $ticketData->ticketId, $emailBody);
         $emailBody = str_replace('{{ticketLink}}', $ticketLink, $emailBody);
-        $emailBody = str_replace('{{ticketName}}', $ticket->ticketName ? (string) $ticket->ticketName : '', $emailBody);
-        $emailBody = str_replace('{{username}}', (string) $ticket->username, $emailBody);
+        $emailBody = str_replace('{{ticketName}}', (string) $ticketData->ticketName, $emailBody);
+        $emailBody = str_replace('{{username}}', (string) $ticketData->username, $emailBody);
         
         // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
         $dueDate = new \DateTime();
