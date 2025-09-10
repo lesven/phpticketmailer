@@ -99,7 +99,16 @@ class CsvProcessor
                 $username = $row[$columnIndices[$fieldMapping['username']]];
                 $uniqueUsernames[$username] = true;
                 
-                $validTickets[] = $this->createTicketFromRow($row, $columnIndices, $fieldMapping);
+                try {
+                    $validTickets[] = $this->createTicketFromRow($row, $columnIndices, $fieldMapping);
+                } catch (\App\Exception\InvalidUsernameException | \App\Exception\InvalidTicketIdException | \App\Exception\InvalidTicketNameException $e) {
+                    // Ungültige Zeilen werden zu invalidRows hinzugefügt anstatt die Verarbeitung zu stoppen
+                    $invalidRows[] = [
+                        'rowNumber' => $rowNumber,
+                        'data' => $row,
+                        'error' => $e->getMessage()
+                    ];
+                }
             });
             
             $result['validTickets'] = $validTickets;
