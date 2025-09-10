@@ -355,15 +355,6 @@ class EmailService
      * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
      * @param \DateTime $timestamp Der Zeitstempel der Sendung
      * @return EmailSent Die erstellte EmailSent-Entität
-     * und protokolliert den Versand. Bei Fehlern wird der Fehlerstatus
-     * in der protokollierten Entität gespeichert.
-     * 
-     * @param TicketData $ticket Der Ticket-Datensatz
-     * @param array $emailConfig Die E-Mail-Konfiguration
-     * @param string $templateContent Der Inhalt der E-Mail-Vorlage
-     * @param bool $testMode Gibt an, ob im Testmodus gesendet wird
-     * @param \DateTime $timestamp Der Zeitstempel der Sendung
-     * @return EmailSent Die erstellte EmailSent-Entität
      */
     private function processTicketEmail(
         TicketData $ticket,
