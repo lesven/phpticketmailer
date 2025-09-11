@@ -301,7 +301,7 @@ class EmailService
         $endTime = microtime(true);
         $sentCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSent()));
         $failedCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isError()));
-        $skippedCount = count($sentEmails) - $sentCount - $failedCount;
+        $skippedCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSkipped()));
 
         $this->eventDispatcher->dispatch(new BulkEmailCompletedEvent(
             count($ticketData), // $ticketData ist das ursprüngliche Array der Tickets

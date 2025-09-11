@@ -537,4 +537,114 @@ class EmailServiceTest extends TestCase
         $this->assertCount(1, $recipients);
         $this->assertEquals('test@example.com', array_values($recipients)[0]->getAddress());
     }
+
+    public function testSkippedCountCalculationIssue(): void
+    {
+        // This test demonstrates the bug where skippedCount is calculated by subtraction
+        // instead of using the proper isSkipped() method
+        
+        // Create mock EmailSent objects with different statuses
+        $sentEmails = [];
+        
+        // 1 sent email
+        $sentEmail = new \App\Entity\EmailSent();
+        $sentEmail->setStatus(EmailStatus::sent());
+        $sentEmails[] = $sentEmail;
+        
+        // 1 error email
+        $errorEmail = new \App\Entity\EmailSent();
+        $errorEmail->setStatus(EmailStatus::error('Test error'));
+        $sentEmails[] = $errorEmail;
+        
+        // 1 skipped email (already processed)
+        $skippedEmail = new \App\Entity\EmailSent();
+        $skippedEmail->setStatus(EmailStatus::alreadyProcessed(new \DateTime()));
+        $sentEmails[] = $skippedEmail;
+        
+        // 1 email with custom status that is neither sent, error, nor skipped
+        $customEmail = new \App\Entity\EmailSent();
+        $customEmail->setStatus(EmailStatus::fromString('Pending Review')); // Custom status
+        $sentEmails[] = $customEmail;
+        
+        // Current buggy calculation: skippedCount = total - sent - failed = 4 - 1 - 1 = 2
+        // But the correct count should be 1 (only the "already processed" email is actually skipped)
+        
+        $sentCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSent()));
+        $failedCount = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isError()));
+        $skippedCountBuggy = count($sentEmails) - $sentCount - $failedCount; // Current buggy calculation
+        $skippedCountCorrect = count(array_filter($sentEmails, fn($email) => $email->getStatus()?->isSkipped())); // Correct calculation
+        
+        $this->assertEquals(1, $sentCount);
+        $this->assertEquals(1, $failedCount);
+        $this->assertEquals(2, $skippedCountBuggy, 'Buggy calculation incorrectly counts custom status as skipped');
+        $this->assertEquals(1, $skippedCountCorrect, 'Correct calculation only counts actually skipped emails');
+        
+        // Verify the custom status is not actually considered skipped
+        $this->assertFalse($customEmail->getStatus()->isSkipped(), 'Custom status should not be considered skipped');
+        $this->assertFalse($customEmail->getStatus()->isSent(), 'Custom status should not be considered sent');
+        $this->assertFalse($customEmail->getStatus()->isError(), 'Custom status should not be considered error');
+    }
+
+    public function testBulkEmailCompletedEventUsesCorrectCounting(): void
+    {
+        // Integration test to verify that the BulkEmailCompletedEvent gets correct counts
+        // when actual EmailService processing creates mixed status emails
+        
+        $tickets = [
+            TicketData::fromStrings('T-001', 'user1', 'Test1'), // will be sent
+            TicketData::fromStrings('T-002', 'user2', 'Test2'), // will be skipped (excluded from surveys)
+        ];
+
+        $user1 = new \App\Entity\User();
+        $user1->setEmail('user1@example.com');
+        $user1->setUsername('user1');
+
+        $user2 = new \App\Entity\User();
+        $user2->setEmail('user2@example.com');
+        $user2->setUsername('user2');
+        $user2->setExcludedFromSurveys(true); // This will cause a skip
+
+        $this->userRepo->method('findByUsername')->willReturnCallback(function($username) use ($user1, $user2) {
+            return match($username) {
+                'user1' => $user1,
+                'user2' => $user2,
+                default => null
+            };
+        });
+
+        $this->emailSentRepo->method('findExistingTickets')->willReturn([]);
+
+        // Mailer succeeds for both (user2 is skipped before mailer is called)
+        $this->mailer->expects($this->once())->method('send');
+
+        $this->entityManager->expects($this->exactly(2))->method('persist');
+        $this->entityManager->expects($this->atLeast(2))->method('flush');
+
+        // Capture the BulkEmailCompletedEvent
+        $capturedEvent = null;
+        $this->eventDispatcher->method('dispatch')->willReturnCallback(function($event) use (&$capturedEvent) {
+            if ($event instanceof \App\Event\Email\BulkEmailCompletedEvent) {
+                $capturedEvent = $event;
+            }
+            return $event;
+        });
+
+        $result = $this->service->sendTicketEmailsWithDuplicateCheck($tickets, false, false);
+
+        $this->assertCount(2, $result);
+        
+        // Verify the first email was sent and second was skipped
+        $this->assertTrue($result[0]->getStatus()->isSent(), 'First email should be sent');
+        $this->assertTrue($result[1]->getStatus()->isSkipped(), 'Second email should be skipped');
+
+        // Verify the event was dispatched with correct counts
+        $this->assertNotNull($capturedEvent, 'BulkEmailCompletedEvent should have been dispatched');
+        $this->assertEquals(1, $capturedEvent->sentCount, 'Event should report 1 sent');
+        $this->assertEquals(0, $capturedEvent->failedCount, 'Event should report 0 failed');
+        $this->assertEquals(1, $capturedEvent->skippedCount, 'Event should report 1 skipped using proper isSkipped() method');
+        
+        // Verify total count consistency
+        $expectedTotal = $capturedEvent->sentCount + $capturedEvent->failedCount + $capturedEvent->skippedCount;
+        $this->assertEquals(count($result), $expectedTotal, 'Total counts should match result count');
+    }
 }
