@@ -1,5 +1,8 @@
 FROM php:8.3-fpm-bookworm
 
+# Build argument to control Xdebug installation
+ARG ENABLE_XDEBUG=false
+
 # Installiere Abhängigkeiten
 RUN apt-get update && apt-get install -y \
     libzip-dev \
@@ -33,14 +36,24 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Arbeitsverzeichnis festlegen
 WORKDIR /var/www/html
 
-## Xdebug für Code-Coverage installieren
-RUN pecl channel-update pecl.php.net && pecl install xdebug && docker-php-ext-enable xdebug
-# Copy xdebug configuration (mode off, trigger start)
-COPY docker/php/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
-# Ensure the zend_extension is explicitly set to the installed xdebug.so
-RUN php -r "echo ini_get('extension_dir');" > /tmp/extension_dir && \
-    EXT_DIR=$(cat /tmp/extension_dir) && \
-    printf 'zend_extension=%s/xdebug.so\n' "$EXT_DIR" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini || true
+# Copy xdebug configuration first (always available, but only used if Xdebug is installed)
+COPY docker/php/xdebug.ini /tmp/xdebug.ini
+
+# Xdebug nur installieren wenn ENABLE_XDEBUG=true
+RUN if [ "$ENABLE_XDEBUG" = "true" ]; then \
+        echo "==> Installing Xdebug for development"; \
+        pecl channel-update pecl.php.net && \
+        pecl install xdebug && \
+        docker-php-ext-enable xdebug && \
+        # Copy xdebug configuration \
+        cp /tmp/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini && \
+        # Ensure the zend_extension is explicitly set to the installed xdebug.so \
+        php -r "echo ini_get('extension_dir');" > /tmp/extension_dir && \
+        EXT_DIR=$(cat /tmp/extension_dir) && \
+        printf 'zend_extension=%s/xdebug.so\n' "$EXT_DIR" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini; \
+    else \
+        echo "==> Skipping Xdebug installation for production build"; \
+    fi
 
 
 # Symfony-Cache-Berechtigung setzen

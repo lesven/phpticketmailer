@@ -18,11 +18,12 @@ WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
 
-.PHONY: help build up up-d down down-remove restart ps logs logs-php exec-php console deploy composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
-	@echo "  make build           -> Docker-Images bauen (no-cache, pull)"
+	@echo "  make build           -> Docker-Images bauen (no-cache, pull) - PRODUCTION (ohne Xdebug)"
+	@echo "  make build-dev       -> Docker-Images bauen (no-cache, pull) - DEVELOPMENT (mit Xdebug)"
 	@echo "  make up              -> Docker-Compose up (foreground)"
 	@echo "  make up-d            -> Docker-Compose up -d (detached)"
 	@echo "  make down            -> Stoppt alle Compose-Container (sicher, löscht keine Volumes)"
@@ -44,20 +45,25 @@ help:
 	@echo "  make fresh           -> full rebuild + composer install + migrate"
 	@echo "  make recreate-db     -> DB-Volume entfernen und DB neu starten"
 
-## Build Docker images (no-cache, pull latest base images)
+## Build Docker images (no-cache, pull latest base images) - PRODUCTION (ohne Xdebug)
 build:
-	@echo "==> Building docker images"
-	@$(DC_BASE) $(DC_ARGS) build --pull --no-cache
+	@echo "==> Building docker images for PRODUCTION (without Xdebug)"
+	@$(DC_BASE) $(DC_ARGS) build --pull --no-cache --build-arg ENABLE_XDEBUG=false
+
+## Build Docker images (no-cache, pull latest base images) - DEVELOPMENT (mit Xdebug)
+build-dev:
+	@echo "==> Building docker images for DEVELOPMENT (with Xdebug)"
+	@$(DC_BASE) $(DC_ARGS) build --pull --no-cache --build-arg ENABLE_XDEBUG=true
 
 ## Start in foreground
 up-foreground:
 	@echo "==> docker compose up (foreground)"
-	@$(DC_BASE) $(DC_ARGS) up --build
+	@$(DC_BASE) $(DC_ARGS) up
 
 ## Start detached
 up:
 	@echo "==> docker compose up -d"
-	@$(DC_BASE) $(DC_ARGS) up -d --build
+	@$(DC_BASE) $(DC_ARGS) up -d
 
 ## Stop containers only (safer)
 down:
