@@ -58,12 +58,12 @@ build-dev:
 ## Start in foreground
 up-foreground:
 	@echo "==> docker compose up (foreground)"
-	@$(DC_BASE) $(DC_ARGS) up --build
+	@$(DC_BASE) $(DC_ARGS) up
 
 ## Start detached
 up:
 	@echo "==> docker compose up -d"
-	@$(DC_BASE) $(DC_ARGS) up -d --build
+	@$(DC_BASE) $(DC_ARGS) up -d
 
 ## Stop containers only (safer)
 down:
