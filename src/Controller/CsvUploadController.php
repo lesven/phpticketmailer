@@ -174,7 +174,10 @@ class CsvUploadController extends AbstractController
         $emailMappings = [];
         
         foreach ($unknownUsers as $username) {
-            $emailInput = $request->request->get('email_' . $username);
+            // Benutzername für HTML-Attribut konvertieren (gleiche Logik wie im Template)
+            $htmlSafeUsername = $this->convertUsernameForHtmlAttribute($username);
+            $emailInput = $request->request->get('email_' . $htmlSafeUsername);
+            
             if (!empty($emailInput)) {
                 try {
                     // E-Mail normalisieren (Outlook-Format -> Standard-Format)
@@ -192,6 +195,20 @@ class CsvUploadController extends AbstractController
         }
         
         return $emailMappings;
+    }
+
+    /**
+     * Konvertiert einen Benutzernamen für die Verwendung als HTML-Attribut
+     * Repliziert die Logik von Twig's html_attr Escaping für Konsistenz mit dem Template
+     * 
+     * @param string $username Der ursprüngliche Benutzername
+     * @return string Der für HTML-Attribute sichere Benutzername
+     */
+    private function convertUsernameForHtmlAttribute(string $username): string
+    {
+        // Grundlegende HTML-Attribut-Escaping-Logik
+        // Punkte werden zu Unterstrichen, da sie in HTML-Attributnamen problematisch sind
+        return str_replace('.', '_', $username);
     }
 
 }

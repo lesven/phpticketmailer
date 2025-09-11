@@ -3,6 +3,7 @@ namespace App\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use App\Service\CsvProcessor;
+use App\ValueObject\TicketData;
 
 class CsvProcessorSimpleTest extends TestCase
 {
@@ -22,9 +23,10 @@ class CsvProcessorSimpleTest extends TestCase
         // Nutze Reflection, um die private Methode zu testen
         $method = new \ReflectionMethod($processor, 'createTicketFromRow');
         $method->setAccessible(true);
+        /** @var TicketData $result */
         $result = $method->invoke($processor, $row, $columnIndices, $fieldMapping);
 
-        $this->assertEquals(50, mb_strlen($result['ticketName']));
-        $this->assertEquals(substr(str_repeat('X', 60), 0, 50), $result['ticketName']);
+        $this->assertEquals(50, mb_strlen((string) $result->ticketName));
+        $this->assertEquals(substr(str_repeat('X', 60), 0, 50), (string) $result->ticketName);
     }
 }

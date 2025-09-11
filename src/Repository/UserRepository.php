@@ -187,19 +187,24 @@ class UserRepository extends ServiceEntityRepository
         
         $unknownUsers = [];
         foreach (array_keys($usernames) as $csvUsername) {
-            $csvUsernameObj = Username::fromString($csvUsername);
-            $isKnown = false;
-            
-            // Vergleiche mit allen gefundenen Benutzernamen über Value Object equals()
-            foreach ($foundUsernames as $foundUsername) {
-                if ($csvUsernameObj->equals($foundUsername)) {
-                    $isKnown = true;
-                    break;
+            try {
+                $csvUsernameObj = Username::fromString($csvUsername);
+                $isKnown = false;
+                
+                // Vergleiche mit allen gefundenen Benutzernamen über Value Object equals()
+                foreach ($foundUsernames as $foundUsername) {
+                    if ($csvUsernameObj->equals($foundUsername)) {
+                        $isKnown = true;
+                        break;
+                    }
                 }
-            }
-            
-            if (!$isKnown) {
-                $unknownUsers[] = $csvUsername;
+                
+                if (!$isKnown) {
+                    $unknownUsers[] = $csvUsername;
+                }
+            } catch (\App\Exception\InvalidUsernameException $e) {
+                // Ungültige Benutzernamen werden stillschweigend ignoriert
+                // Sie sollten bereits in der CSV-Verarbeitung als ungültig markiert worden sein
             }
         }
         

@@ -6,6 +6,7 @@ use App\Service\CsvFileReader;
 use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
 use PHPUnit\Framework\TestCase;
+use App\ValueObject\TicketData;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -14,7 +15,7 @@ class CsvProcessorTest extends TestCase
 {
     public function testProcessReturnsValidAndInvalidRowsAndUnknownUsers(): void
     {
-        $content = "ticketId,username,ticketName\n1,user1,Name1\n,missing,Name2\n3,user3,Name3\n";
+        $content = "ticketId,username,ticketName\nT-001,user1,Name1\n,missing,Name2\nT-003,user3,Name3\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
 
@@ -130,7 +131,7 @@ class CsvProcessorTest extends TestCase
 
     public function testProcessWithDuplicateTicketIds(): void
     {
-        $content = "ticketId,username,ticketName\n1,user1,Name1\n1,user2,Name2\n2,user3,Name3\n";
+        $content = "ticketId,username,ticketName\nT-001,user1,Name1\nT-001,user2,Name2\nT-002,user3,Name3\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
         $uploaded = new UploadedFile($tmp, 'dupes.csv', null, null, true);
@@ -163,9 +164,9 @@ class CsvProcessorTest extends TestCase
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
-        $ticketIds = array_column($res['validTickets'], 'ticketId');
-    $this->assertContainsEquals('1', $ticketIds);
-    $this->assertContainsEquals('2', $ticketIds);
+        $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res['validTickets']);
+        $this->assertContainsEquals('T-001', $ticketIds);
+        $this->assertContainsEquals('T-002', $ticketIds);
         @unlink($tmp);
     }
 }

@@ -5,8 +5,7 @@ namespace App\Command;
 use App\Event\User\UserImportStartedEvent;
 use App\Event\User\UserImportCompletedEvent;
 use App\Event\Email\EmailSentEvent;
-use App\ValueObject\TicketId;
-use App\ValueObject\Username;
+use App\ValueObject\TicketData;
 use App\ValueObject\EmailAddress;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -54,13 +53,12 @@ class TestEventsCommand extends Command
         $io->section('2. Email Events');
         
         $io->text('📤 Dispatching EmailSentEvent...');
+        $ticketData = TicketData::fromStrings('T-12345', 'test_user', 'System Issue Fix');
         $this->eventDispatcher->dispatch(new EmailSentEvent(
-            TicketId::fromString('T-12345'),
-            Username::fromString('test_user'),
+            $ticketData,
             EmailAddress::fromString('test@example.com'),
             'Your Ticket Update',
-            true, // test mode
-            'System Issue Fix'
+            true // test mode
         ));
 
         // Test 3: Direct Logger Test

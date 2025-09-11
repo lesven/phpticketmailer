@@ -69,12 +69,12 @@ class AuditLogEventHandler
     {
         $this->auditLogger->info('Email sent', [
             'event' => 'email_sent',
-            'ticket_id' => (string) $event->ticketId,
-            'username' => (string) $event->username,
+            'ticket_id' => (string) $event->ticketData->ticketId,
+            'username' => (string) $event->ticketData->username,
             'email' => (string) $event->email,
             'subject' => $event->subject,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName,
+            'ticket_name' => $event->ticketData->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
     }
@@ -84,13 +84,13 @@ class AuditLogEventHandler
     {
         $this->auditLogger->warning('Email failed', [
             'event' => 'email_failed',
-            'ticket_id' => (string) $event->ticketId,
-            'username' => (string) $event->username,
+            'ticket_id' => (string) $event->ticketData->ticketId,
+            'username' => (string) $event->ticketData->username,
             'email' => (string) $event->email,
             'subject' => $event->subject,
             'error_message' => $event->errorMessage,
             'test_mode' => $event->testMode,
-            'ticket_name' => $event->ticketName,
+            'ticket_name' => $event->ticketData->ticketName?->getValue(),
             'occurred_at' => $event->getOccurredAt()->format('Y-m-d H:i:s'),
         ]);
     }

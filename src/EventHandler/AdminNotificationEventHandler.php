@@ -98,15 +98,15 @@ class AdminNotificationEventHandler
     {
         $message = sprintf(
             'Kritischer E-Mail-Fehler für Ticket %s (User: %s): %s',
-            (string) $event->ticketId,
-            (string) $event->username,
+            (string) $event->ticketData->ticketId,
+            (string) $event->ticketData->username,
             $event->errorMessage
         );
 
         $this->logger->error('[ADMIN_NOTIFICATION] ' . $message, [
             'event_type' => 'critical_email_failure',
-            'ticket_id' => (string) $event->ticketId,
-            'username' => (string) $event->username,
+            'ticket_id' => (string) $event->ticketData->ticketId,
+            'username' => (string) $event->ticketData->username,
             'email' => (string) $event->email,
             'error_message' => $event->errorMessage,
             'test_mode' => $event->testMode

@@ -13,6 +13,7 @@ doctrine:
             email_address: App\Doctrine\Type\EmailAddressType
             ticket_id: App\Doctrine\Type\TicketIdType
             username: App\Doctrine\Type\UsernameType
+            ticket_name: App\Doctrine\Type\TicketNameType
             email_status: App\Doctrine\EmailStatusType
     orm:
         auto_generate_proxy_classes: true

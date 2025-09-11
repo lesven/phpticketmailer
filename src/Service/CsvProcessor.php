@@ -13,6 +13,7 @@ namespace App\Service;
 
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
+use App\ValueObject\TicketData;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -95,10 +96,21 @@ class CsvProcessor
                     return;
                 }
                 
-                $username = $row[$columnIndices[$fieldMapping['username']]];
-                $uniqueUsernames[$username] = true;
-                
-                $validTickets[] = $this->createTicketFromRow($row, $columnIndices, $fieldMapping);
+                try {
+                    $ticket = $this->createTicketFromRow($row, $columnIndices, $fieldMapping);
+                    $validTickets[] = $ticket;
+                    
+                    // Username nur bei erfolgreich erstelltem Ticket hinzufügen
+                    $username = $row[$columnIndices[$fieldMapping['username']]];
+                    $uniqueUsernames[$username] = true;
+                } catch (\App\Exception\InvalidUsernameException | \App\Exception\InvalidTicketIdException | \App\Exception\InvalidTicketNameException $e) {
+                    // Ungültige Zeilen werden zu invalidRows hinzugefügt anstatt die Verarbeitung zu stoppen
+                    $invalidRows[] = [
+                        'rowNumber' => $rowNumber,
+                        'data' => $row,
+                        'error' => $e->getMessage()
+                    ];
+                }
             });
             
             $result['validTickets'] = $validTickets;
@@ -131,22 +143,21 @@ class CsvProcessor
     }
     
     /**
-     * Erstellt ein Ticket-Array aus einer CSV-Zeile
-     * 
+     * Erstellt ein TicketData-Objekt aus einer CSV-Zeile
+     *
      * @param array $row Die CSV-Zeile
      * @param array $columnIndices Die Indizes der benötigten Spalten
      * @param array $fieldMapping Die Zuordnung der logischen zu physischen Feldnamen
-     * @return array Das Ticket als assoziatives Array
      */
-    private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): array
+    private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): TicketData
     {
-        $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? '';
-        $ticketName = mb_substr($ticketNameRaw, 0, 50);
-        return [
-            'ticketId' => $row[$columnIndices[$fieldMapping['ticketId']]],
-            'username' => $row[$columnIndices[$fieldMapping['username']]],
-            'ticketName' => $ticketName ?: null,
-        ];
+        $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
+
+        return TicketData::fromStrings(
+            $row[$columnIndices[$fieldMapping['ticketId']]],
+            $row[$columnIndices[$fieldMapping['username']]],
+            $ticketNameRaw
+        );
     }
     
     /**

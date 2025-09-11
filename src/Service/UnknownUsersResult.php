@@ -20,10 +20,14 @@ readonly class UnknownUsersResult
      */
     public static function success(int $newUsersCount): self
     {
+        $message = $newUsersCount === 1 
+            ? '1 neuer Benutzer wurde erfolgreich angelegt'
+            : "{$newUsersCount} neue Benutzer wurden erfolgreich angelegt";
+            
         return new self(
             success: true,
             newUsersCount: $newUsersCount,
-            message: 'Neue Benutzer wurden erfolgreich angelegt',
+            message: $message,
             flashType: 'success'
         );
     }
