@@ -81,7 +81,7 @@ class SessionManager
                         $unknownUsers[] = new \App\ValueObject\UnknownUserWithTicket(
                             new \App\ValueObject\Username($item['username']),
                             new \App\ValueObject\TicketId($item['ticketId']),
-                            $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null
+                            isset($item['ticketName']) && $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null
                         );
                     } catch (\Exception $e) {
                         // Skip invalid entries without breaking the whole process
