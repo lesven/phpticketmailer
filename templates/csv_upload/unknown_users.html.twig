@@ -28,13 +28,27 @@
                         <thead>
                             <tr>
                                 <th>Benutzername</th>
+                                <th>Ticket-Informationen</th>
                                 <th>E-Mail-Adresse</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for username in unknownUsers %}
+                            {% for unknownUser in unknownUsers %}
+                                {% set username = unknownUser.getUsernameString is defined ? unknownUser.getUsernameString : unknownUser %}
+                                {% set ticketId = unknownUser.getTicketIdString is defined ? unknownUser.getTicketIdString : null %}
+                                {% set ticketName = unknownUser.getTicketNameString is defined ? unknownUser.getTicketNameString : null %}
                                 <tr>
                                     <td>{{ username|e }}</td>
+                                    <td>
+                                        {% if ticketId and ticketName %}
+                                            <strong>Ticket-ID:</strong> {{ ticketId|e }}<br>
+                                            <strong>Ticket-Name:</strong> {{ ticketName|e }}
+                                        {% elseif ticketId %}
+                                            <strong>Ticket-ID:</strong> {{ ticketId|e }}
+                                        {% else %}
+                                            <span class="text-muted">Keine Ticket-Informationen verfügbar</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <input type="text" 
                                                name="email_{{ username|e('html_attr') }}" 

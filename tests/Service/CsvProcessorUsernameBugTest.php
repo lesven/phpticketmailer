@@ -6,6 +6,7 @@ use App\Service\CsvProcessor;
 use App\Service\CsvFileReader;
 use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
+use App\ValueObject\UnknownUserWithTicket;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -127,6 +128,10 @@ class CsvProcessorUsernameBugTest extends TestCase
         $this->assertCount(1, $result['validTickets'], 'Ein gültiges Ticket erwartet');
         $this->assertEmpty($result['invalidRows'], 'Keine ungültigen Zeilen erwartet');
         $this->assertCount(1, $result['unknownUsers'], 'Ein unbekannter User erwartet');
-        $this->assertEquals('valid.username', $result['unknownUsers'][0]);
+        
+        // The unknown user should now be an UnknownUserWithTicket object
+        $unknownUser = $result['unknownUsers'][0];
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
+        $this->assertEquals('valid.username', $unknownUser->getUsernameString());
     }
 }

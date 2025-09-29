@@ -5,6 +5,7 @@ use App\Service\CsvProcessor;
 use App\Service\CsvFileReader;
 use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
+use App\ValueObject\UnknownUserWithTicket;
 use PHPUnit\Framework\TestCase;
 use App\ValueObject\TicketData;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -72,7 +73,12 @@ class CsvProcessorTest extends TestCase
 
         $this->assertCount(2, $res['validTickets']);
         $this->assertCount(1, $res['invalidRows']);
-        $this->assertEquals(['user3'], $res['unknownUsers']);
+        $this->assertCount(1, $res['unknownUsers']);
+        
+        // The unknown user should now be an UnknownUserWithTicket object
+        $unknownUser = $res['unknownUsers'][0];
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
+        $this->assertEquals('user3', $unknownUser->getUsernameString());
 
         @unlink($tmp);
     }
