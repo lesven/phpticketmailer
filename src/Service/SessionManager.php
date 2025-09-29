@@ -72,15 +72,26 @@ class SessionManager
         foreach ($serializedData as $item) {
             if (is_array($item) && isset($item['type'])) {
                 if ($item['type'] === 'UnknownUserWithTicket') {
-                    // Reconstruct UnknownUserWithTicket object
-                    $unknownUsers[] = new \App\ValueObject\UnknownUserWithTicket(
-                        new \App\ValueObject\Username($item['username']),
-                        new \App\ValueObject\TicketId($item['ticketId']),
-                        $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null
-                    );
+                    // Reconstruct UnknownUserWithTicket object with validation
+                    try {
+                        if (empty($item['username']) || empty($item['ticketId'])) {
+                            continue; // Skip invalid entries
+                        }
+                        
+                        $unknownUsers[] = new \App\ValueObject\UnknownUserWithTicket(
+                            new \App\ValueObject\Username($item['username']),
+                            new \App\ValueObject\TicketId($item['ticketId']),
+                            $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null
+                        );
+                    } catch (\Exception $e) {
+                        // Skip invalid entries without breaking the whole process
+                        continue;
+                    }
                 } else {
                     // Fallback for string type
-                    $unknownUsers[] = $item['username'];
+                    if (!empty($item['username'])) {
+                        $unknownUsers[] = $item['username'];
+                    }
                 }
             } else {
                 // Legacy format - direct strings
