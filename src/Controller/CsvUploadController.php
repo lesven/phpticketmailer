@@ -99,7 +99,7 @@ class CsvUploadController extends AbstractController
     public function unknownUsers(Request $request): Response
     {
         $unknownUsers = $this->sessionManager->getUnknownUsers();
-        
+
         if (empty($unknownUsers)) {
             $this->addFlash('warning', 'Keine unbekannten Benutzer zu verarbeiten');
             return $this->redirectToRoute('csv_upload');

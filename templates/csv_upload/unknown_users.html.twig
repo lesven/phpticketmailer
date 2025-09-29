@@ -34,9 +34,9 @@
                         </thead>
                         <tbody>
                             {% for unknownUser in unknownUsers %}
-                                {% set username = unknownUser is iterable ? unknownUser.usernameString : unknownUser %}
-                                {% set ticketId = unknownUser is iterable ? unknownUser.ticketIdString : null %}
-                                {% set ticketName = unknownUser is iterable ? unknownUser.ticketNameString : null %}
+                                {% set username = unknownUser.getUsernameString is defined ? unknownUser.getUsernameString : unknownUser %}
+                                {% set ticketId = unknownUser.getTicketIdString is defined ? unknownUser.getTicketIdString : null %}
+                                {% set ticketName = unknownUser.getTicketNameString is defined ? unknownUser.getTicketNameString : null %}
                                 <tr>
                                     <td>{{ username|e }}</td>
                                     <td>

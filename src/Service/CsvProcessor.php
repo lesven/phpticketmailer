@@ -152,16 +152,19 @@ class CsvProcessor
         $ticketsByUsername = [];
         foreach ($validTickets as $ticket) {
             $usernameString = $ticket->username->getValue();
-            if (!isset($ticketsByUsername[$usernameString])) {
-                $ticketsByUsername[$usernameString] = $ticket;
+            // Use lowercase for case-insensitive matching
+            $lowercaseUsername = strtolower($usernameString);
+            if (!isset($ticketsByUsername[$lowercaseUsername])) {
+                $ticketsByUsername[$lowercaseUsername] = $ticket;
             }
         }
 
         // Erstelle enhanced unknown users mit Ticket-Information
         $enhancedUnknownUsers = [];
         foreach ($unknownUsernames as $usernameString) {
-            if (isset($ticketsByUsername[$usernameString])) {
-                $enhancedUnknownUsers[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$usernameString]);
+            $lowercaseUnknownUser = strtolower($usernameString);
+            if (isset($ticketsByUsername[$lowercaseUnknownUser])) {
+                $enhancedUnknownUsers[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$lowercaseUnknownUser]);
             } else {
                 // Fallback für den Fall, dass kein Ticket gefunden wird (sollte nicht passieren)
                 $enhancedUnknownUsers[] = $usernameString;
