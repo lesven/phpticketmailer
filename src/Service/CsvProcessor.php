@@ -14,6 +14,8 @@ namespace App\Service;
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
 use App\ValueObject\TicketData;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\Username;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -115,7 +117,7 @@ class CsvProcessor
             
             $result['validTickets'] = $validTickets;
             $result['invalidRows'] = $invalidRows;
-            $result['unknownUsers'] = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
+            $result['unknownUsers'] = $this->identifyUnknownUsersWithTickets($validTickets);
             
             // Speichere die gültigen Tickets in der Session für späteren Zugriff
             $this->storeTicketsInSession($validTickets);
@@ -127,7 +129,48 @@ class CsvProcessor
         
         return $result;
     }
-      /**
+
+    /**
+     * Identifiziert unbekannte Benutzer anhand der gültigen Tickets mit Ticket-Kontext
+     * 
+     * @param array $validTickets Liste der gültigen Ticket-Daten
+     * @return array Array von UnknownUserWithTicket Objekten
+     */
+    private function identifyUnknownUsersWithTickets(array $validTickets): array
+    {
+        if (empty($validTickets)) {
+            return [];
+        }
+
+        // Sammle einzigartige Benutzernamen aus den Tickets
+        $uniqueUsernames = [];
+        $ticketsByUsername = [];
+        
+        foreach ($validTickets as $ticket) {
+            $usernameString = $ticket->username->toString();
+            $uniqueUsernames[$usernameString] = true;
+            
+            // Speichere das erste Ticket pro Benutzername (für die Anzeige)
+            if (!isset($ticketsByUsername[$usernameString])) {
+                $ticketsByUsername[$usernameString] = $ticket;
+            }
+        }
+
+        // Identifiziere unbekannte Benutzer
+        $unknownUsernames = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
+        
+        // Erstelle UnknownUserWithTicket Objekte
+        $unknownUsersWithTickets = [];
+        foreach ($unknownUsernames as $usernameString) {
+            if (isset($ticketsByUsername[$usernameString])) {
+                $unknownUsersWithTickets[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$usernameString]);
+            }
+        }
+        
+        return $unknownUsersWithTickets;
+    }
+
+    /**
      * Prüft, ob eine Zeile alle erforderlichen Werte enthält
      * 
      * @param array $row Die zu prüfende Zeile
