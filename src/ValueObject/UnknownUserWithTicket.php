@@ -34,7 +34,7 @@ final readonly class UnknownUserWithTicket
      */
     public function getUsernameString(): string
     {
-        return $this->username->toString();
+        return $this->username->getValue();
     }
 
     /**
@@ -42,7 +42,7 @@ final readonly class UnknownUserWithTicket
      */
     public function getTicketIdString(): string
     {
-        return $this->ticketId->toString();
+        return $this->ticketId->getValue();
     }
 
     /**
@@ -50,6 +50,6 @@ final readonly class UnknownUserWithTicket
      */
     public function getTicketNameString(): ?string
     {
-        return $this->ticketName?->toString();
+        return $this->ticketName?->getValue();
     }
 }

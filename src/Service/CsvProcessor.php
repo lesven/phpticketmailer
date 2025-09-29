@@ -117,7 +117,12 @@ class CsvProcessor
             
             $result['validTickets'] = $validTickets;
             $result['invalidRows'] = $invalidRows;
-            $result['unknownUsers'] = $this->identifyUnknownUsersWithTickets($validTickets);
+            
+            // Get basic unknown users using the existing method (for backward compatibility)
+            $basicUnknownUsers = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
+            
+            // Enhance with ticket information for display purposes
+            $result['unknownUsers'] = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
             
             // Speichere die gültigen Tickets in der Session für späteren Zugriff
             $this->storeTicketsInSession($validTickets);
@@ -131,43 +136,39 @@ class CsvProcessor
     }
 
     /**
-     * Identifiziert unbekannte Benutzer anhand der gültigen Tickets mit Ticket-Kontext
+     * Erweitert eine Liste von unbekannten Benutzern mit Ticket-Kontext
      * 
+     * @param array $unknownUsernames Liste der unbekannten Benutzernamen (Strings)
      * @param array $validTickets Liste der gültigen Ticket-Daten
-     * @return array Array von UnknownUserWithTicket Objekten
+     * @return array Array von UnknownUserWithTicket Objekten oder Strings (für Backward Compatibility)
      */
-    private function identifyUnknownUsersWithTickets(array $validTickets): array
+    private function enhanceUnknownUsersWithTicketInfo(array $unknownUsernames, array $validTickets): array
     {
-        if (empty($validTickets)) {
+        if (empty($unknownUsernames)) {
             return [];
         }
 
-        // Sammle einzigartige Benutzernamen aus den Tickets
-        $uniqueUsernames = [];
+        // Erstelle Mapping von Username zu Ticket für schnellen Zugriff
         $ticketsByUsername = [];
-        
         foreach ($validTickets as $ticket) {
-            $usernameString = $ticket->username->toString();
-            $uniqueUsernames[$usernameString] = true;
-            
-            // Speichere das erste Ticket pro Benutzername (für die Anzeige)
+            $usernameString = $ticket->username->getValue();
             if (!isset($ticketsByUsername[$usernameString])) {
                 $ticketsByUsername[$usernameString] = $ticket;
             }
         }
 
-        // Identifiziere unbekannte Benutzer
-        $unknownUsernames = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
-        
-        // Erstelle UnknownUserWithTicket Objekte
-        $unknownUsersWithTickets = [];
+        // Erstelle enhanced unknown users mit Ticket-Information
+        $enhancedUnknownUsers = [];
         foreach ($unknownUsernames as $usernameString) {
             if (isset($ticketsByUsername[$usernameString])) {
-                $unknownUsersWithTickets[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$usernameString]);
+                $enhancedUnknownUsers[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$usernameString]);
+            } else {
+                // Fallback für den Fall, dass kein Ticket gefunden wird (sollte nicht passieren)
+                $enhancedUnknownUsers[] = $usernameString;
             }
         }
         
-        return $unknownUsersWithTickets;
+        return $enhancedUnknownUsers;
     }
 
     /**
