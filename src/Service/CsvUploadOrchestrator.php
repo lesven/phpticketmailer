@@ -86,7 +86,10 @@ class CsvUploadOrchestrator
      */
     private function createUsersFromMappings(array $emailMappings, array $unknownUsers): int
     {
-        foreach ($unknownUsers as $username) {
+        foreach ($unknownUsers as $unknownUser) {
+            // Handle both old format (strings) and new format (UnknownUserWithTicket objects)
+            $username = is_string($unknownUser) ? $unknownUser : $unknownUser->getUsernameString();
+            
             if (isset($emailMappings[$username])) {
                 try {
                     $this->userCreator->createUser($username, $emailMappings[$username]);

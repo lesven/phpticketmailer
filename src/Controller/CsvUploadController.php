@@ -99,7 +99,7 @@ class CsvUploadController extends AbstractController
     public function unknownUsers(Request $request): Response
     {
         $unknownUsers = $this->sessionManager->getUnknownUsers();
-        
+
         if (empty($unknownUsers)) {
             $this->addFlash('warning', 'Keine unbekannten Benutzer zu verarbeiten');
             return $this->redirectToRoute('csv_upload');
@@ -173,7 +173,10 @@ class CsvUploadController extends AbstractController
     {
         $emailMappings = [];
         
-        foreach ($unknownUsers as $username) {
+        foreach ($unknownUsers as $unknownUser) {
+            // Handle both old format (strings) and new format (UnknownUserWithTicket objects)
+            $username = is_string($unknownUser) ? $unknownUser : $unknownUser->getUsernameString();
+            
             // Benutzername für HTML-Attribut konvertieren (gleiche Logik wie im Template)
             $htmlSafeUsername = $this->convertUsernameForHtmlAttribute($username);
             $emailInput = $request->request->get('email_' . $htmlSafeUsername);

@@ -14,6 +14,8 @@ namespace App\Service;
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
 use App\ValueObject\TicketData;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\Username;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -115,7 +117,12 @@ class CsvProcessor
             
             $result['validTickets'] = $validTickets;
             $result['invalidRows'] = $invalidRows;
-            $result['unknownUsers'] = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
+            
+            // Get basic unknown users using the existing method (for backward compatibility)
+            $basicUnknownUsers = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
+            
+            // Enhance with ticket information for display purposes
+            $result['unknownUsers'] = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
             
             // Speichere die gültigen Tickets in der Session für späteren Zugriff
             $this->storeTicketsInSession($validTickets);
@@ -127,7 +134,47 @@ class CsvProcessor
         
         return $result;
     }
-      /**
+
+    /**
+     * Erweitert eine Liste von unbekannten Benutzern mit Ticket-Kontext
+     * 
+     * @param array $unknownUsernames Liste der unbekannten Benutzernamen (Strings)
+     * @param array $validTickets Liste der gültigen Ticket-Daten
+     * @return array Array von UnknownUserWithTicket Objekten oder Strings (für Backward Compatibility)
+     */
+    private function enhanceUnknownUsersWithTicketInfo(array $unknownUsernames, array $validTickets): array
+    {
+        if (empty($unknownUsernames)) {
+            return [];
+        }
+
+        // Erstelle Mapping von Username zu Ticket für schnellen Zugriff
+        $ticketsByUsername = [];
+        foreach ($validTickets as $ticket) {
+            $usernameString = $ticket->username->getValue();
+            // Use lowercase for case-insensitive matching
+            $lowercaseUsername = strtolower($usernameString);
+            if (!isset($ticketsByUsername[$lowercaseUsername])) {
+                $ticketsByUsername[$lowercaseUsername] = $ticket;
+            }
+        }
+
+        // Erstelle enhanced unknown users mit Ticket-Information
+        $enhancedUnknownUsers = [];
+        foreach ($unknownUsernames as $usernameString) {
+            $lowercaseUnknownUser = strtolower($usernameString);
+            if (isset($ticketsByUsername[$lowercaseUnknownUser])) {
+                $enhancedUnknownUsers[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$lowercaseUnknownUser]);
+            } else {
+                // Fallback für den Fall, dass kein Ticket gefunden wird (sollte nicht passieren)
+                $enhancedUnknownUsers[] = $usernameString;
+            }
+        }
+        
+        return $enhancedUnknownUsers;
+    }
+
+    /**
      * Prüft, ob eine Zeile alle erforderlichen Werte enthält
      * 
      * @param array $row Die zu prüfende Zeile
