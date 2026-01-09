@@ -214,23 +214,29 @@ class EmailSentRepository extends ServiceEntityRepository
      */
     public function getMonthlyUserStatistics(): array
     {
-        // Berechne das Datum vor 6 Monaten
-        $sixMonthsAgo = new \DateTime();
-        $sixMonthsAgo->modify('-6 months');
-        $sixMonthsAgo->modify('first day of this month');
-        $sixMonthsAgo->setTime(0, 0, 0);
+        // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
+        $fiveMonthsAgo = new \DateTime();
+        $fiveMonthsAgo->modify('-5 months');
+        $fiveMonthsAgo->modify('first day of this month');
+        $fiveMonthsAgo->setTime(0, 0, 0);
 
         // Hole Daten für die letzten 6 Monate
         $qb = $this->createQueryBuilder('e')
             ->select("DATE_FORMAT(e.timestamp, '%Y-%m') as month, COUNT(DISTINCT e.username) as unique_users")
-            ->where('e.timestamp >= :sixMonthsAgo')
+            ->where('e.timestamp >= :fiveMonthsAgo')
             ->andWhere('e.status = :status')
-            ->setParameter('sixMonthsAgo', $sixMonthsAgo)
+            ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
             ->setParameter('status', 'sent')
             ->groupBy('month')
             ->orderBy('month', 'ASC');
 
         $results = $qb->getQuery()->getResult();
+
+        // Erstelle ein Lookup-Array für schnelleren Zugriff (O(m) statt O(n*m))
+        $resultsByMonth = [];
+        foreach ($results as $result) {
+            $resultsByMonth[$result['month']] = (int) $result['unique_users'];
+        }
 
         // Erstelle ein vollständiges Array für die letzten 6 Monate (auch Monate ohne Daten)
         $monthlyStats = [];
@@ -241,26 +247,11 @@ class EmailSentRepository extends ServiceEntityRepository
             $monthDate->modify("-$i months");
             $monthKey = $monthDate->format('Y-m');
             
-            // Suche nach existierenden Daten für diesen Monat
-            $found = false;
-            foreach ($results as $result) {
-                if ($result['month'] === $monthKey) {
-                    $monthlyStats[] = [
-                        'month' => $monthKey,
-                        'unique_users' => (int) $result['unique_users']
-                    ];
-                    $found = true;
-                    break;
-                }
-            }
-            
-            // Wenn keine Daten für diesen Monat gefunden wurden, füge einen Eintrag mit 0 hinzu
-            if (!$found) {
-                $monthlyStats[] = [
-                    'month' => $monthKey,
-                    'unique_users' => 0
-                ];
-            }
+            // Verwende Lookup-Array für O(1) Zugriff
+            $monthlyStats[] = [
+                'month' => $monthKey,
+                'unique_users' => $resultsByMonth[$monthKey] ?? 0
+            ];
         }
 
         return $monthlyStats;
