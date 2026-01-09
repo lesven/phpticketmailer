@@ -203,4 +203,66 @@ class EmailSentRepository extends ServiceEntityRepository
             'success_rate' => $total > 0 ? round(($successful / $total) * 100, 1) : 0
         ];
     }
+
+    /**
+     * Holt die Anzahl einzigartiger Benutzer pro Monat für die letzten 6 Monate
+     *
+     * Gibt ein Array zurück, das für jeden der letzten 6 Monate die Anzahl
+     * der einzigartigen Benutzer enthält, die eine E-Mail erhalten haben.
+     *
+     * @return array Array mit monatlichen Statistiken [['month' => 'YYYY-MM', 'unique_users' => int], ...]
+     */
+    public function getMonthlyUserStatistics(): array
+    {
+        // Berechne das Datum vor 6 Monaten
+        $sixMonthsAgo = new \DateTime();
+        $sixMonthsAgo->modify('-6 months');
+        $sixMonthsAgo->modify('first day of this month');
+        $sixMonthsAgo->setTime(0, 0, 0);
+
+        // Hole Daten für die letzten 6 Monate
+        $qb = $this->createQueryBuilder('e')
+            ->select("DATE_FORMAT(e.timestamp, '%Y-%m') as month, COUNT(DISTINCT e.username) as unique_users")
+            ->where('e.timestamp >= :sixMonthsAgo')
+            ->andWhere('e.status = :status')
+            ->setParameter('sixMonthsAgo', $sixMonthsAgo)
+            ->setParameter('status', 'sent')
+            ->groupBy('month')
+            ->orderBy('month', 'ASC');
+
+        $results = $qb->getQuery()->getResult();
+
+        // Erstelle ein vollständiges Array für die letzten 6 Monate (auch Monate ohne Daten)
+        $monthlyStats = [];
+        $currentDate = new \DateTime();
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = clone $currentDate;
+            $monthDate->modify("-$i months");
+            $monthKey = $monthDate->format('Y-m');
+            
+            // Suche nach existierenden Daten für diesen Monat
+            $found = false;
+            foreach ($results as $result) {
+                if ($result['month'] === $monthKey) {
+                    $monthlyStats[] = [
+                        'month' => $monthKey,
+                        'unique_users' => (int) $result['unique_users']
+                    ];
+                    $found = true;
+                    break;
+                }
+            }
+            
+            // Wenn keine Daten für diesen Monat gefunden wurden, füge einen Eintrag mit 0 hinzu
+            if (!$found) {
+                $monthlyStats[] = [
+                    'month' => $monthKey,
+                    'unique_users' => 0
+                ];
+            }
+        }
+
+        return $monthlyStats;
+    }
 }
