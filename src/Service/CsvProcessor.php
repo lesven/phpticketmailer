@@ -16,6 +16,7 @@ use App\Repository\UserRepository;
 use App\ValueObject\TicketData;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
+use App\ValueObject\CsvProcessingResult;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -55,16 +56,13 @@ class CsvProcessor
      * 
      * @param UploadedFile $file Die hochgeladene CSV-Datei
      * @param CsvFieldConfig $csvFieldConfig Konfiguration der CSV-Feldnamen
-     * @return array{validTickets: array, invalidRows: array, unknownUsers: array} Ergebnisse der Verarbeitung
+     * @return \App\ValueObject\CsvProcessingResult Ergebnisse der Verarbeitung
      * @throws \Exception Bei Fehlern während der Verarbeitung
      */
-    public function process(UploadedFile $file, CsvFieldConfig $csvFieldConfig): array
+    public function process(UploadedFile $file, CsvFieldConfig $csvFieldConfig): \App\ValueObject\CsvProcessingResult
     {
-        $result = [
-            'validTickets' => [],
-            'invalidRows' => [],
-            'unknownUsers' => []
-        ];
+        // result wird als CsvProcessingResult am Ende zurückgegeben
+
 
         // Konfigurierte Feldnamen holen
         $fieldMapping = $csvFieldConfig->getFieldMapping();
@@ -115,24 +113,24 @@ class CsvProcessor
                 }
             });
             
-            $result['validTickets'] = $validTickets;
-            $result['invalidRows'] = $invalidRows;
-            
-            // Get basic unknown users using the existing method (for backward compatibility)
+            // Collect simple unknown users using the existing method (for backward compatibility)
             $basicUnknownUsers = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
             
             // Enhance with ticket information for display purposes
-            $result['unknownUsers'] = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
+            $enhancedUnknownUsers = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
             
-            // Speichere die gültigen Tickets in der Session für späteren Zugriff
-            $this->storeTicketsInSession($validTickets);
+            // NOTE: Session persistence has been moved out of CsvProcessor. Callers should persist valid tickets when necessary.
+            // Deprecated: $this->storeTicketsInSession($validTickets);
             
+            return new \App\ValueObject\CsvProcessingResult(
+                $validTickets,
+                $invalidRows,
+                $enhancedUnknownUsers
+            );
         } finally {
             // Datei-Handle sicher schließen
             $this->csvFileReader->closeHandle($handle);
         }
-        
-        return $result;
     }
 
     /**

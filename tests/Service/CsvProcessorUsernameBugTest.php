@@ -78,13 +78,13 @@ class CsvProcessorUsernameBugTest extends TestCase
         $result = $this->csvProcessor->process($file, $csvFieldConfig);
         
         // Assertions
-        $this->assertEmpty($result['validTickets'], 'Keine gültigen Tickets erwartet');
-        $this->assertCount(1, $result['invalidRows'], 'Eine ungültige Zeile erwartet');
-        $this->assertEmpty($result['unknownUsers'], 'Keine unbekannten User erwartet');
+        $this->assertEmpty($result->getValidTickets(), 'Keine gültigen Tickets erwartet');
+        $this->assertCount(1, $result->getInvalidRows(), 'Eine ungültige Zeile erwartet');
+        $this->assertEmpty($result->getUnknownUsers(), 'Keine unbekannten User erwartet');
         
         // Die ungültige Zeile sollte einen Fehler haben
-        $this->assertArrayHasKey('error', $result['invalidRows'][0]);
-        $this->assertStringContainsString('Ticket ID contains invalid characters', $result['invalidRows'][0]['error']);
+        $this->assertArrayHasKey('error', $result->getInvalidRows()[0]);
+        $this->assertStringContainsString('Ticket ID contains invalid characters', $result->getInvalidRows()[0]['error']);
     }
 
     /**
@@ -125,12 +125,12 @@ class CsvProcessorUsernameBugTest extends TestCase
         $result = $this->csvProcessor->process($file, $csvFieldConfig);
         
         // Assertions
-        $this->assertCount(1, $result['validTickets'], 'Ein gültiges Ticket erwartet');
-        $this->assertEmpty($result['invalidRows'], 'Keine ungültigen Zeilen erwartet');
-        $this->assertCount(1, $result['unknownUsers'], 'Ein unbekannter User erwartet');
+        $this->assertCount(1, $result->getValidTickets(), 'Ein gültiges Ticket erwartet');
+        $this->assertEmpty($result->getInvalidRows(), 'Keine ungültigen Zeilen erwartet');
+        $this->assertCount(1, $result->getUnknownUsers(), 'Ein unbekannter User erwartet');
         
         // The unknown user should now be an UnknownUserWithTicket object
-        $unknownUser = $result['unknownUsers'][0];
+        $unknownUser = $result->getUnknownUsers()[0];
         $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         $this->assertEquals('valid.username', $unknownUser->getUsernameString());
     }

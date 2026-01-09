@@ -63,13 +63,13 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(6, $result['unknownUsers']);
+        $this->assertCount(6, $result->getUnknownUsers());
 
         // 5 sollten UnknownUserWithTicket-Objekte sein, 1 String-Fallback
         $objectCount = 0;
         $stringCount = 0;
 
-        foreach ($result['unknownUsers'] as $user) {
+        foreach ($result->getUnknownUsers() as $user) {
             if ($user instanceof UnknownUserWithTicket) {
                 $objectCount++;
             } else {
@@ -101,9 +101,9 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(2, $result['unknownUsers']);
+        $this->assertCount(2, $result->getUnknownUsers());
 
-        foreach ($result['unknownUsers'] as $user) {
+        foreach ($result->getUnknownUsers() as $user) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $user);
             
             if ($user->getUsernameString() === 'dupuser') {
@@ -192,10 +192,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(100, $result['unknownUsers']);
+        $this->assertCount(100, $result->getUnknownUsers());
         
         // Alle sollten UnknownUserWithTicket-Objekte sein
-        foreach ($result['unknownUsers'] as $user) {
+        foreach ($result->getUnknownUsers() as $user) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $user);
         }
     }
@@ -218,10 +218,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(2, $result['unknownUsers']);
+        $this->assertCount(2, $result->getUnknownUsers());
         
         // Verifikation der minimal langen Benutzernamen
-        $usernames = array_map(fn($user) => $user->getUsernameString(), $result['unknownUsers']);
+        $usernames = array_map(fn($user) => $user->getUsernameString(), $result->getUnknownUsers());
         $this->assertContains('abc', $usernames);
         $this->assertContains('xyz', $usernames);
     }
@@ -257,11 +257,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(count($specialCases), $result['unknownUsers']);
+        $this->assertCount(count($specialCases), $result->getUnknownUsers());
 
-        // Session-Handling mit Unicode-Zeichen
-        $processingResult = ['unknownUsers' => $result['unknownUsers'], 'validTickets' => []];
-        $this->sessionManager->storeUploadResults($processingResult);
+        // Session-Handling mit Unicode-Zeichen: store the DTO directly
+        $this->sessionManager->storeUploadResults($result);
         
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
         $this->assertCount(count($specialCases), $retrievedUsers);

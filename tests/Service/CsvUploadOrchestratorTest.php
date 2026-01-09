@@ -13,6 +13,7 @@ use App\Entity\CsvFieldConfig;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use PHPUnit\Framework\TestCase;
 use App\ValueObject\TicketData;
+use App\ValueObject\CsvProcessingResult;
 
 class CsvUploadOrchestratorTest extends TestCase
 {
@@ -42,12 +43,11 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => ['user1', 'user2', 'user3'],
-            'validTickets' => [
-                TicketData::fromStrings('T-001', 'known_user')
-            ]
-        ];
+        $processingResult = new CsvProcessingResult(
+            [ TicketData::fromStrings('T-001', 'known_user') ],
+            [],
+            ['user1', 'user2', 'user3']
+        );
 
         $this->csvFieldConfigRepository->expects($this->once())
             ->method('saveConfig')
@@ -76,13 +76,11 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => [],
-            'validTickets' => [
-                TicketData::fromStrings('T-001', 'known_user1'),
-                TicketData::fromStrings('T-002', 'known_user2')
-            ]
-        ];
+        $processingResult = new CsvProcessingResult(
+            [ TicketData::fromStrings('T-001', 'known_user1'), TicketData::fromStrings('T-002', 'known_user2') ],
+            [],
+            []
+        );
 
         $this->csvFieldConfigRepository->expects($this->once())
             ->method('saveConfig')
@@ -111,10 +109,11 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => ['unknown1'],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            [],
+            [],
+            ['unknown1']
+        );
 
         $this->csvProcessor->method('process')->willReturn($processingResult);
 
@@ -231,8 +230,6 @@ class CsvUploadOrchestratorTest extends TestCase
     {
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
-        $processingResult = ['unknownUsers' => [], 'validTickets' => []];
-
         // Verify the order of operations
         $callOrder = [];
 
@@ -244,9 +241,9 @@ class CsvUploadOrchestratorTest extends TestCase
 
         $this->csvProcessor->expects($this->once())
             ->method('process')
-            ->willReturnCallback(function() use (&$callOrder, $processingResult) {
+            ->willReturnCallback(function() use (&$callOrder) {
                 $callOrder[] = 'process';
-                return $processingResult;
+                return new CsvProcessingResult([], [], []);
             });
 
         $this->sessionManager->expects($this->once())

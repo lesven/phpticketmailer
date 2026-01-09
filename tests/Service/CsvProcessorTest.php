@@ -67,16 +67,16 @@ class CsvProcessorTest extends TestCase
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
 
-        $this->assertArrayHasKey('validTickets', $res);
-        $this->assertArrayHasKey('invalidRows', $res);
-        $this->assertArrayHasKey('unknownUsers', $res);
+        $this->assertIsArray($res->getValidTickets());
+        $this->assertIsArray($res->getInvalidRows());
+        $this->assertIsArray($res->getUnknownUsers());
 
-        $this->assertCount(2, $res['validTickets']);
-        $this->assertCount(1, $res['invalidRows']);
-        $this->assertCount(1, $res['unknownUsers']);
+        $this->assertCount(2, $res->getValidTickets());
+        $this->assertCount(1, $res->getInvalidRows());
+        $this->assertCount(1, $res->getUnknownUsers());
         
         // The unknown user should now be an UnknownUserWithTicket object
-        $unknownUser = $res['unknownUsers'][0];
+        $unknownUser = $res->getUnknownUsers()[0];
         $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         $this->assertEquals('user3', $unknownUser->getUsernameString());
 
@@ -130,8 +130,8 @@ class CsvProcessorTest extends TestCase
         $cfg = $this->createMock(CsvFieldConfig::class);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
-        $this->assertCount(0, $res['validTickets']);
-        $this->assertCount(0, $res['invalidRows']);
+        $this->assertCount(0, $res->getValidTickets());
+        $this->assertCount(0, $res->getInvalidRows());
         @unlink($tmp);
     }
 
@@ -170,7 +170,7 @@ class CsvProcessorTest extends TestCase
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
-        $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res['validTickets']);
+        $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res->getValidTickets());
         $this->assertContainsEquals('T-001', $ticketIds);
         $this->assertContainsEquals('T-002', $ticketIds);
         @unlink($tmp);

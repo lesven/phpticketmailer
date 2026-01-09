@@ -43,15 +43,19 @@ class CsvUploadOrchestrator
         // 2. CSV-Datei verarbeiten
         $processingResult = $this->csvProcessor->process($csvFile, $csvFieldConfig);
 
-        // 3. Ergebnisse in Session speichern
+        // 3. Ergebnisse in Session speichern (SessionManager unterstützt nun sowohl Array als auch CsvProcessingResult)
         $this->sessionManager->storeUploadResults($processingResult);
 
         // 4. Entscheidung über nächsten Schritt treffen
-        if (!empty($processingResult['unknownUsers'])) {
+        $unknownUsers = $processingResult instanceof \App\ValueObject\CsvProcessingResult
+            ? $processingResult->getUnknownUsers()
+            : ($processingResult['unknownUsers'] ?? []);
+
+        if (!empty($unknownUsers)) {
             return UploadResult::redirectToUnknownUsers(
                 $testMode,
                 $forceResend,
-                count($processingResult['unknownUsers'])
+                count($unknownUsers)
             );
         }
 

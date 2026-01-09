@@ -61,14 +61,14 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $result = $this->processor->process($uploadedFile, $cfg);
 
         // Alle 3 unknown users sollten als UnknownUserWithTicket-Objekte erstellt werden
-        $this->assertCount(3, $result['unknownUsers']);
+        $this->assertCount(3, $result->getUnknownUsers());
         
-        foreach ($result['unknownUsers'] as $unknownUser) {
+        foreach ($result->getUnknownUsers() as $unknownUser) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         }
 
         // Spezifische Checks für jeden Benutzer
-        $usernames = array_map(fn($u) => $u->getUsernameString(), $result['unknownUsers']);
+        $usernames = array_map(fn($u) => $u->getUsernameString(), $result->getUnknownUsers());
         $this->assertContains('johndoe', $usernames);
         $this->assertContains('janedoe', $usernames);
         $this->assertContains('mixedcase', $usernames);
@@ -91,15 +91,15 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->processor->process($uploadedFile, $cfg);
 
-        $this->assertCount(2, $result['unknownUsers']);
+        $this->assertCount(2, $result->getUnknownUsers());
         
         // Erster sollte UnknownUserWithTicket sein
-        $this->assertInstanceOf(UnknownUserWithTicket::class, $result['unknownUsers'][0]);
-        $this->assertEquals('existinguser', $result['unknownUsers'][0]->getUsernameString());
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $result->getUnknownUsers()[0]);
+        $this->assertEquals('existinguser', $result->getUnknownUsers()[0]->getUsernameString());
         
         // Zweiter sollte String-Fallback sein
-        $this->assertIsString($result['unknownUsers'][1]);
-        $this->assertEquals('nonexistentuser', $result['unknownUsers'][1]);
+        $this->assertIsString($result->getUnknownUsers()[1]);
+        $this->assertEquals('nonexistentuser', $result->getUnknownUsers()[1]);
     }
 
     /**
@@ -116,7 +116,7 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->processor->process($uploadedFile, $cfg);
 
-        $this->assertEmpty($result['unknownUsers']);
+        $this->assertEmpty($result->getUnknownUsers());
     }
 
     /**
@@ -138,13 +138,13 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $result = $this->processor->process($uploadedFile, $cfg);
 
         // Sollte nur einen unknown user geben
-        $this->assertCount(1, $result['unknownUsers']);
-        $this->assertInstanceOf(UnknownUserWithTicket::class, $result['unknownUsers'][0]);
-        $this->assertEquals('testuser', $result['unknownUsers'][0]->getUsernameString());
+        $this->assertCount(1, $result->getUnknownUsers());
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $result->getUnknownUsers()[0]);
+        $this->assertEquals('testuser', $result->getUnknownUsers()[0]->getUsernameString());
         
         // Das erste gefundene Ticket sollte verwendet werden
-        $this->assertEquals('T-001', $result['unknownUsers'][0]->getTicketIdString());
-        $this->assertEquals('First Issue', $result['unknownUsers'][0]->getTicketNameString());
+        $this->assertEquals('T-001', $result->getUnknownUsers()[0]->getTicketIdString());
+        $this->assertEquals('First Issue', $result->getUnknownUsers()[0]->getTicketNameString());
     }
 
     /**
@@ -165,9 +165,9 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->processor->process($uploadedFile, $cfg);
 
-        $this->assertCount(3, $result['unknownUsers']);
+        $this->assertCount(3, $result->getUnknownUsers());
         
-        foreach ($result['unknownUsers'] as $unknownUser) {
+        foreach ($result->getUnknownUsers() as $unknownUser) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         }
     }
@@ -190,9 +190,9 @@ class CsvProcessorCaseInsensitiveTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->processor->process($uploadedFile, $cfg);
 
-        $this->assertCount(3, $result['unknownUsers']);
+        $this->assertCount(3, $result->getUnknownUsers());
         
-        foreach ($result['unknownUsers'] as $unknownUser) {
+        foreach ($result->getUnknownUsers() as $unknownUser) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         }
     }

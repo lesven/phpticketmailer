@@ -24,9 +24,9 @@ class SessionManager
     /**
      * Speichert die Ergebnisse eines CSV-Upload-Vorgangs in der Session
      * 
-     * @param array $processingResult Ergebnis der CSV-Verarbeitung
+     * @param array|\App\ValueObject\CsvProcessingResult $processingResult Ergebnis der CSV-Verarbeitung
      */
-    public function storeUploadResults(array $processingResult): void
+    public function storeUploadResults($processingResult): void
     {
         $session = $this->requestStack->getSession();
         
@@ -34,8 +34,16 @@ class SessionManager
         $session->remove(self::UNKNOWN_USERS_KEY);
         $session->remove(self::VALID_TICKETS_KEY);
         
+        // Accept either array format or CsvProcessingResult object
+        if ($processingResult instanceof \App\ValueObject\CsvProcessingResult) {
+            $unknownUsers = $processingResult->getUnknownUsers();
+            $validTickets = $processingResult->getValidTickets();
+        } else {
+            $unknownUsers = $processingResult['unknownUsers'] ?? [];
+            $validTickets = $processingResult['validTickets'] ?? [];
+        }
+
         // Convert UnknownUserWithTicket objects to arrays for session storage
-        $unknownUsers = $processingResult['unknownUsers'] ?? [];
         $serializedUnknownUsers = [];
         
         foreach ($unknownUsers as $unknownUser) {
@@ -56,7 +64,7 @@ class SessionManager
         }
         
         $session->set(self::UNKNOWN_USERS_KEY, $serializedUnknownUsers);
-        $session->set(self::VALID_TICKETS_KEY, $processingResult['validTickets'] ?? []);
+        $session->set(self::VALID_TICKETS_KEY, $validTickets);
     }
 
     /**
