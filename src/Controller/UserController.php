@@ -5,58 +5,47 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\UserType;
 use App\Form\UserImportType;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Service\PaginationService;
 use App\Service\UserImportService;
+use App\Service\UserListingCriteria;
+use App\Service\UserListingService;
 
 #[Route('/user')]
 class UserController extends AbstractController
 {
     /**
-     * Zeigt die Benutzerliste mit Paginierung, Suche und Sortierung
+     * Zeigt die Benutzerliste mit Paginierung, Suche und Sortierung.
+     * Der Controller baut nur das Request-Objekt auf und überlässt die
+     * Filter-/Sortierlogik dem `UserListingService`.
      */
     #[Route('/', name: 'user_index', methods: ['GET'])]
-    public function index(Request $request, UserRepository $userRepository, PaginationService $paginationService): Response
+    public function index(Request $request, UserListingService $listingService): Response
     {
-        // Parameter aus Request extrahieren
-        $searchTerm = $request->query->get('search');
-        $sortField = $request->query->get('sort', 'id');
-        $sortDirection = $request->query->get('direction', 'ASC');
-        $page = max(1, (int) $request->query->get('page', 1));
-        
-        // Bei Suchanfrage: alle Ergebnisse ohne Paginierung anzeigen
-        if ($searchTerm) {
-            $users = $userRepository->searchByUsername($searchTerm, $sortField, $sortDirection);
-            $paginationResult = null;
-        } else {
-            // Paginierung verwenden wenn keine Suche aktiv
-            $queryBuilder = $userRepository->createSortedQueryBuilder($sortField, $sortDirection);
-            $paginationResult = $paginationService->paginate($queryBuilder, $page);
-            $users = $paginationResult->results;
-        }
-          return $this->render('user/index.html.twig', [
-            'users' => $users,
-            'searchTerm' => $searchTerm,
-            'sortField' => $sortField,
-            'sortDirection' => $sortDirection,
-            'oppositeDirection' => $sortDirection === 'ASC' ? 'DESC' : 'ASC',
-            'pagination' => $paginationResult,
-            'hasSearch' => !empty($searchTerm),
+        $criteria = UserListingCriteria::fromRequest($request);
+        $listingResult = $listingService->listUsers($criteria);
+
+        return $this->render('user/index.html.twig', [
+            'users' => $listingResult->users,
+            'searchTerm' => $listingResult->searchTerm,
+            'sortField' => $listingResult->sortField,
+            'sortDirection' => $listingResult->sortDirection,
+            'oppositeDirection' => $listingResult->getOppositeDirection(),
+            'pagination' => $listingResult->pagination,
+            'hasSearch' => $listingResult->hasSearch(),
             // Template compatibility variables
-            'currentPage' => $paginationResult ? $paginationResult->currentPage : 1,
-            'totalPages' => $paginationResult ? $paginationResult->totalPages : 1,
-            'totalUsers' => $paginationResult ? $paginationResult->totalItems : count($users)
+            'currentPage' => $listingResult->pagination ? $listingResult->pagination->currentPage : 1,
+            'totalPages' => $listingResult->pagination ? $listingResult->pagination->totalPages : 1,
+            'totalUsers' => $listingResult->pagination ? $listingResult->pagination->totalItems : count($listingResult->users),
         ]);
     }
 
     /**
-     * Exportiert alle Benutzer als CSV-Datei
+     * Exportiert alle Benutzer als CSV-Datei und liefert eine Download-Response.
      */
     #[Route('/export', name: 'user_export', methods: ['GET'])]
     public function export(UserImportService $userImportService): Response
@@ -78,7 +67,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * Importiert Benutzer aus einer CSV-Datei
+     * Importiert Benutzer aus einer CSV-Datei über das Upload-Formular.
      */
     #[Route('/import', name: 'user_import', methods: ['GET', 'POST'])]
     public function import(Request $request, UserImportService $userImportService): Response
@@ -106,7 +95,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * Erstellt einen neuen Benutzer
+     * Erstellt einen neuen Benutzer mithilfe des `UserType`-Formulars.
      */
     #[Route('/new', name: 'user_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
@@ -130,7 +119,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * Bearbeitet einen bestehenden Benutzer
+     * Bearbeitet einen bestehenden Benutzer und speichert Änderungen.
      */
     #[Route('/{id}/edit', name: 'user_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
@@ -152,7 +141,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * Löscht einen Benutzer
+     * Löscht einen Benutzer nach CSRF-Prüfung und zeigt einen Flash.
      */
     #[Route('/{id}', name: 'user_delete', methods: ['POST'])]
     public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
@@ -168,7 +157,7 @@ class UserController extends AbstractController
     }
 
     /**
-     * Schaltet den Umfrage-Ausschluss für einen Benutzer um
+     * Schaltet den Umfrage-Ausschluss für den Nutzer um und leitet zurück zur Liste.
      */
     #[Route('/{id}/toggle-exclude', name: 'user_toggle_exclude', methods: ['POST'])]
     public function toggleExclude(Request $request, User $user, EntityManagerInterface $entityManager): Response
