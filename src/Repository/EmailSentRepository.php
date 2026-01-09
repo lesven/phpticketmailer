@@ -215,10 +215,7 @@ class EmailSentRepository extends ServiceEntityRepository
     public function getMonthlyUserStatistics(): array
     {
         // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
-        $fiveMonthsAgo = new \DateTime();
-        $fiveMonthsAgo->modify('-5 months');
-        $fiveMonthsAgo->modify('first day of this month');
-        $fiveMonthsAgo->setTime(0, 0, 0);
+        $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
 
         // Hole Daten für die letzten 6 Monate
         $qb = $this->createQueryBuilder('e')
