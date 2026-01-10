@@ -90,4 +90,26 @@ class EmailAddressTest extends TestCase
             ['a@b.co'],
         ];
     }
+
+    /**
+     * @dataProvider tldProvider
+     */
+    public function testGetTLD(string $email, string $expectedTLD): void
+    {
+        $emailAddress = EmailAddress::fromString($email);
+        $this->assertEquals($expectedTLD, $emailAddress->getTLD());
+    }
+
+    public static function tldProvider(): array
+    {
+        return [
+            ['user@example.com', 'com'],
+            ['user@example.de', 'de'],
+            ['user@subdomain.example.co.uk', 'uk'],
+            ['user@test.org', 'org'],
+            ['admin@company.net', 'net'],
+            ['test@example.io', 'io'],
+            ['info@example.ch', 'ch'],
+        ];
+    }
 }

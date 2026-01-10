@@ -203,4 +203,77 @@ class EmailSentRepository extends ServiceEntityRepository
             'success_rate' => $total > 0 ? round(($successful / $total) * 100, 1) : 0
         ];
     }
+
+    /**
+     * Zählt einzigartige Benutzer pro Monat (gruppiert nach Jahr-Monat)
+     * 
+     * Gibt ein Array zurück mit Monaten als Schlüssel (Format: 'YYYY-MM') 
+     * und der Anzahl einzigartiger Benutzer als Wert.
+     *
+     * @return array Array mit monatlichen Statistiken ['YYYY-MM' => count]
+     */
+    public function getUniqueUsersByMonth(): array
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->select("DATE_FORMAT(e.timestamp, '%Y-%m') as month, COUNT(DISTINCT e.username) as unique_count")
+            ->where('e.status = :status')
+            ->setParameter('status', 'sent')
+            ->groupBy('month')
+            ->orderBy('month', 'DESC');
+
+        $results = $qb->getQuery()->getResult();
+
+        $monthlyStats = [];
+        foreach ($results as $row) {
+            $monthlyStats[$row['month']] = (int) $row['unique_count'];
+        }
+
+        return $monthlyStats;
+    }
+
+    /**
+     * Zählt einzigartige Benutzer pro Monat pro TLD (Top-Level-Domain)
+     * 
+     * Extrahiert die TLD aus der E-Mail-Adresse und gruppiert die Statistiken
+     * nach Monat und TLD. Dies ermöglicht die Identifizierung, welche Tochterfirma
+     * (basierend auf der E-Mail-Domain) wie viele einzigartige Benutzer pro Monat hatte.
+     *
+     * @return array Array mit monatlichen TLD-Statistiken ['YYYY-MM' => ['tld' => count, ...]]
+     */
+    public function getUniqueUsersByMonthAndTLD(): array
+    {
+        // Da Doctrine DQL keine native String-Funktionen für TLD-Extraktion hat,
+        // verwenden wir eine rohe SQL-Abfrage für optimale Performance
+        $conn = $this->getEntityManager()->getConnection();
+        
+        $sql = "
+            SELECT 
+                DATE_FORMAT(e.timestamp, '%Y-%m') as month,
+                SUBSTRING_INDEX(e.email, '.', -1) as tld,
+                COUNT(DISTINCT e.username) as unique_count
+            FROM emails_sent e
+            WHERE e.status = :status
+            GROUP BY month, tld
+            ORDER BY month DESC, tld ASC
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $results = $stmt->executeQuery(['status' => 'sent'])->fetchAllAssociative();
+
+        // Strukturiere die Ergebnisse in ein verschachteltes Array
+        $monthlyTldStats = [];
+        foreach ($results as $row) {
+            $month = $row['month'];
+            $tld = strtolower($row['tld']); // Normalisiere TLD zu Kleinbuchstaben
+            $count = (int) $row['unique_count'];
+
+            if (!isset($monthlyTldStats[$month])) {
+                $monthlyTldStats[$month] = [];
+            }
+
+            $monthlyTldStats[$month][$tld] = $count;
+        }
+
+        return $monthlyTldStats;
+    }
 }

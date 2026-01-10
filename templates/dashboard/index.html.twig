@@ -111,6 +111,44 @@
         </div>
     </div>
     
+    <!-- Monatliche Statistiken mit TLD-Aufschlüsselung -->
+    <h2 class="mb-3">Monatliche Benutzerstatistiken</h2>
+    
+    {% if monthlyStats is empty %}
+        <div class="alert alert-info">
+            Noch keine monatlichen Statistiken verfügbar.
+        </div>
+    {% else %}
+        <div class="table-responsive mb-4">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Monat</th>
+                        <th>Einzigartige Benutzer Gesamt</th>
+                        <th>Aufschlüsselung nach TLD (Top-Level-Domain)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month, count in monthlyStats %}
+                        <tr>
+                            <td><strong>{{ month }}</strong></td>
+                            <td><span class="badge bg-primary">{{ count }}</span></td>
+                            <td>
+                                {% if monthlyTldStats[month] is defined %}
+                                    {% for tld, tldCount in monthlyTldStats[month] %}
+                                        <span class="badge bg-info me-1">.{{ tld }}: {{ tldCount }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">Keine TLD-Daten</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+    
     <h2 class="mb-3">Letzte E-Mail-Versandaktionen</h2>
     
     {% if recentEmails is empty %}

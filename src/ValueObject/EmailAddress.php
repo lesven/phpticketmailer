@@ -95,6 +95,21 @@ final readonly class EmailAddress
     }
 
     /**
+     * Extrahiert die Top-Level-Domain (TLD) der E-Mail-Adresse
+     * 
+     * Beispiel: Für "user@example.com" wird "com" zurückgegeben
+     * Beispiel: Für "user@subdomain.example.co.uk" wird "uk" zurückgegeben
+     * 
+     * @return string Die Top-Level-Domain der E-Mail-Adresse
+     */
+    public function getTLD(): string
+    {
+        $domain = $this->getDomain();
+        $parts = explode('.', $domain);
+        return end($parts);
+    }
+
+    /**
      * Prüft ob es sich um eine Business-E-Mail handelt
      * 
      * Business-E-Mails sind solche, die NICHT von bekannten
