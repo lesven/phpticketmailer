@@ -133,15 +133,16 @@
                                     <tr>
                                         <td style="white-space:nowrap">{{ stat.month }}</td>
                                         <td>
-                                            {% if stat.domains is not empty %}
-                                                {% for domain, count in stat.domains %}
-                                                    <span class="badge bg-info">{{ domain }}: {{ count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                            {% set domainCounts = stat.domains %}
+                                            {% if domainCounts is not empty %}
+                                                {% for dc in domainCounts %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
                                                 {% endfor %}
                                             {% else %}
                                                 <span class="text-muted">Keine Daten</span>
                                             {% endif %}
                                         </td>
-                                        <td><strong>{{ stat.total_users }}</strong></td>
+                                        <td><strong>{{ stat.total }}</strong></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -173,15 +174,16 @@
                                     <tr>
                                         <td style="white-space:nowrap">{{ stat.month }}</td>
                                         <td>
-                                            {% if stat.domains is not empty %}
-                                                {% for domain, count in stat.domains %}
-                                                    <span class="badge bg-info">{{ domain }}: {{ count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                            {% set domainCounts = stat.domains %}
+                                            {% if domainCounts is not empty %}
+                                                {% for dc in domainCounts %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
                                                 {% endfor %}
                                             {% else %}
                                                 <span class="text-muted">Keine Daten</span>
                                             {% endif %}
                                         </td>
-                                        <td><strong>{{ stat.total_tickets }}</strong></td>
+                                        <td><strong>{{ stat.total }}</strong></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

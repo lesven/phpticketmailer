@@ -60,11 +60,11 @@ class DashboardController extends AbstractController
         // Hole die E-Mail-Statistiken
         $statistics = $this->emailSentRepository->getEmailStatistics();
 
-        // Hole die monatlichen Benutzerstatistiken nach Domain
-        $monthlyDomainStatistics = $this->emailSentRepository->getMonthlyUserStatisticsByDomain();
+        // Hole die monatlichen Benutzerstatistiken nach Domain als DTOs
+        $monthlyDomainStatistics = $this->emailSentRepository->getMonthlyUserStatisticsByDomainDto();
 
-        // Hole die monatlichen Ticketstatistiken nach Domain
-        $monthlyTicketStatistics = $this->emailSentRepository->getMonthlyTicketStatisticsByDomain();
+        // Hole die monatlichen Ticketstatistiken nach Domain als DTOs
+        $monthlyTicketStatistics = $this->emailSentRepository->getMonthlyTicketStatisticsByDomainDto();
 
         // Render das Dashboard-Template mit den abgerufenen Daten
         return $this->render('dashboard/index.html.twig', [

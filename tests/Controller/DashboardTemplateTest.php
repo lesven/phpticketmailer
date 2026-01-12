@@ -35,8 +35,8 @@ class DashboardTemplateTest extends TestCase
         ]));
 
         $monthlyDomainStatistics = [
-            ['month' => '2026-01', 'domains' => ['company-a.com' => 2, 'company-b.com' => 1], 'total_users' => 3],
-            ['month' => '2026-02', 'domains' => [], 'total_users' => 0],
+            new \App\Dto\MonthlyDomainStatistic('2026-01', [new \App\Dto\DomainCount('company-a.com', 2), new \App\Dto\DomainCount('company-b.com', 1)], 3),
+            new \App\Dto\MonthlyDomainStatistic('2026-02', [], 0),
         ];
 
         $rendered = $twig->render('dashboard/index.html.twig', [
