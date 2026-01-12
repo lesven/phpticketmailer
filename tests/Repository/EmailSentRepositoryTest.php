@@ -105,7 +105,8 @@ class EmailSentRepositoryTest extends KernelTestCase
             $this->assertArrayHasKey('total_users', $stat);
             
             if ($previousMonth !== null) {
-                $this->assertGreaterThan($previousMonth, $stat['month']);
+                // Wir erwarten jetzt absteigende Reihenfolge (aktuellster Monat zuerst)
+                $this->assertLessThan($previousMonth, $stat['month']);
             }
             $previousMonth = $stat['month'];
         }

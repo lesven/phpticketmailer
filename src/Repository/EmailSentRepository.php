@@ -369,6 +369,7 @@ SQL;
             ];
         }
 
-        return $monthlyStats;
+        // Aktuellsten Monat zuerst anzeigen
+        return array_reverse($monthlyStats);
     }
 }
