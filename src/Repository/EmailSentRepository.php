@@ -405,6 +405,19 @@ SQL;
     }
 
     /**
+     * Gibt die rohen Monats-/Domain-Counts zurück (interne Darstellung).
+     * Nützlich für Services, die das Ergebnis weiterverarbeiten.
+     *
+     * @param string $distinctField 'username' oder 'ticket_id'
+     * @return array
+     */
+    public function getMonthlyDomainCountsRaw(string $distinctField): array
+    {
+        $totalKey = $distinctField === 'username' ? 'total_users' : 'total_tickets';
+        return $this->getMonthlyDomainStatistics($distinctField, $totalKey);
+    }
+
+    /**
      * Gemeinsame Implementierung für monatliche Domain-Statistiken.
      *
      * @param string $distinctField "username" oder "ticket_id"

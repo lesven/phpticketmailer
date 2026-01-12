@@ -27,16 +27,19 @@ class DashboardController extends AbstractController
      *
      * @var EmailSentRepository
      */
-    private $emailSentRepository;
+    private EmailSentRepository $emailSentRepository;
+
+    private \App\Service\StatisticsService $statisticsService;
 
     /**
      * Konstruktor mit Dependency Injection für das E-Mail-Repository
      *
      * @param EmailSentRepository $emailSentRepository Repository für E-Mail-Protokolle
      */
-    public function __construct(EmailSentRepository $emailSentRepository)
+    public function __construct(EmailSentRepository $emailSentRepository, \App\Service\StatisticsService $statisticsService)
     {
         $this->emailSentRepository = $emailSentRepository;
+        $this->statisticsService = $statisticsService;
     }
 
     /**
@@ -60,11 +63,9 @@ class DashboardController extends AbstractController
         // Hole die E-Mail-Statistiken
         $statistics = $this->emailSentRepository->getEmailStatistics();
 
-        // Hole die monatlichen Benutzerstatistiken nach Domain als DTOs
-        $monthlyDomainStatistics = $this->emailSentRepository->getMonthlyUserStatisticsByDomainDto();
-
-        // Hole die monatlichen Ticketstatistiken nach Domain als DTOs
-        $monthlyTicketStatistics = $this->emailSentRepository->getMonthlyTicketStatisticsByDomainDto();
+        // Hole die monatlichen Benutzer- und Ticketstatistiken über den Service (DTOs)
+        $monthlyDomainStatistics = $this->statisticsService->getMonthlyUserStatisticsByDomain();
+        $monthlyTicketStatistics = $this->statisticsService->getMonthlyTicketStatisticsByDomain();
 
         // Render das Dashboard-Template mit den abgerufenen Daten
         return $this->render('dashboard/index.html.twig', [

@@ -16,14 +16,16 @@ class DashboardControllerTest extends TestCase
 {
     private DashboardController $controller;
     private EmailSentRepository $emailSentRepository;
+    private \App\Service\StatisticsService $statisticsService;
     private Environment $twig;
 
     protected function setUp(): void
     {
         $this->emailSentRepository = $this->createMock(EmailSentRepository::class);
+        $this->statisticsService = $this->createMock(\App\Service\StatisticsService::class);
         $this->twig = $this->createMock(Environment::class);
 
-        $this->controller = new DashboardController($this->emailSentRepository);
+        $this->controller = new DashboardController($this->emailSentRepository, $this->statisticsService);
 
         // Inject mocked services using reflection
         $reflectionClass = new \ReflectionClass($this->controller);
@@ -83,10 +85,10 @@ class DashboardControllerTest extends TestCase
         $this->emailSentRepository->method('getEmailStatistics')
             ->willReturn($statistics);
 
-        $this->emailSentRepository->method('getMonthlyUserStatisticsByDomainDto')
+        $this->statisticsService->method('getMonthlyUserStatisticsByDomain')
             ->willReturn($monthlyDomainStatistics);
 
-        $this->emailSentRepository->method('getMonthlyTicketStatisticsByDomainDto')
+        $this->statisticsService->method('getMonthlyTicketStatisticsByDomain')
             ->willReturn($monthlyTicketStatistics);
 
         $this->twig->method('render')
