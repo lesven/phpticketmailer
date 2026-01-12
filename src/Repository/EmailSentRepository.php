@@ -320,98 +320,125 @@ class EmailSentRepository extends ServiceEntityRepository
         // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
         $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
 
-        // Hole Rohdaten (timestamp, username, email) und berechne die monatlichen Unique-Counts in PHP.
-        $qb = $this->createQueryBuilder('e')
-            ->select('e.timestamp as ts, e.username as username, e.email as email')
-            ->where('e.timestamp >= :fiveMonthsAgo')
-            ->andWhere('e.status = :status')
-            ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
-            ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
-            ->orderBy('e.timestamp', 'ASC');
+        // Versuche eine aggregierte Abfrage in der Datenbank zu machen
+        try {
+            $conn = $this->getEntityManager()->getConnection();
 
-        // Use array hydration to get consistent scalar arrays
-        $rows = $qb->getQuery()->getArrayResult();
+            // DATE_FORMAT und SUBSTRING_INDEX sind für MySQL/MariaDB verfügbar und effizient.
+            // Wir zählen DISTINCT username pro (month, domain).
+            $sql = <<<SQL
+SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
+       SUBSTRING_INDEX(e.email, '@', -1) AS domain,
+       COUNT(DISTINCT e.username) AS users
+FROM emails_sent e
+WHERE e.timestamp >= :fiveMonthsAgo
+  AND e.status = :status
+GROUP BY month, domain
+ORDER BY month ASC, domain ASC
+SQL;
 
-        // Fallback: if arrayResult is empty for some DB/Doctrine setups, try entity hydration
-        if (empty($rows)) {
-            $entities = $this->createQueryBuilder('e')
-                ->select('e')
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue('fiveMonthsAgo', $fiveMonthsAgo->format('Y-m-d H:i:s'));
+            $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
+            $rows = $stmt->executeQuery()->fetchAllAssociative();
+
+            $resultsByMonth = [];
+            foreach ($rows as $row) {
+                $month = $row['month'] ?? null;
+                $domain = $row['domain'] ?? null;
+                $users = isset($row['users']) ? (int)$row['users'] : 0;
+
+                if ($month && $domain) {
+                    $resultsByMonth[$month][$domain] = $users;
+                }
+            }
+
+        } catch (\Throwable $e) {
+            // Falls die DB-Funktionalität nicht verfügbar ist (z. B. anderes RDBMS ohne DATE_FORMAT/SUBSTRING_INDEX),
+            // falle zurück auf die PHP-basierte Aggregation (robustheit)
+
+            // Hole Rohdaten (timestamp, username, email) und berechne die monatlichen Unique-Counts in PHP.
+            $qb = $this->createQueryBuilder('e')
+                ->select('e.timestamp as ts, e.username as username, e.email as email')
                 ->where('e.timestamp >= :fiveMonthsAgo')
                 ->andWhere('e.status = :status')
                 ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
-                ->orderBy('e.timestamp', 'ASC')
-                ->getQuery()
-                ->getResult();
+                ->orderBy('e.timestamp', 'ASC');
 
-            if (!empty($entities)) {
-                $rows = $entities; // process entities in the loop below
-            }
-        }
+            $rows = $qb->getQuery()->getArrayResult();
 
-        // Groups of usernames per month and domain (set semantics via associative arrays)
-        // Structure: $usersByMonthAndDomain['2024-01']['example.com']['user1'] = true
-        $usersByMonthAndDomain = [];
-        foreach ($rows as $row) {
-            // Support both scalar/array results and full entity objects
-            if (is_array($row)) {
-                $ts = $row['ts'] ?? $row['timestamp'] ?? null;
-                $username = isset($row['username']) ? (string)$row['username'] : null;
-                $email = $row['email'] ?? null;
-            } elseif ($row instanceof \App\Entity\EmailSent) {
-                $ts = $row->getTimestamp();
-                $username = $row->getUsername() ? $row->getUsername()->getValue() : null;
-                $email = $row->getEmail();
-            } else {
-                // Unknown row type
-                continue;
-            }
+            if (empty($rows)) {
+                $entities = $this->createQueryBuilder('e')
+                    ->select('e')
+                    ->where('e.timestamp >= :fiveMonthsAgo')
+                    ->andWhere('e.status = :status')
+                    ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                    ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+                    ->orderBy('e.timestamp', 'ASC')
+                    ->getQuery()
+                    ->getResult();
 
-            if (!$ts || $username === null || !$email) {
-                continue;
-            }
-
-            // Extract domain from email
-            $domain = null;
-            if (is_string($email)) {
-                // Email is stored as string in array result
-                $atPos = strrpos($email, '@');
-                if ($atPos !== false) {
-                    $domain = substr($email, $atPos + 1);
+                if (!empty($entities)) {
+                    $rows = $entities; // process entities in the loop below
                 }
-            } elseif ($email instanceof \App\ValueObject\EmailAddress) {
-                // Email is an EmailAddress object
-                $domain = $email->getDomain();
             }
 
-            if (!$domain) {
-                continue;
-            }
-
-            // Extract month from timestamp
-            if ($ts instanceof \DateTimeInterface) {
-                $monthKey = $ts->format('Y-m');
-            } else {
-                try {
-                    $dt = new \DateTime($ts);
-                    $monthKey = $dt->format('Y-m');
-                } catch (\Exception $e) {
-                    // Skip rows with invalid timestamps
+            $usersByMonthAndDomain = [];
+            foreach ($rows as $row) {
+                if (is_array($row)) {
+                    $ts = $row['ts'] ?? $row['timestamp'] ?? null;
+                    $username = isset($row['username']) ? (string)$row['username'] : null;
+                    $email = $row['email'] ?? null;
+                } elseif ($row instanceof \App\Entity\EmailSent) {
+                    $ts = $row->getTimestamp();
+                    $username = $row->getUsername() ? $row->getUsername()->getValue() : null;
+                    $email = $row->getEmail();
+                } else {
                     continue;
                 }
+
+                if (!$ts || $username === null || !$email) {
+                    continue;
+                }
+
+                // Extract domain from email
+                $domain = null;
+                if (is_string($email)) {
+                    $atPos = strrpos($email, '@');
+                    if ($atPos !== false) {
+                        $domain = substr($email, $atPos + 1);
+                    }
+                } elseif ($email instanceof \App\ValueObject\EmailAddress) {
+                    $domain = $email->getDomain();
+                }
+
+                if (!$domain) {
+                    continue;
+                }
+
+                if ($ts instanceof \DateTimeInterface) {
+                    $monthKey = $ts->format('Y-m');
+                } else {
+                    try {
+                        $dt = new \DateTime($ts);
+                        $monthKey = $dt->format('Y-m');
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+
+                $usersByMonthAndDomain[$monthKey][$domain][$username] = true;
             }
 
-            $usersByMonthAndDomain[$monthKey][$domain][$username] = true;
-        }
-
-        // Convert to counts per month and domain
-        $resultsByMonth = [];
-        foreach ($usersByMonthAndDomain as $monthKey => $domains) {
-            $domainCounts = [];
-            foreach ($domains as $domain => $users) {
-                $domainCounts[$domain] = count($users);
+            $resultsByMonth = [];
+            foreach ($usersByMonthAndDomain as $monthKey => $domains) {
+                $domainCounts = [];
+                foreach ($domains as $domain => $users) {
+                    $domainCounts[$domain] = count($users);
+                }
+                $resultsByMonth[$monthKey] = $domainCounts;
             }
-            $resultsByMonth[$monthKey] = $domainCounts;
         }
 
         // Erstelle ein vollständiges Array für die letzten 6 Monate (auch Monate ohne Daten)
