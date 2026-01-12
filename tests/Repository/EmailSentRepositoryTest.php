@@ -537,6 +537,22 @@ class EmailSentRepositoryTest extends KernelTestCase
         $this->assertTrue($found);
     }
 
+    public function testGetMonthlyDomainCountsRawRespectsSinceParameter(): void
+    {
+        $now = new \DateTime();
+        $this->createEmailSentWithDomain('user1', 'example.com', $now);
+        $this->entityManager->flush();
+
+        $future = new \DateTimeImmutable('+1 year');
+        $statistics = $this->repository->getMonthlyDomainCountsRaw('username', $future);
+
+        $this->assertCount(6, $statistics);
+        foreach ($statistics as $stat) {
+            $this->assertEmpty($stat['domains']);
+            $this->assertEquals(0, $stat['total_users']);
+        }
+    }
+
     private function createEmailSentWithDomainAndTicket(
         string $username,
         string $domain,

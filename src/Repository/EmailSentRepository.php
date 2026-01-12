@@ -20,7 +20,9 @@ use Doctrine\Persistence\ManagerRegistry;
  * 
  * @extends ServiceEntityRepository<EmailSent>
  */
-class EmailSentRepository extends ServiceEntityRepository
+use App\Repository\EmailSentReadRepositoryInterface;
+
+class EmailSentRepository extends ServiceEntityRepository implements EmailSentReadRepositoryInterface
 {
     private const COUNT_SELECT = 'COUNT(e.id)';
     
@@ -218,7 +220,9 @@ class EmailSentRepository extends ServiceEntityRepository
     public function getMonthlyUserStatisticsByDomain(): array
     {
         // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
-        $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
+        // Startdatum: falls $since gesetzt ist, verwende es (lenkbar für Tests/Services),
+        // sonst berechne Standard-Fenster: aktueller Monat + 5 vorherige Monate
+        $startDate = $since ?? (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
 
         // Versuche eine aggregierte Abfrage in der Datenbank zu machen
         try {
@@ -243,7 +247,7 @@ ORDER BY month ASC, users DESC, domain ASC
 SQL;
 
             $stmt = $conn->prepare($sql);
-            $stmt->bindValue('fiveMonthsAgo', $fiveMonthsAgo->format('Y-m-d H:i:s'));
+            $stmt->bindValue('fiveMonthsAgo', $startDate->format('Y-m-d H:i:s'));
             $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
             // Accept both the localized 'Versendet' and legacy 'sent' marker, and any variants starting with the localized value
             $stmt->bindValue('status_plain', 'sent');
@@ -276,7 +280,7 @@ SQL;
                 ->select('e.timestamp as ts, e.username as username, e.email as email')
                 ->where('e.timestamp >= :fiveMonthsAgo')
                 ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
-                ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                ->setParameter('fiveMonthsAgo', $startDate)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->setParameter('status_plain', 'sent')
                 ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
@@ -289,7 +293,7 @@ SQL;
                     ->select('e')
                     ->where('e.timestamp >= :fiveMonthsAgo')
                     ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
-                    ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                    ->setParameter('fiveMonthsAgo', $startDate)
                     ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                     ->setParameter('status_plain', 'sent')
                     ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
@@ -411,10 +415,10 @@ SQL;
      * @param string $distinctField 'username' oder 'ticket_id'
      * @return array
      */
-    public function getMonthlyDomainCountsRaw(string $distinctField): array
+    public function getMonthlyDomainCountsRaw(string $distinctField, ?\DateTimeImmutable $since = null): array
     {
         $totalKey = $distinctField === 'username' ? 'total_users' : 'total_tickets';
-        return $this->getMonthlyDomainStatistics($distinctField, $totalKey);
+        return $this->getMonthlyDomainStatistics($distinctField, $totalKey, $since);
     }
 
     /**
@@ -424,13 +428,14 @@ SQL;
      * @param string $totalKey Namensschlüssel für die Gesamtanzahl (z.B. 'total_users' oder 'total_tickets')
      * @return array
      */
-    private function getMonthlyDomainStatistics(string $distinctField, string $totalKey): array
+    private function getMonthlyDomainStatistics(string $distinctField, string $totalKey, ?\DateTimeInterface $since = null): array
     {
         if (!in_array($distinctField, ['username', 'ticket_id'], true)) {
             throw new \InvalidArgumentException('Ungültiges distinct field: ' . $distinctField);
         }
 
-        $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
+        // Bestimme Startdatum: Parameter `$since` übersteuert Standard (letzte 6 Monate)
+        $startDate = $since ?? (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
 
         $resultsByMonth = [];
 
@@ -456,7 +461,7 @@ ORDER BY month ASC, {$countAlias} DESC, domain ASC
 SQL;
 
             $stmt = $conn->prepare($sql);
-            $stmt->bindValue('fiveMonthsAgo', $fiveMonthsAgo->format('Y-m-d H:i:s'));
+            $stmt->bindValue('fiveMonthsAgo', $startDate->format('Y-m-d H:i:s'));
             $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
             $stmt->bindValue('status_plain', 'sent');
             $stmt->bindValue('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%');
@@ -484,7 +489,7 @@ SQL;
                 ->select('e.timestamp as ts, ' . ($distinctField === 'username' ? 'e.username as distinct_value' : 'e.ticketId as distinct_value') . ', e.email as email')
                 ->where('e.timestamp >= :fiveMonthsAgo')
                 ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
-                ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                ->setParameter('fiveMonthsAgo', $startDate)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->setParameter('status_plain', 'sent')
                 ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
@@ -497,7 +502,7 @@ SQL;
                     ->select('e')
                     ->where('e.timestamp >= :fiveMonthsAgo')
                     ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
-                    ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                    ->setParameter('fiveMonthsAgo', $startDate)
                     ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                     ->setParameter('status_plain', 'sent')
                     ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
