@@ -66,6 +66,15 @@ class DashboardControllerTest extends TestCase
             ['month' => '2026-01', 'domains' => [], 'total_users' => 0],
         ];
 
+        $monthlyTicketStatistics = [
+            ['month' => '2025-08', 'domains' => ['example.com' => 5], 'total_tickets' => 5],
+            ['month' => '2025-09', 'domains' => ['example.com' => 8, 'subsidiary.com' => 6], 'total_tickets' => 14],
+            ['month' => '2025-10', 'domains' => ['example.com' => 7], 'total_tickets' => 7],
+            ['month' => '2025-11', 'domains' => [], 'total_tickets' => 0],
+            ['month' => '2025-12', 'domains' => ['subsidiary.com' => 10], 'total_tickets' => 10],
+            ['month' => '2026-01', 'domains' => [], 'total_tickets' => 0],
+        ];
+
         $this->emailSentRepository->method('findBy')
             ->with([], ['timestamp' => 'DESC'], 10)
             ->willReturn($recentEmails);
@@ -76,11 +85,15 @@ class DashboardControllerTest extends TestCase
         $this->emailSentRepository->method('getMonthlyUserStatisticsByDomain')
             ->willReturn($monthlyDomainStatistics);
 
+        $this->emailSentRepository->method('getMonthlyTicketStatisticsByDomain')
+            ->willReturn($monthlyTicketStatistics);
+
         $this->twig->method('render')
             ->with('dashboard/index.html.twig', [
                 'recentEmails' => $recentEmails,
                 'statistics' => $statistics,
                 'monthlyDomainStatistics' => $monthlyDomainStatistics,
+                'monthlyTicketStatistics' => $monthlyTicketStatistics,
             ])
             ->willReturn('<html>Dashboard</html>');
 
