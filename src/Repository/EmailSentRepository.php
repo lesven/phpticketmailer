@@ -548,7 +548,14 @@ SQL;
                     }
                 }
 
-                $valuesByMonthAndDomain[$monthKey][$domain][(string)$distinctValue] = true;
+                // Normalize distinct value to a string key (handles ValueObjects)
+                $distinctKey = $this->normalizeDistinctValue($distinctValue);
+                if ($distinctKey === null) {
+                    // If we cannot convert the distinct value to a string, skip this row
+                    continue;
+                }
+
+                $valuesByMonthAndDomain[$monthKey][$domain][$distinctKey] = true;
             }
 
             $resultsByMonth = [];
@@ -579,5 +586,38 @@ SQL;
         }
 
         return array_reverse($monthlyStats);
+    }
+
+    /**
+     * Normalisiert einen distinct-Wert (Username oder TicketId) zu einem String-Key.
+     * Unterstützt Strings, skalare Werte, ValueObjects mit getValue() oder Objekte mit __toString().
+     *
+     * @param mixed $value
+     * @return string|null Der String-Key oder null, wenn nicht konvertierbar
+     */
+    private function normalizeDistinctValue(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_object($value)) {
+            if (method_exists($value, 'getValue')) {
+                $v = $value->getValue();
+                return is_scalar($v) ? (string)$v : null;
+            }
+
+            if (method_exists($value, '__toString')) {
+                return (string)$value;
+            }
+
+            return null;
+        }
+
+        if (is_scalar($value)) {
+            return (string)$value;
+        }
+
+        return null;
     }
 }

@@ -459,6 +459,31 @@ class EmailSentRepositoryTest extends KernelTestCase
         $this->assertTrue($foundCurrentMonth, 'Aktueller Monat sollte in den Statistiken vorhanden sein');
     }
 
+    public function testNormalizeDistinctValueHandlesValueObjects(): void
+    {
+        $reflection = new \ReflectionClass($this->repository);
+        $method = $reflection->getMethod('normalizeDistinctValue');
+        $method->setAccessible(true);
+
+        // plain string
+        $this->assertEquals('abc', $method->invoke($this->repository, 'abc'));
+        // int
+        $this->assertEquals('42', $method->invoke($this->repository, 42));
+        // object with getValue
+        $obj = new class {
+            public function getValue() { return 'VAL1'; }
+        };
+        $this->assertEquals('VAL1', $method->invoke($this->repository, $obj));
+        // object with __toString
+        $obj2 = new class {
+            public function __toString() { return 'STR1'; }
+        };
+        $this->assertEquals('STR1', $method->invoke($this->repository, $obj2));
+        // object without either
+        $obj3 = new class {};
+        $this->assertNull($method->invoke($this->repository, $obj3));
+    }
+
     private function createEmailSentWithDomainAndTicket(
         string $username,
         string $domain,
