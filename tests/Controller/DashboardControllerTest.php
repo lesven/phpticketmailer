@@ -57,6 +57,15 @@ class DashboardControllerTest extends TestCase
             'errorsToday' => 2
         ];
 
+        $monthlyStatistics = [
+            ['month' => '2025-08', 'unique_users' => 5],
+            ['month' => '2025-09', 'unique_users' => 10],
+            ['month' => '2025-10', 'unique_users' => 8],
+            ['month' => '2025-11', 'unique_users' => 12],
+            ['month' => '2025-12', 'unique_users' => 15],
+            ['month' => '2026-01', 'unique_users' => 3],
+        ];
+
         $this->emailSentRepository->method('findBy')
             ->with([], ['timestamp' => 'DESC'], 10)
             ->willReturn($recentEmails);
@@ -64,10 +73,14 @@ class DashboardControllerTest extends TestCase
         $this->emailSentRepository->method('getEmailStatistics')
             ->willReturn($statistics);
 
+        $this->emailSentRepository->method('getMonthlyUserStatistics')
+            ->willReturn($monthlyStatistics);
+
         $this->twig->method('render')
             ->with('dashboard/index.html.twig', [
                 'recentEmails' => $recentEmails,
-                'statistics' => $statistics
+                'statistics' => $statistics,
+                'monthlyStatistics' => $monthlyStatistics,
             ])
             ->willReturn('<html>Dashboard</html>');
 

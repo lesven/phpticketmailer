@@ -130,7 +130,7 @@ class EmailSentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->select(self::COUNT_SELECT)
             ->where('e.status = :status')
-            ->setParameter('status', 'sent')
+            ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -145,7 +145,7 @@ class EmailSentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->select('COUNT(DISTINCT e.username)')
             ->where('e.status = :status')
-            ->setParameter('status', 'sent')
+            ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -202,5 +202,107 @@ class EmailSentRepository extends ServiceEntityRepository
             'unique_recipients' => $unique,
             'success_rate' => $total > 0 ? round(($successful / $total) * 100, 1) : 0
         ];
+    }
+
+    /**
+     * Holt die Anzahl einzigartiger Benutzer pro Monat für die letzten 6 Monate
+     *
+     * Gibt ein Array zurück, das für jeden der letzten 6 Monate die Anzahl
+     * der einzigartigen Benutzer enthält, die eine E-Mail erhalten haben.
+     *
+     * @return array Array mit monatlichen Statistiken [['month' => 'YYYY-MM', 'unique_users' => int], ...]
+     */
+    public function getMonthlyUserStatistics(): array
+    {
+        // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
+        $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
+
+        // Hole Rohdaten (timestamp + username) und berechne die monatlichen Unique-Counts in PHP.
+        // Das umgeht DQL-Funktionsprobleme und ist robust gegen unterschiedliche DB-Umgebungen.
+        $qb = $this->createQueryBuilder('e')
+            ->select('e.timestamp as ts, e.username as username')
+            ->where('e.timestamp >= :fiveMonthsAgo')
+            ->andWhere('e.status = :status')
+            ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+            ->orderBy('e.timestamp', 'ASC');
+
+        // Use array hydration to get consistent scalar arrays (ts, username)
+        $rows = $qb->getQuery()->getArrayResult();
+
+        // Fallback: if arrayResult is empty for some DB/Doctrine setups, try entity hydration
+        if (empty($rows)) {
+            $entities = $this->createQueryBuilder('e')
+                ->select('e')
+                ->where('e.timestamp >= :fiveMonthsAgo')
+                ->andWhere('e.status = :status')
+                ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                ->setParameter('status', 'sent')
+                ->orderBy('e.timestamp', 'ASC')
+                ->getQuery()
+                ->getResult();
+
+            if (!empty($entities)) {
+                $rows = $entities; // process entities in the loop below
+            }
+        }
+
+        // Groups of usernames per month (set semantics via associative arrays)
+        $usersByMonth = [];
+        foreach ($rows as $row) {
+            // Support both scalar/array results and full entity objects
+            if (is_array($row)) {
+                $ts = $row['ts'] ?? $row['timestamp'] ?? null;
+                $username = isset($row['username']) ? (string)$row['username'] : null;
+            } elseif ($row instanceof \App\Entity\EmailSent) {
+                $ts = $row->getTimestamp();
+                $username = $row->getUsername() ? $row->getUsername()->getValue() : null;
+            } else {
+                // Unknown row type
+                continue;
+            }
+
+            if (!$ts || $username === null) {
+                continue;
+            }
+
+            if ($ts instanceof \DateTimeInterface) {
+                $monthKey = $ts->format('Y-m');
+            } else {
+                try {
+                    $dt = new \DateTime($ts);
+                    $monthKey = $dt->format('Y-m');
+                } catch (\Exception $e) {
+                    // Skip rows with invalid timestamps
+                    continue;
+                }
+            }
+
+            $usersByMonth[$monthKey][$username] = true;
+        }
+
+        // Convert to counts per month
+        $resultsByMonth = [];
+        foreach ($usersByMonth as $monthKey => $users) {
+            $resultsByMonth[$monthKey] = count($users);
+        }
+
+        // Erstelle ein vollständiges Array für die letzten 6 Monate (auch Monate ohne Daten)
+        $monthlyStats = [];
+        $currentDate = new \DateTime();
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = clone $currentDate;
+            $monthDate->modify("-$i months");
+            $monthKey = $monthDate->format('Y-m');
+            
+            // Verwende Lookup-Array für O(1) Zugriff
+            $monthlyStats[] = [
+                'month' => $monthKey,
+                'unique_users' => $resultsByMonth[$monthKey] ?? 0
+            ];
+        }
+
+        return $monthlyStats;
     }
 }
