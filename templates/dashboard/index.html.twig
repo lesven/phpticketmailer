@@ -141,6 +141,44 @@
         </div>
     </div>
     
+    <!-- Monatliche Benutzerstatistiken nach TLD -->
+    <h2 class="mb-3">Benutzerstatistik nach Top-Level-Domain (letzte 6 Monate)</h2>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-text">Anzahl einzigartiger Benutzer pro Monat, gruppiert nach E-Mail Top-Level-Domain (TLD). Die TLD kann zur Identifizierung der Tochterfirma verwendet werden:</p>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Monat</th>
+                                    <th>TLD-Statistiken</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in monthlyStatisticsByTLD %}
+                                    <tr>
+                                        <td>{{ stat.month }}</td>
+                                        <td>
+                                            {% if stat.tld_statistics is empty %}
+                                                <span class="text-muted">Keine Daten</span>
+                                            {% else %}
+                                                {% for tld, count in stat.tld_statistics %}
+                                                    <span class="badge bg-info me-1">.{{ tld }}: {{ count }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <h2 class="mb-3">Letzte E-Mail-Versandaktionen</h2>
     
     {% if recentEmails is empty %}

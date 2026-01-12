@@ -95,6 +95,30 @@ final readonly class EmailAddress
     }
 
     /**
+     * Extrahiert die Top-Level-Domain (TLD) aus der E-Mail-Adresse
+     * 
+     * Die TLD ist der letzte Teil der Domain nach dem letzten Punkt.
+     * Beispiele:
+     * - "user@example.com" → "com"
+     * - "user@mail.example.co.uk" → "uk"
+     * - "user@subdomain.company.de" → "de"
+     * 
+     * @return string Die TLD der E-Mail-Adresse
+     */
+    public function getTLD(): string
+    {
+        $domain = $this->getDomain();
+        $lastDotPosition = strrpos($domain, '.');
+        
+        if ($lastDotPosition === false) {
+            // Sollte nie passieren, da Domain mindestens einen Punkt haben muss
+            return $domain;
+        }
+        
+        return substr($domain, $lastDotPosition + 1);
+    }
+
+    /**
      * Prüft ob es sich um eine Business-E-Mail handelt
      * 
      * Business-E-Mails sind solche, die NICHT von bekannten

@@ -62,12 +62,16 @@ class DashboardController extends AbstractController
 
         // Hole die monatlichen Benutzerstatistiken
         $monthlyStatistics = $this->emailSentRepository->getMonthlyUserStatistics();
+        
+        // Hole die monatlichen Benutzerstatistiken gruppiert nach TLD
+        $monthlyStatisticsByTLD = $this->emailSentRepository->getMonthlyUserStatisticsByTLD();
 
         // Render das Dashboard-Template mit den abgerufenen Daten
         return $this->render('dashboard/index.html.twig', [
             'recentEmails' => $recentEmails,
             'statistics' => $statistics,
             'monthlyStatistics' => $monthlyStatistics,
+            'monthlyStatisticsByTLD' => $monthlyStatisticsByTLD,
         ]);
     }
 

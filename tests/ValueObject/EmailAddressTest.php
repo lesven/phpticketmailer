@@ -45,6 +45,28 @@ class EmailAddressTest extends TestCase
     }
 
     /**
+     * @dataProvider tldProvider
+     */
+    public function testGetTLD(string $email, string $expectedTLD): void
+    {
+        $emailAddress = EmailAddress::fromString($email);
+        $this->assertEquals($expectedTLD, $emailAddress->getTLD());
+    }
+
+    public static function tldProvider(): array
+    {
+        return [
+            ['user@example.com', 'com'],
+            ['test@company.de', 'de'],
+            ['admin@mail.co.uk', 'uk'],
+            ['contact@subdomain.company.org', 'org'],
+            ['info@example.net', 'net'],
+            ['support@service.io', 'io'],
+            ['user@domain.info', 'info'],
+        ];
+    }
+
+    /**
      * @dataProvider invalidEmailProvider
      */
     public function testInvalidEmailAddress(string $invalidEmail): void

@@ -305,4 +305,126 @@ class EmailSentRepository extends ServiceEntityRepository
 
         return $monthlyStats;
     }
+
+    /**
+     * Holt die Anzahl einzigartiger Benutzer pro Monat gruppiert nach TLD für die letzten 6 Monate
+     *
+     * Gibt ein Array zurück, das für jeden der letzten 6 Monate die Anzahl
+     * der einzigartigen Benutzer gruppiert nach Top-Level-Domain enthält.
+     *
+     * @return array Array mit monatlichen TLD-Statistiken [['month' => 'YYYY-MM', 'tld_statistics' => ['com' => int, 'de' => int, ...]], ...]
+     */
+    public function getMonthlyUserStatisticsByTLD(): array
+    {
+        // Berechne das Datum vor 5 Monaten (zusammen mit dem aktuellen Monat = 6 Monate)
+        $fiveMonthsAgo = (new \DateTime())->modify('-5 months first day of this month')->setTime(0, 0, 0);
+
+        // Hole Rohdaten (timestamp + username + email) und berechne die monatlichen Unique-Counts pro TLD in PHP
+        $qb = $this->createQueryBuilder('e')
+            ->select('e.timestamp as ts, e.username as username, e.email as email')
+            ->where('e.timestamp >= :fiveMonthsAgo')
+            ->andWhere('e.status = :status')
+            ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+            ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+            ->orderBy('e.timestamp', 'ASC');
+
+        // Use array hydration to get consistent scalar arrays (ts, username, email)
+        $rows = $qb->getQuery()->getArrayResult();
+
+        // Fallback: if arrayResult is empty for some DB/Doctrine setups, try entity hydration
+        if (empty($rows)) {
+            $entities = $this->createQueryBuilder('e')
+                ->select('e')
+                ->where('e.timestamp >= :fiveMonthsAgo')
+                ->andWhere('e.status = :status')
+                ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
+                ->setParameter('status', 'sent')
+                ->orderBy('e.timestamp', 'ASC')
+                ->getQuery()
+                ->getResult();
+
+            if (!empty($entities)) {
+                $rows = $entities; // process entities in the loop below
+            }
+        }
+
+        // Groups of usernames per month per TLD (set semantics via associative arrays)
+        $usersByMonthAndTLD = [];
+        foreach ($rows as $row) {
+            // Support both scalar/array results and full entity objects
+            if (is_array($row)) {
+                $ts = $row['ts'] ?? $row['timestamp'] ?? null;
+                $username = isset($row['username']) ? (string)$row['username'] : null;
+                $email = $row['email'] ?? null;
+            } elseif ($row instanceof \App\Entity\EmailSent) {
+                $ts = $row->getTimestamp();
+                $username = $row->getUsername() ? $row->getUsername()->getValue() : null;
+                $email = $row->getEmail();
+            } else {
+                // Unknown row type
+                continue;
+            }
+
+            if (!$ts || $username === null || !$email) {
+                continue;
+            }
+
+            if ($ts instanceof \DateTimeInterface) {
+                $monthKey = $ts->format('Y-m');
+            } else {
+                try {
+                    $dt = new \DateTime($ts);
+                    $monthKey = $dt->format('Y-m');
+                } catch (\Exception $e) {
+                    // Skip rows with invalid timestamps
+                    continue;
+                }
+            }
+
+            // Extract TLD from email
+            try {
+                if (is_string($email)) {
+                    $emailAddress = \App\ValueObject\EmailAddress::fromString($email);
+                } elseif ($email instanceof \App\ValueObject\EmailAddress) {
+                    $emailAddress = $email;
+                } else {
+                    continue;
+                }
+                
+                $tld = $emailAddress->getTLD();
+            } catch (\Exception $e) {
+                // Skip invalid email addresses
+                continue;
+            }
+
+            $usersByMonthAndTLD[$monthKey][$tld][$username] = true;
+        }
+
+        // Convert to counts per month per TLD
+        $resultsByMonth = [];
+        foreach ($usersByMonthAndTLD as $monthKey => $tldData) {
+            $tldCounts = [];
+            foreach ($tldData as $tld => $users) {
+                $tldCounts[$tld] = count($users);
+            }
+            $resultsByMonth[$monthKey] = $tldCounts;
+        }
+
+        // Erstelle ein vollständiges Array für die letzten 6 Monate (auch Monate ohne Daten)
+        $monthlyStats = [];
+        $currentDate = new \DateTime();
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = clone $currentDate;
+            $monthDate->modify("-$i months");
+            $monthKey = $monthDate->format('Y-m');
+            
+            $monthlyStats[] = [
+                'month' => $monthKey,
+                'tld_statistics' => $resultsByMonth[$monthKey] ?? []
+            ];
+        }
+
+        return $monthlyStats;
+    }
 }
