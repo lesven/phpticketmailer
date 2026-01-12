@@ -235,7 +235,7 @@ WHERE e.timestamp >= :fiveMonthsAgo
   AND e.status = :status
   AND e.email LIKE '%@%'
 GROUP BY month, domain
-ORDER BY month ASC, domain ASC
+ORDER BY month ASC, users DESC, domain ASC
 SQL;
 
             $stmt = $conn->prepare($sql);
@@ -253,6 +253,12 @@ SQL;
                     $resultsByMonth[$month][$domain] = $users;
                 }
             }
+
+            // Sortiere Domains pro Monat absteigend nach Benutzeranzahl
+            foreach ($resultsByMonth as $monthKey => &$domainCounts) {
+                arsort($domainCounts, SORT_NUMERIC);
+            }
+            unset($domainCounts);
 
         } catch (\Throwable $e) {
             // Falls die DB-Funktionalität nicht verfügbar ist (z. B. anderes RDBMS ohne DATE_FORMAT/SUBSTRING_INDEX),
@@ -348,6 +354,10 @@ SQL;
                 foreach ($domains as $domain => $users) {
                     $domainCounts[$domain] = count($users);
                 }
+
+                // Sortiere Domains pro Monat absteigend nach Benutzeranzahl
+                arsort($domainCounts, SORT_NUMERIC);
+
                 $resultsByMonth[$monthKey] = $domainCounts;
             }
         }

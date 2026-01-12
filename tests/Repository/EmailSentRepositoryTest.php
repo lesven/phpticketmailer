@@ -206,6 +206,34 @@ class EmailSentRepositoryTest extends KernelTestCase
         }
     }
 
+    public function testGetMonthlyUserStatisticsByDomainOrdersDomainsByCountDesc(): void
+    {
+        $now = new \DateTime();
+
+        // Erzeuge Verteilungen: a:3, c:2, b:1
+        $this->createEmailSentWithDomain('u1', 'company-a.com', $now);
+        $this->createEmailSentWithDomain('u2', 'company-a.com', $now);
+        $this->createEmailSentWithDomain('u3', 'company-a.com', $now);
+
+        $this->createEmailSentWithDomain('v1', 'company-c.com', $now);
+        $this->createEmailSentWithDomain('v2', 'company-c.com', $now);
+
+        $this->createEmailSentWithDomain('w1', 'company-b.com', $now);
+
+        $this->entityManager->flush();
+
+        $statistics = $this->repository->getMonthlyUserStatisticsByDomain();
+
+        $currentMonthKey = $now->format('Y-m');
+        foreach ($statistics as $stat) {
+            if ($stat['month'] === $currentMonthKey) {
+                $domains = array_keys($stat['domains']);
+                // Erwartete Reihenfolge: company-a.com, company-c.com, company-b.com
+                $this->assertSame(['company-a.com', 'company-c.com', 'company-b.com'], $domains);
+            }
+        }
+    }
+
     public function testGetMonthlyUserStatisticsByDomainNormalizesAndFiltersEmails(): void
     {
         $now = new \DateTime();
