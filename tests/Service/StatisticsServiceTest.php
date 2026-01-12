@@ -19,18 +19,40 @@ class StatisticsServiceTest extends TestCase
             ['month' => '2026-02', 'domains' => [], 'total_users' => 0]
         ];
 
-        $repo->method('getMonthlyDomainCountsRaw')
-            ->with('username')
-            ->willReturn($raw);
+        $repo->method('getMonthlyDomainCountsRows')
+            ->willReturnCallback(function($distinct, $since) use ($raw) {
+                // assert we received a DateTimeImmutable since parameter
+                $this->assertInstanceOf(\DateTimeImmutable::class, $since);
+                // convert raw monthly map to rows
+                $rows = [];
+                foreach ($raw as $stat) {
+                    foreach ($stat['domains'] as $domain => $count) {
+                        $rows[] = ['month' => $stat['month'], 'domain' => $domain, 'count' => $count];
+                    }
+                }
+                return $rows;
+            });
 
-        $service = new StatisticsService($repo);
+        $clock = $this->createMock(\App\Service\ClockInterface::class);
+        $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
+
+        $service = new StatisticsService($repo, $clock);
         $dtos = $service->getMonthlyUserStatisticsByDomain();
 
         $this->assertIsArray($dtos);
-        $this->assertCount(2, $dtos);
-        $this->assertInstanceOf(MonthlyDomainStatistic::class, $dtos[0]);
-        $this->assertEquals('2026-01', $dtos[0]->month());
-        $domains = $dtos[0]->domains();
+        // Default months=6 -> expect 6 DTO entries
+        $this->assertCount(6, $dtos);
+        // Find DTO for 2026-01
+        $found = null;
+        foreach ($dtos as $dto) {
+            if ($dto->month() === '2026-01') {
+                $found = $dto;
+                break;
+            }
+        }
+        $this->assertNotNull($found, 'Expected a DTO for month 2026-01');
+        $this->assertInstanceOf(MonthlyDomainStatistic::class, $found);
+        $domains = $found->domains();
         $this->assertCount(2, $domains);
         $map = [];
         foreach ($domains as $d) {

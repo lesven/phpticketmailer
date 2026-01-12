@@ -25,7 +25,7 @@ class DashboardControllerTest extends TestCase
         $this->statisticsService = $this->createMock(\App\Service\StatisticsService::class);
         $this->twig = $this->createMock(Environment::class);
 
-        $this->controller = new DashboardController($this->emailSentRepository, $this->statisticsService);
+        $this->controller = new DashboardController($this->emailSentRepository, $this->statisticsService, $this->createMock(\App\Service\ClockInterface::class));
 
         // Inject mocked services using reflection
         $reflectionClass = new \ReflectionClass($this->controller);

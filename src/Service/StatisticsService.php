@@ -8,7 +8,7 @@ use App\Repository\EmailSentRepository;
 
 class StatisticsService
 {
-    public function __construct(private readonly EmailSentRepository $emailSentRepository)
+    public function __construct(private readonly EmailSentRepository $emailSentRepository, private readonly \App\Service\ClockInterface $clock)
     {
     }
 
@@ -17,10 +17,31 @@ class StatisticsService
      *
      * @return MonthlyDomainStatistic[]
      */
-    public function getMonthlyUserStatisticsByDomain(): array
+    public function getMonthlyUserStatisticsByDomain(int $months = 6): array
     {
-        $raw = $this->emailSentRepository->getMonthlyDomainCountsRaw('username');
-        return $this->mapToDtos($raw, 'total_users');
+        $range = \App\ValueObject\MonthRange::lastMonths($months, $this->clock);
+        $since = $range->start();
+        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows('username', $since);
+
+        // aggregate rows into month->domain->count map
+        $map = [];
+        foreach ($rows as $r) {
+            $m = $r['month'];
+            $d = $r['domain'];
+            $c = $r['count'];
+            $map[$m][$d] = $c;
+        }
+
+        // build full months array and map to DTOs
+        $monthlyStats = [];
+        foreach ($range->months() as $monthKey) {
+            $domains = $map[$monthKey] ?? [];
+            // ensure domains sorted desc
+            arsort($domains, SORT_NUMERIC);
+            $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_users' => array_sum($domains)];
+        }
+
+        return $this->mapToDtos($monthlyStats, 'total_users');
     }
 
     /**
@@ -28,10 +49,28 @@ class StatisticsService
      *
      * @return MonthlyDomainStatistic[]
      */
-    public function getMonthlyTicketStatisticsByDomain(): array
+    public function getMonthlyTicketStatisticsByDomain(int $months = 6): array
     {
-        $raw = $this->emailSentRepository->getMonthlyDomainCountsRaw('ticket_id');
-        return $this->mapToDtos($raw, 'total_tickets');
+        $range = \App\ValueObject\MonthRange::lastMonths($months, $this->clock);
+        $since = $range->start();
+        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows('ticket_id', $since);
+
+        $map = [];
+        foreach ($rows as $r) {
+            $m = $r['month'];
+            $d = $r['domain'];
+            $c = $r['count'];
+            $map[$m][$d] = $c;
+        }
+
+        $monthlyStats = [];
+        foreach ($range->months() as $monthKey) {
+            $domains = $map[$monthKey] ?? [];
+            arsort($domains, SORT_NUMERIC);
+            $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_tickets' => array_sum($domains)];
+        }
+
+        return $this->mapToDtos($monthlyStats, 'total_tickets');
     }
 
     /**

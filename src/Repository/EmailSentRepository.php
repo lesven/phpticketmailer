@@ -422,6 +422,145 @@ SQL;
     }
 
     /**
+     * Liefert rohe aggregierte Zeilen mit month, domain, count ab einem Startdatum
+     *
+     * @return array<int, array{month: string, domain: string, count: int}>
+     */
+    public function getMonthlyDomainCountsRows(string $distinctField, \DateTimeImmutable $since): array
+    {
+        if (!in_array($distinctField, ['username', 'ticket_id'], true)) {
+            throw new \InvalidArgumentException('Ungültiges distinct field: ' . $distinctField);
+        }
+
+        $rows = [];
+
+        try {
+            $conn = $this->getEntityManager()->getConnection();
+            $distinctSqlColumn = $distinctField === 'username' ? 'e.username' : 'e.ticket_id';
+            $countAlias = 'val_count';
+
+            $sql = <<<SQL
+SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
+       LOWER(TRIM(SUBSTRING_INDEX(e.email, '@', -1))) AS domain,
+       COUNT(DISTINCT {$distinctSqlColumn}) AS {$countAlias}
+FROM emails_sent e
+WHERE e.timestamp >= :since
+  AND (
+      e.status = :status OR
+      e.status = :status_plain OR
+      e.status LIKE :status_like
+  )
+  AND e.email LIKE '%@%'
+GROUP BY month, domain
+ORDER BY month ASC, {$countAlias} DESC, domain ASC
+SQL;
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue('since', $since->format('Y-m-d H:i:s'));
+            $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
+            $stmt->bindValue('status_plain', 'sent');
+            $stmt->bindValue('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%');
+
+            $dbRows = $stmt->executeQuery()->fetchAllAssociative();
+
+            foreach ($dbRows as $r) {
+                $rows[] = ['month' => $r['month'], 'domain' => $r['domain'], 'count' => (int)$r[$countAlias]];
+            }
+        } catch (\Throwable $e) {
+            // Fallback auf PHP-basierten Aggregationspfad: lade Rohdaten und aggregiere
+            $qb = $this->createQueryBuilder('e')
+                ->select('e.timestamp as ts, ' . ($distinctField === 'username' ? 'e.username as distinct_value' : 'e.ticketId as distinct_value') . ', e.email as email')
+                ->where('e.timestamp >= :since')
+                ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                ->setParameter('since', $since)
+                ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+                ->setParameter('status_plain', 'sent')
+                ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
+                ->orderBy('e.timestamp', 'ASC');
+
+            $rawRows = $qb->getQuery()->getArrayResult();
+
+            $valuesByMonthAndDomain = [];
+            foreach ($rawRows as $row) {
+                if (is_array($row)) {
+                    $ts = $row['ts'] ?? $row['timestamp'] ?? null;
+                    $distinctValue = $row['distinct_value'] ?? null;
+                    $email = $row['email'] ?? null;
+                } elseif ($row instanceof \App\Entity\EmailSent) {
+                    $ts = $row->getTimestamp();
+                    $distinctValue = $distinctField === 'username' ? ($row->getUsername() ? $row->getUsername()->getValue() : null) : ($row->getTicketId() ? $row->getTicketId()->getValue() : null);
+                    $email = $row->getEmail();
+                } else {
+                    continue;
+                }
+
+                if (!$ts || $distinctValue === null || !$email) {
+                    continue;
+                }
+
+                // Extract domain
+                $domain = null;
+                if (is_string($email)) {
+                    $atPos = strrpos($email, '@');
+                    if ($atPos !== false) {
+                        $domain = substr($email, $atPos + 1);
+                    }
+                } elseif ($email instanceof \App\ValueObject\EmailAddress) {
+                    $domain = $email->getDomain();
+                }
+
+                if (!$domain || strpos($domain, '.') === false) {
+                    continue;
+                }
+
+                $domain = strtolower(trim($domain));
+
+                // month
+                if ($ts instanceof \DateTimeInterface) {
+                    $monthKey = $ts->format('Y-m');
+                } else {
+                    try {
+                        $dt = new \DateTime($ts);
+                        $monthKey = $dt->format('Y-m');
+                    } catch (\Exception $ex) {
+                        continue;
+                    }
+                }
+
+                $key = $distinctValue;
+                if (is_object($key)) {
+                    if (method_exists($key, 'getValue')) {
+                        $k = $key->getValue();
+                        $key = is_scalar($k) ? (string)$k : null;
+                    } elseif (method_exists($key, '__toString')) {
+                        $key = (string)$key;
+                    } else {
+                        $key = null;
+                    }
+                } elseif (is_scalar($key)) {
+                    $key = (string)$key;
+                } else {
+                    $key = null;
+                }
+
+                if ($key === null) {
+                    continue;
+                }
+
+                $valuesByMonthAndDomain[$monthKey][$domain][$key] = true;
+            }
+
+            foreach ($valuesByMonthAndDomain as $monthKey => $domains) {
+                foreach ($domains as $domain => $values) {
+                    $rows[] = ['month' => $monthKey, 'domain' => $domain, 'count' => count($values)];
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * Gemeinsame Implementierung für monatliche Domain-Statistiken.
      *
      * @param string $distinctField "username" oder "ticket_id"
