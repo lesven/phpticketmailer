@@ -589,6 +589,48 @@ SQL;
     }
 
     /**
+     * Gibt die monatlichen Benutzerstatistiken als DTOs zurück
+     *
+     * @return \App\Dto\MonthlyDomainStatistic[]
+     */
+    public function getMonthlyUserStatisticsByDomainDto(): array
+    {
+        return $this->mapToDtos($this->getMonthlyDomainStatistics('username', 'total_users'), 'total_users');
+    }
+
+    /**
+     * Gibt die monatlichen Ticketstatistiken als DTOs zurück
+     *
+     * @return \App\Dto\MonthlyDomainStatistic[]
+     */
+    public function getMonthlyTicketStatisticsByDomainDto(): array
+    {
+        return $this->mapToDtos($this->getMonthlyDomainStatistics('ticket_id', 'total_tickets'), 'total_tickets');
+    }
+
+    /**
+     * Mappt das interne Array-Format zu DTOs
+     *
+     * @param array $monthlyStats
+     * @param string $totalKey
+     * @return \App\Dto\MonthlyDomainStatistic[]
+     */
+    private function mapToDtos(array $monthlyStats, string $totalKey): array
+    {
+        $dtos = [];
+        foreach ($monthlyStats as $stat) {
+            $month = $stat['month'] ?? '';
+            $domains = [];
+            foreach ($stat['domains'] ?? [] as $domain => $count) {
+                $domains[] = new \App\Dto\DomainCount($domain, (int)$count);
+            }
+            $total = isset($stat[$totalKey]) ? (int)$stat[$totalKey] : array_sum($stat['domains'] ?? []);
+            $dtos[] = new \App\Dto\MonthlyDomainStatistic($month, $domains, $total);
+        }
+        return $dtos;
+    }
+
+    /**
      * Normalisiert einen distinct-Wert (Username oder TicketId) zu einem String-Key.
      * Unterstützt Strings, skalare Werte, ValueObjects mit getValue() oder Objekte mit __toString().
      *

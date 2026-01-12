@@ -484,6 +484,59 @@ class EmailSentRepositoryTest extends KernelTestCase
         $this->assertNull($method->invoke($this->repository, $obj3));
     }
 
+    public function testGetMonthlyTicketStatisticsByDomainDtoMapping(): void
+    {
+        $now = new \DateTime();
+        $this->createEmailSentWithDomainAndTicket('u1', 'example.com', 'T-01', $now);
+        $this->createEmailSentWithDomainAndTicket('u2', 'example.com', 'T-02', $now);
+        $this->createEmailSentWithDomainAndTicket('u3', 'other.com', 'T-03', $now);
+        $this->entityManager->flush();
+
+        $dtos = $this->repository->getMonthlyTicketStatisticsByDomainDto();
+        $this->assertIsArray($dtos);
+        $this->assertNotEmpty($dtos);
+
+        $currentMonth = $now->format('Y-m');
+        $found = false;
+        foreach ($dtos as $dto) {
+            $this->assertInstanceOf(\App\Dto\MonthlyDomainStatistic::class, $dto);
+            if ($dto->month() === $currentMonth) {
+                $found = true;
+                $domains = $dto->domains();
+                $this->assertCount(2, $domains);
+                $map = [];
+                foreach ($domains as $dc) {
+                    $this->assertInstanceOf(\App\Dto\DomainCount::class, $dc);
+                    $map[$dc->domain()] = $dc->count();
+                }
+                $this->assertEquals(2, $map['example.com']);
+                $this->assertEquals(1, $map['other.com']);
+                $this->assertEquals(3, $dto->total());
+            }
+        }
+        $this->assertTrue($found);
+    }
+
+    public function testGetMonthlyUserStatisticsByDomainDtoMapping(): void
+    {
+        $now = new \DateTime();
+        $this->createEmailSentWithDomain('user1', 'domain.com', $now);
+        $this->createEmailSentWithDomain('user2', 'domain.com', $now);
+        $this->entityManager->flush();
+
+        $dtos = $this->repository->getMonthlyUserStatisticsByDomainDto();
+        $this->assertIsArray($dtos);
+        $currentMonth = $now->format('Y-m');
+        $found = false;
+        foreach ($dtos as $dto) {
+            if ($dto->month() === $currentMonth) {
+                $found = true;
+                $this->assertEquals(2, $dto->total());
+            }
+        }
+        $this->assertTrue($found);
+    }
+
     private function createEmailSentWithDomainAndTicket(
         string $username,
         string $domain,
