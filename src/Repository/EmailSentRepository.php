@@ -232,7 +232,11 @@ SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
        COUNT(DISTINCT e.username) AS users
 FROM emails_sent e
 WHERE e.timestamp >= :fiveMonthsAgo
-  AND e.status = :status
+  AND (
+      e.status = :status OR
+      e.status = :status_plain OR
+      e.status LIKE :status_like
+  )
   AND e.email LIKE '%@%'
 GROUP BY month, domain
 ORDER BY month ASC, users DESC, domain ASC
@@ -241,6 +245,9 @@ SQL;
             $stmt = $conn->prepare($sql);
             $stmt->bindValue('fiveMonthsAgo', $fiveMonthsAgo->format('Y-m-d H:i:s'));
             $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
+            // Accept both the localized 'Versendet' and legacy 'sent' marker, and any variants starting with the localized value
+            $stmt->bindValue('status_plain', 'sent');
+            $stmt->bindValue('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%');
             $rows = $stmt->executeQuery()->fetchAllAssociative();
 
             $resultsByMonth = [];
@@ -268,9 +275,11 @@ SQL;
             $qb = $this->createQueryBuilder('e')
                 ->select('e.timestamp as ts, e.username as username, e.email as email')
                 ->where('e.timestamp >= :fiveMonthsAgo')
-                ->andWhere('e.status = :status')
+                ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
                 ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+                ->setParameter('status_plain', 'sent')
+                ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
                 ->orderBy('e.timestamp', 'ASC');
 
             $rows = $qb->getQuery()->getArrayResult();
@@ -279,9 +288,11 @@ SQL;
                 $entities = $this->createQueryBuilder('e')
                     ->select('e')
                     ->where('e.timestamp >= :fiveMonthsAgo')
-                    ->andWhere('e.status = :status')
+                    ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
                     ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
                     ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+                    ->setParameter('status_plain', 'sent')
+                    ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
                     ->orderBy('e.timestamp', 'ASC')
                     ->getQuery()
                     ->getResult();
