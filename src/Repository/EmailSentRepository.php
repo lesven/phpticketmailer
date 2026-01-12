@@ -237,7 +237,7 @@ class EmailSentRepository extends ServiceEntityRepository
                 ->where('e.timestamp >= :fiveMonthsAgo')
                 ->andWhere('e.status = :status')
                 ->setParameter('fiveMonthsAgo', $fiveMonthsAgo)
-                ->setParameter('status', 'sent')
+                ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->orderBy('e.timestamp', 'ASC')
                 ->getQuery()
                 ->getResult();
