@@ -328,11 +328,12 @@ class EmailSentRepository extends ServiceEntityRepository
             // Wir zählen DISTINCT username pro (month, domain).
             $sql = <<<SQL
 SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
-       SUBSTRING_INDEX(e.email, '@', -1) AS domain,
+       LOWER(TRIM(SUBSTRING_INDEX(e.email, '@', -1))) AS domain,
        COUNT(DISTINCT e.username) AS users
 FROM emails_sent e
 WHERE e.timestamp >= :fiveMonthsAgo
   AND e.status = :status
+  AND e.email LIKE '%@%'
 GROUP BY month, domain
 ORDER BY month ASC, domain ASC
 SQL;
@@ -417,6 +418,15 @@ SQL;
                     continue;
                 }
 
+                // Normalize domain: trim and lowercase to avoid duplicates by case/whitespace
+                $domain = strtolower(trim($domain));
+
+                // Basic validation: domain must contain a dot (skip invalid domains)
+                if (strpos($domain, '.') === false) {
+                    continue;
+                }
+
+                // Extract month from timestamp
                 if ($ts instanceof \DateTimeInterface) {
                     $monthKey = $ts->format('Y-m');
                 } else {
@@ -424,6 +434,7 @@ SQL;
                         $dt = new \DateTime($ts);
                         $monthKey = $dt->format('Y-m');
                     } catch (\Exception $e) {
+                        // Skip rows with invalid timestamps
                         continue;
                     }
                 }

@@ -152,27 +152,26 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Monat</th>
+                                    <th style="width:100px; white-space:nowrap;">Monat</th>
                                     <th>Domain</th>
                                     <th>Anzahl Benutzer</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for stat in monthlyDomainStatistics %}
-                                    {% if stat.domains is not empty %}
-                                        {% for domain, count in stat.domains %}
-                                            <tr>
-                                                <td>{{ stat.month }}</td>
-                                                <td><span class="badge bg-info">{{ domain }}</span></td>
-                                                <td><strong>{{ count }}</strong></td>
-                                            </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td>{{ stat.month }}</td>
-                                            <td colspan="2" class="text-muted">Keine Daten</td>
-                                        </tr>
-                                    {% endif %}
+                                    <tr>
+                                        <td style="white-space:nowrap">{{ stat.month }}</td>
+                                        <td>
+                                            {% if stat.domains is not empty %}
+                                                {% for domain, count in stat.domains %}
+                                                    <span class="badge bg-info">{{ domain }}: {{ count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Keine Daten</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>{{ stat.total_users }}</strong></td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>

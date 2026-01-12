@@ -314,6 +314,75 @@ class EmailSentRepositoryTest extends KernelTestCase
         }
     }
 
+    public function testGetMonthlyUserStatisticsByDomainNormalizesAndFiltersEmails(): void
+    {
+        $now = new \DateTime();
+        $conn = $this->entityManager->getConnection();
+
+        // Füge rohe DB-Zeilen ein, die nicht per EmailAddress normalisiert wurden
+        $conn->executeStatement(
+            'INSERT INTO emails_sent (ticket_id, username, email, subject, status, timestamp, test_mode, ticket_name) VALUES (:ticket_id, :username, :email, :subject, :status, :timestamp, :test_mode, :ticket_name)',
+            [
+                'ticket_id' => 'DBTEST-01',
+                'username' => 'user_upper',
+                'email' => 'User@Example.COM ', // mixed case + trailing space
+                'subject' => 'Test',
+                'status' => 'sent',
+                'timestamp' => $now->format('Y-m-d H:i:s'),
+                'test_mode' => 0,
+                'ticket_name' => null,
+            ]
+        );
+
+        $conn->executeStatement(
+            'INSERT INTO emails_sent (ticket_id, username, email, subject, status, timestamp, test_mode, ticket_name) VALUES (:ticket_id, :username, :email, :subject, :status, :timestamp, :test_mode, :ticket_name)',
+            [
+                'ticket_id' => 'DBTEST-02',
+                'username' => 'user_lower',
+                'email' => 'other@example.com',
+                'subject' => 'Test',
+                'status' => 'sent',
+                'timestamp' => $now->format('Y-m-d H:i:s'),
+                'test_mode' => 0,
+                'ticket_name' => null,
+            ]
+        );
+
+        // Ungültige Email (kein @) -> sollte gefiltert werden
+        $conn->executeStatement(
+            'INSERT INTO emails_sent (ticket_id, username, email, subject, status, timestamp, test_mode, ticket_name) VALUES (:ticket_id, :username, :email, :subject, :status, :timestamp, :test_mode, :ticket_name)',
+            [
+                'ticket_id' => 'DBTEST-03',
+                'username' => 'invalid_user',
+                'email' => 'invalidemail',
+                'subject' => 'Test',
+                'status' => 'sent',
+                'timestamp' => $now->format('Y-m-d H:i:s'),
+                'test_mode' => 0,
+                'ticket_name' => null,
+            ]
+        );
+
+        $this->entityManager->flush();
+
+        $statistics = $this->repository->getMonthlyUserStatisticsByDomain();
+
+        $currentMonthKey = $now->format('Y-m');
+        $found = false;
+        foreach ($statistics as $stat) {
+            if ($stat['month'] === $currentMonthKey) {
+                $this->assertArrayHasKey('example.com', $stat['domains']);
+                // user_upper + other -> zwei eindeutige Benutzer in example.com
+                $this->assertEquals(2, $stat['domains']['example.com']);
+                // invalidemail darf nicht auftauchen
+                $this->assertArrayNotHasKey('invalidemail', $stat['domains']);
+                $found = true;
+            }
+        }
+
+        $this->assertTrue($found, 'Aktueller Monat sollte in den Statistiken vorhanden sein');
+    }
+
     private function createEmailSentWithDomain(
         string $username,
         string $domain,
