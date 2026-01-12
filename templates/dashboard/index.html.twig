@@ -141,6 +141,47 @@
         </div>
     </div>
     
+    <!-- Monatliche Benutzerstatistiken nach Domain -->
+    <h2 class="mb-3">Benutzerstatistik nach Domain (letzte 6 Monate)</h2>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-text">Anzahl einzigartiger Benutzer pro Monat, gruppiert nach E-Mail-Domain (zur Identifikation der Tochterfirma):</p>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Monat</th>
+                                    <th>Domain</th>
+                                    <th>Anzahl Benutzer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in monthlyDomainStatistics %}
+                                    {% if stat.domains is not empty %}
+                                        {% for domain, count in stat.domains %}
+                                            <tr>
+                                                <td>{{ stat.month }}</td>
+                                                <td><span class="badge bg-info">{{ domain }}</span></td>
+                                                <td><strong>{{ count }}</strong></td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td>{{ stat.month }}</td>
+                                            <td colspan="2" class="text-muted">Keine Daten</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <h2 class="mb-3">Letzte E-Mail-Versandaktionen</h2>
     
     {% if recentEmails is empty %}
