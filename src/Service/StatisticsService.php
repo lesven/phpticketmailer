@@ -41,6 +41,9 @@ class StatisticsService
             $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_users' => array_sum($domains)];
         }
 
+        // months() returns oldest->newest; for UI we want newest first
+        $monthlyStats = array_reverse($monthlyStats);
+
         return $this->mapToDtos($monthlyStats, 'total_users');
     }
 
@@ -69,6 +72,9 @@ class StatisticsService
             arsort($domains, SORT_NUMERIC);
             $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_tickets' => array_sum($domains)];
         }
+
+        // months() returns oldest->newest; for UI we want newest first
+        $monthlyStats = array_reverse($monthlyStats);
 
         return $this->mapToDtos($monthlyStats, 'total_tickets');
     }

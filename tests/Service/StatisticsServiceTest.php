@@ -42,6 +42,10 @@ class StatisticsServiceTest extends TestCase
         $this->assertIsArray($dtos);
         // Default months=6 -> expect 6 DTO entries
         $this->assertCount(6, $dtos);
+
+        // Neuerdings soll der neuste Monat oben stehen -> erster Eintrag ist das aktuelle Monat
+        $this->assertEquals($clock->now()->format('Y-m'), $dtos[0]->month(), 'Expected newest month first');
+
         // Find DTO for 2026-01
         $found = null;
         foreach ($dtos as $dto) {
