@@ -41,8 +41,6 @@ class DashboardTemplateTest extends TestCase
 
         $rendered = $twig->render('dashboard/index.html.twig', [
             'monthlyDomainStatistics' => $monthlyDomainStatistics,
-            // required by template but not relevant for this test
-            'monthlyStatistics' => [],
             'recentEmails' => [],
             'statistics' => [],
         ]);
