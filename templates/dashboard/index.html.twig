@@ -137,7 +137,7 @@
                                             {% set domainCounts = stat.domains %}
                                             {% if domainCounts is not empty %}
                                                 {% for dc in domainCounts %}
-                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }} ({{ dc.percentage }}%)</span>{% if not loop.last %}&nbsp;{% endif %}
                                                 {% endfor %}
                                             {% else %}
                                                 <span class="text-muted">Keine Daten</span>
@@ -179,7 +179,7 @@
                                             {% set domainCounts = stat.domains %}
                                             {% if domainCounts is not empty %}
                                                 {% for dc in domainCounts %}
-                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }} ({{ dc.percentage }}%)</span>{% if not loop.last %}&nbsp;{% endif %}
                                                 {% endfor %}
                                             {% else %}
                                                 <span class="text-muted">Keine Daten</span>
