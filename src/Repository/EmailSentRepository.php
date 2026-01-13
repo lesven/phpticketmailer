@@ -260,37 +260,7 @@ class EmailSentRepository extends ServiceEntityRepository implements EmailSentRe
      */
     public function getMonthlyTicketStatisticsByDomain(): array
     {
-        // Default: last 6 months
-        $since = (new \DateTimeImmutable())->modify('-5 months first day of this month')->setTime(0, 0, 0);
-
-        $rows = $this->getMonthlyDomainCountsRows('ticket_id', $since);
-
-        $map = [];
-        foreach ($rows as $r) {
-            $m = $r['month'];
-            $d = $r['domain'];
-            $c = $r['count'];
-            $map[$m][$d] = $c;
-        }
-
-        $monthlyStats = [];
-        $currentDate = new \DateTime();
-        for ($i = 5; $i >= 0; $i--) {
-            $monthDate = clone $currentDate;
-            $monthDate->modify("-$i months");
-            $monthKey = $monthDate->format('Y-m');
-
-            $domains = $map[$monthKey] ?? [];
-            arsort($domains, SORT_NUMERIC);
-
-            $monthlyStats[] = [
-                'month' => $monthKey,
-                'domains' => $domains,
-                'total_tickets' => array_sum($domains)
-            ];
-        }
-
-        return array_reverse($monthlyStats);
+        return $this->getMonthlyDomainStatistics('ticket_id', 'total_tickets');
     }
 
     /**
