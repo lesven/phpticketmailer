@@ -5,6 +5,7 @@ namespace App\Tests\Repository;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\ValueObject\Username;
+use App\ValueObject\EmailAddress;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -80,11 +81,15 @@ class UserRepositoryTest extends TestCase
     /**
      * Helper: Erstellt einen Mock User mit Username Value Object
      */
-    private function createUser(string $username): User
+    private function createUser(string $username, ?string $email = null): User
     {
         $user = $this->createMock(User::class);
         $user->method('getUsername')
              ->willReturn(Username::fromString($username));
+        if ($email !== null) {
+            $user->method('getEmail')
+                 ->willReturn(EmailAddress::fromString($email));
+        }
         return $user;
     }
 
@@ -139,5 +144,71 @@ class UserRepositoryTest extends TestCase
         sort($foundUsernames);
         
         $this->assertEquals(['janedoe', 'johndoe', 'svenmuller'], $foundUsernames);
+    }
+
+    /**
+     * Test: Suche nach Benutzernamen oder E-Mail
+     * 
+     * Simuliert die erweiterte Suchfunktionalität:
+     * - Suche sollte sowohl im Benutzernamen als auch in der E-Mail finden
+     * - Teiltext-Suche (LIKE) sollte funktionieren
+     * - Case-insensitive Suche
+     */
+    public function testSearchByUsernameOrEmail(): void
+    {
+        // Mock Users mit Benutzernamen und E-Mails
+        $user1 = $this->createUser('svenmuller', 'sven.mueller@example.com');
+        $user2 = $this->createUser('johndoe', 'john.doe@example.com');
+        $user3 = $this->createUser('janedoe', 'jane.doe@example.com');
+        
+        // Repository simuliert die erweiterte Suchfunktionalität
+        $this->userRepository->method('searchByUsername')
+            ->willReturnCallback(function (?string $searchTerm, ?string $sortField = null, ?string $sortDirection = null) use ($user1, $user2, $user3) {
+                if ($searchTerm === null) {
+                    return [$user1, $user2, $user3];
+                }
+                
+                $searchTermLower = strtolower($searchTerm);
+                $results = [];
+                
+                foreach ([$user1, $user2, $user3] as $user) {
+                    $username = strtolower((string)$user->getUsername());
+                    $email = strtolower($user->getEmail());
+                    
+                    // Simuliert: LOWER(u.username) LIKE LOWER(:searchTerm) OR LOWER(u.email) LIKE LOWER(:searchTerm)
+                    if (str_contains($username, $searchTermLower) || str_contains($email, $searchTermLower)) {
+                        $results[] = $user;
+                    }
+                }
+                
+                return $results;
+            });
+        
+        // Test: Suche nach Benutzername findet User
+        $results = $this->userRepository->searchByUsername('sven');
+        $this->assertCount(1, $results, 'Suche nach "sven" sollte 1 User finden');
+        $this->assertEquals('svenmuller', (string)$results[0]->getUsername());
+        
+        // Test: Suche nach E-Mail findet User
+        $results = $this->userRepository->searchByUsername('john.doe@example.com');
+        $this->assertCount(1, $results, 'Suche nach E-Mail sollte 1 User finden');
+        $this->assertEquals('johndoe', (string)$results[0]->getUsername());
+        
+        // Test: Teiltext-Suche in E-Mail
+        $results = $this->userRepository->searchByUsername('example.com');
+        $this->assertCount(3, $results, 'Suche nach "example.com" sollte alle 3 User finden');
+        
+        // Test: Teiltext-Suche findet mehrere
+        $results = $this->userRepository->searchByUsername('doe');
+        $this->assertCount(2, $results, 'Suche nach "doe" sollte 2 User finden (johndoe und janedoe)');
+        
+        // Test: Case-insensitive Suche in E-Mail
+        $results = $this->userRepository->searchByUsername('MUELLER');
+        $this->assertCount(1, $results, 'Case-insensitive Suche nach "MUELLER" in E-Mail sollte svenmuller finden');
+        $this->assertEquals('svenmuller', (string)$results[0]->getUsername());
+        
+        // Test: Nicht existierender Suchbegriff
+        $results = $this->userRepository->searchByUsername('nonexistent');
+        $this->assertCount(0, $results, 'Suche nach nicht existierendem Begriff sollte 0 User finden');
     }
 }

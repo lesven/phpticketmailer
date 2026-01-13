@@ -79,12 +79,12 @@ class UserRepository extends ServiceEntityRepository
             ->getResult();
     }
       /**
-     * Sucht Benutzer anhand des Benutzernamens mit optionalem Sortieren
+     * Sucht Benutzer anhand des Benutzernamens oder der E-Mail mit optionalem Sortieren
      * 
      * Diese Methode erlaubt eine Teiltext-Suche (case-insensitive) nach dem Benutzernamen
-     * und unterstützt das Sortieren der Ergebnisse nach verschiedenen Feldern.
+     * oder der E-Mail-Adresse und unterstützt das Sortieren der Ergebnisse nach verschiedenen Feldern.
      * 
-     * @param string|null $searchTerm Suchbegriff für den Benutzernamen (kann null sein für alle Benutzer)
+     * @param string|null $searchTerm Suchbegriff für den Benutzernamen oder die E-Mail (kann null sein für alle Benutzer)
      * @param string|null $sortField Feld für die Sortierung (id, username, email)
      * @param string|null $sortDirection Sortierrichtung (ASC oder DESC)
      * @return User[] Array mit den gefundenen Benutzern
@@ -101,7 +101,7 @@ class UserRepository extends ServiceEntityRepository
         // Suchfilter anwenden, wenn ein Suchbegriff angegeben ist
         if ($searchTerm) {
             $queryBuilder
-                ->where('LOWER(u.username) LIKE LOWER(:searchTerm)')
+                ->where('LOWER(u.username) LIKE LOWER(:searchTerm) OR LOWER(u.email) LIKE LOWER(:searchTerm)')
                 ->setParameter('searchTerm', '%' . $searchTerm . '%');
         }
         
