@@ -2,6 +2,7 @@
 namespace App\Tests\Repository;
 
 use App\Entity\EmailSent;
+use App\Entity\User;
 use App\Repository\EmailSentRepository;
 use App\ValueObject\EmailAddress;
 use App\ValueObject\EmailStatus;
@@ -39,6 +40,7 @@ class EmailSentRepositoryTest extends KernelTestCase
         $connection = $this->entityManager->getConnection();
         try {
             $connection->executeStatement('DELETE FROM emails_sent');
+            $connection->executeStatement('DELETE FROM users');
         } catch (\Throwable $e) {
             // If the test DB is not available or the user doesn't have permissions,
             // mark DB as unavailable and skip these tests (only once)
@@ -598,5 +600,167 @@ class EmailSentRepositoryTest extends KernelTestCase
         $this->entityManager->persist($email);
         
         return $email;
+    }
+
+    public function testGetMonthlyDomainCountsRowsExcludesUsersWithExcludedFromSurveys(): void
+    {
+        $now = new \DateTime();
+        $since = new \DateTimeImmutable($now->format('Y-m-d H:i:s'));
+        
+        // Create users in the database - one excluded, one not
+        $conn = $this->entityManager->getConnection();
+        
+        // Create user1 (not excluded)
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'user1',
+                'email' => 'user1@company-a.com',
+                'excluded' => 0
+            ]
+        );
+        
+        // Create user2 (excluded from surveys)
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'user2',
+                'email' => 'user2@company-a.com',
+                'excluded' => 1
+            ]
+        );
+        
+        // Create user3 (not excluded)
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'user3',
+                'email' => 'user3@company-b.com',
+                'excluded' => 0
+            ]
+        );
+        
+        // Create emails for these users
+        $this->createEmailSentWithDomain('user1', 'company-a.com', $now);
+        $this->createEmailSentWithDomain('user2', 'company-a.com', $now); // Should be excluded
+        $this->createEmailSentWithDomain('user3', 'company-b.com', $now);
+        
+        $this->entityManager->flush();
+        
+        // Get statistics
+        $rows = $this->repository->getMonthlyDomainCountsRows('username', $since);
+        
+        // Verify results
+        $currentMonthKey = $now->format('Y-m');
+        $domainCounts = [];
+        foreach ($rows as $row) {
+            if ($row['month'] === $currentMonthKey) {
+                $domainCounts[$row['domain']] = $row['count'];
+            }
+        }
+        
+        // user1 should be counted in company-a.com (1 user)
+        // user2 should NOT be counted (excluded from surveys)
+        // user3 should be counted in company-b.com (1 user)
+        $this->assertArrayHasKey('company-a.com', $domainCounts);
+        $this->assertEquals(1, $domainCounts['company-a.com'], 'company-a.com should have 1 user (user2 excluded)');
+        
+        $this->assertArrayHasKey('company-b.com', $domainCounts);
+        $this->assertEquals(1, $domainCounts['company-b.com'], 'company-b.com should have 1 user');
+    }
+
+    public function testGetNewUsersByMonthExcludesUsersWithExcludedFromSurveys(): void
+    {
+        $now = new \DateTime();
+        $since = new \DateTimeImmutable($now->format('Y-m-d H:i:s'));
+        
+        // Create users in the database - one excluded, one not
+        $conn = $this->entityManager->getConnection();
+        
+        // Create user1 (not excluded) - new user this month
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'newuser1',
+                'email' => 'newuser1@test.com',
+                'excluded' => 0
+            ]
+        );
+        
+        // Create user2 (excluded from surveys) - new user this month
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'newuser2',
+                'email' => 'newuser2@test.com',
+                'excluded' => 1
+            ]
+        );
+        
+        // Create emails for these users
+        $this->createEmailSentWithDomain('newuser1', 'test.com', $now);
+        $this->createEmailSentWithDomain('newuser2', 'test.com', $now); // Should be excluded
+        
+        $this->entityManager->flush();
+        
+        // Get new users by month
+        $newUsersByMonth = $this->repository->getNewUsersByMonth($since);
+        
+        $currentMonthKey = $now->format('Y-m');
+        
+        // Only newuser1 should be counted as a new user (newuser2 is excluded)
+        $this->assertArrayHasKey($currentMonthKey, $newUsersByMonth);
+        $this->assertEquals(1, $newUsersByMonth[$currentMonthKey], 'Only 1 new user should be counted (newuser2 excluded)');
+    }
+
+    public function testGetMonthlyDomainCountsRowsForTicketsExcludesUsersWithExcludedFromSurveys(): void
+    {
+        $now = new \DateTime();
+        $since = new \DateTimeImmutable($now->format('Y-m-d H:i:s'));
+        
+        // Create users in the database
+        $conn = $this->entityManager->getConnection();
+        
+        // Create user1 (not excluded)
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'tuser1',
+                'email' => 'tuser1@company-x.com',
+                'excluded' => 0
+            ]
+        );
+        
+        // Create user2 (excluded from surveys)
+        $conn->executeStatement(
+            'INSERT INTO users (username, email, excluded_from_surveys) VALUES (:username, :email, :excluded)',
+            [
+                'username' => 'tuser2',
+                'email' => 'tuser2@company-x.com',
+                'excluded' => 1
+            ]
+        );
+        
+        // Create emails with different tickets
+        $this->createEmailSentWithDomainAndTicket('tuser1', 'company-x.com', 'T-100', $now);
+        $this->createEmailSentWithDomainAndTicket('tuser2', 'company-x.com', 'T-200', $now); // Should be excluded
+        
+        $this->entityManager->flush();
+        
+        // Get ticket statistics
+        $rows = $this->repository->getMonthlyDomainCountsRows('ticket_id', $since);
+        
+        // Verify results
+        $currentMonthKey = $now->format('Y-m');
+        $domainCounts = [];
+        foreach ($rows as $row) {
+            if ($row['month'] === $currentMonthKey) {
+                $domainCounts[$row['domain']] = $row['count'];
+            }
+        }
+        
+        // Only T-100 should be counted (T-200 belongs to excluded user)
+        $this->assertArrayHasKey('company-x.com', $domainCounts);
+        $this->assertEquals(1, $domainCounts['company-x.com'], 'company-x.com should have 1 ticket (tuser2\'s ticket excluded)');
     }
 }
