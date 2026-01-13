@@ -65,4 +65,61 @@ class StatisticsServiceTest extends TestCase
         $this->assertEquals(2, $map['example.com']);
         $this->assertEquals(1, $map['other.com']);
     }
+
+    public function testGetMonthlyTicketStatisticsByDomain(): void
+    {
+        $repo = $this->createMock(EmailSentRepository::class);
+
+        $raw = [
+            ['month' => '2026-01', 'domains' => ['company-a.com' => 5, 'company-b.com' => 3], 'total_tickets' => 8],
+            ['month' => '2026-02', 'domains' => [], 'total_tickets' => 0]
+        ];
+
+        $repo->method('getMonthlyDomainCountsRows')
+            ->willReturnCallback(function($distinct, $since) use ($raw) {
+                // assert we received a DateTimeImmutable since parameter
+                $this->assertInstanceOf(\DateTimeImmutable::class, $since);
+                $this->assertEquals('ticket_id', $distinct);
+                // convert raw monthly map to rows
+                $rows = [];
+                foreach ($raw as $stat) {
+                    foreach ($stat['domains'] as $domain => $count) {
+                        $rows[] = ['month' => $stat['month'], 'domain' => $domain, 'count' => $count];
+                    }
+                }
+                return $rows;
+            });
+
+        $clock = $this->createMock(\App\Service\ClockInterface::class);
+        $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
+
+        $service = new StatisticsService($repo, $clock);
+        $dtos = $service->getMonthlyTicketStatisticsByDomain();
+
+        $this->assertIsArray($dtos);
+        $this->assertCount(6, $dtos);
+
+        // Verify newest month is first
+        $this->assertEquals($clock->now()->format('Y-m'), $dtos[0]->month(), 'Expected newest month first');
+
+        // Find DTO for 2026-01
+        $found = null;
+        foreach ($dtos as $dto) {
+            if ($dto->month() === '2026-01') {
+                $found = $dto;
+                break;
+            }
+        }
+        $this->assertNotNull($found, 'Expected a DTO for month 2026-01');
+        $this->assertInstanceOf(MonthlyDomainStatistic::class, $found);
+        $domains = $found->domains();
+        $this->assertCount(2, $domains);
+        $map = [];
+        foreach ($domains as $d) {
+            $map[$d->domain()] = $d->count();
+        }
+        $this->assertEquals(5, $map['company-a.com']);
+        $this->assertEquals(3, $map['company-b.com']);
+        $this->assertEquals(8, $found->total());
+    }
 }

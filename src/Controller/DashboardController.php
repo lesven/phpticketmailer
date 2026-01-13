@@ -31,18 +31,15 @@ class DashboardController extends AbstractController
 
     private \App\Service\StatisticsService $statisticsService;
 
-    private \App\Service\ClockInterface $clock;
-
     /**
      * Konstruktor mit Dependency Injection für das E-Mail-Repository
      *
      * @param EmailSentRepository $emailSentRepository Repository für E-Mail-Protokolle
      */
-    public function __construct(EmailSentRepository $emailSentRepository, \App\Service\StatisticsService $statisticsService, \App\Service\ClockInterface $clock)
+    public function __construct(EmailSentRepository $emailSentRepository, \App\Service\StatisticsService $statisticsService)
     {
         $this->emailSentRepository = $emailSentRepository;
         $this->statisticsService = $statisticsService;
-        $this->clock = $clock;
     }
 
     /**

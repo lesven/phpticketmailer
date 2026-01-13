@@ -19,9 +19,32 @@ class StatisticsService
      */
     public function getMonthlyUserStatisticsByDomain(int $months = 6): array
     {
+        return $this->getMonthlyStatisticsByDomain('username', 'total_users', $months);
+    }
+
+    /**
+     * Liefert monatliche Ticketstatistiken als DTOs
+     *
+     * @return MonthlyDomainStatistic[]
+     */
+    public function getMonthlyTicketStatisticsByDomain(int $months = 6): array
+    {
+        return $this->getMonthlyStatisticsByDomain('ticket_id', 'total_tickets', $months);
+    }
+
+    /**
+     * Generische Methode für monatliche Statistiken nach Domain
+     *
+     * @param string $distinctField 'username' oder 'ticket_id'
+     * @param string $totalKey 'total_users' oder 'total_tickets'
+     * @param int $months Anzahl der Monate
+     * @return MonthlyDomainStatistic[]
+     */
+    private function getMonthlyStatisticsByDomain(string $distinctField, string $totalKey, int $months): array
+    {
         $range = \App\ValueObject\MonthRange::lastMonths($months, $this->clock);
         $since = $range->start();
-        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows('username', $since);
+        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows($distinctField, $since);
 
         // aggregate rows into month->domain->count map
         $map = [];
@@ -38,45 +61,13 @@ class StatisticsService
             $domains = $map[$monthKey] ?? [];
             // ensure domains sorted desc
             arsort($domains, SORT_NUMERIC);
-            $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_users' => array_sum($domains)];
+            $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, $totalKey => array_sum($domains)];
         }
 
         // months() returns oldest->newest; for UI we want newest first
         $monthlyStats = array_reverse($monthlyStats);
 
-        return $this->mapToDtos($monthlyStats, 'total_users');
-    }
-
-    /**
-     * Liefert monatliche Ticketstatistiken als DTOs
-     *
-     * @return MonthlyDomainStatistic[]
-     */
-    public function getMonthlyTicketStatisticsByDomain(int $months = 6): array
-    {
-        $range = \App\ValueObject\MonthRange::lastMonths($months, $this->clock);
-        $since = $range->start();
-        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows('ticket_id', $since);
-
-        $map = [];
-        foreach ($rows as $r) {
-            $m = $r['month'];
-            $d = $r['domain'];
-            $c = $r['count'];
-            $map[$m][$d] = $c;
-        }
-
-        $monthlyStats = [];
-        foreach ($range->months() as $monthKey) {
-            $domains = $map[$monthKey] ?? [];
-            arsort($domains, SORT_NUMERIC);
-            $monthlyStats[] = ['month' => $monthKey, 'domains' => $domains, 'total_tickets' => array_sum($domains)];
-        }
-
-        // months() returns oldest->newest; for UI we want newest first
-        $monthlyStats = array_reverse($monthlyStats);
-
-        return $this->mapToDtos($monthlyStats, 'total_tickets');
+        return $this->mapToDtos($monthlyStats, $totalKey);
     }
 
     /**

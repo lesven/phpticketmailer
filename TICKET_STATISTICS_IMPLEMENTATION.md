@@ -111,15 +111,15 @@ Die Ticket-Statistiken werden automatisch auf dem Dashboard angezeigt. Die Daten
 
 ### Für Entwickler
 
-Die Methode kann auch separat verwendet werden:
+Die Methode kann über den StatisticsService verwendet werden:
 
 ```php
-$statistics = $emailSentRepository->getMonthlyTicketStatisticsByDomain();
+$statistics = $statisticsService->getMonthlyTicketStatisticsByDomain();
 
 foreach ($statistics as $stat) {
-    echo $stat['month'] . ': ' . $stat['total_tickets'] . ' Tickets' . PHP_EOL;
-    foreach ($stat['domains'] as $domain => $count) {
-        echo '  - ' . $domain . ': ' . $count . PHP_EOL;
+    echo $stat->month() . ': ' . $stat->total() . ' Tickets' . PHP_EOL;
+    foreach ($stat->domains() as $domainCount) {
+        echo '  - ' . $domainCount->domain() . ': ' . $domainCount->count() . PHP_EOL;
     }
 }
 ```

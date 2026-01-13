@@ -20,9 +20,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * 
  * @extends ServiceEntityRepository<EmailSent>
  */
-use App\Repository\EmailSentReadRepositoryInterface;
-
-class EmailSentRepository extends ServiceEntityRepository implements EmailSentReadRepositoryInterface
+class EmailSentRepository extends ServiceEntityRepository
 {
     private const COUNT_SELECT = 'COUNT(e.id)';
     
@@ -382,22 +380,7 @@ SQL;
                     }
                 }
 
-                $key = $distinctValue;
-                if (is_object($key)) {
-                    if (method_exists($key, 'getValue')) {
-                        $k = $key->getValue();
-                        $key = is_scalar($k) ? (string)$k : null;
-                    } elseif (method_exists($key, '__toString')) {
-                        $key = (string)$key;
-                    } else {
-                        $key = null;
-                    }
-                } elseif (is_scalar($key)) {
-                    $key = (string)$key;
-                } else {
-                    $key = null;
-                }
-
+                $key = $this->normalizeDistinctValue($distinctValue);
                 if ($key === null) {
                     continue;
                 }
@@ -598,48 +581,6 @@ SQL;
         }
 
         return array_reverse($monthlyStats);
-    }
-
-    /**
-     * Gibt die monatlichen Benutzerstatistiken als DTOs zurück
-     *
-     * @return \App\Dto\MonthlyDomainStatistic[]
-     */
-    public function getMonthlyUserStatisticsByDomainDto(): array
-    {
-        return $this->mapToDtos($this->getMonthlyDomainStatistics('username', 'total_users'), 'total_users');
-    }
-
-    /**
-     * Gibt die monatlichen Ticketstatistiken als DTOs zurück
-     *
-     * @return \App\Dto\MonthlyDomainStatistic[]
-     */
-    public function getMonthlyTicketStatisticsByDomainDto(): array
-    {
-        return $this->mapToDtos($this->getMonthlyDomainStatistics('ticket_id', 'total_tickets'), 'total_tickets');
-    }
-
-    /**
-     * Mappt das interne Array-Format zu DTOs
-     *
-     * @param array $monthlyStats
-     * @param string $totalKey
-     * @return \App\Dto\MonthlyDomainStatistic[]
-     */
-    private function mapToDtos(array $monthlyStats, string $totalKey): array
-    {
-        $dtos = [];
-        foreach ($monthlyStats as $stat) {
-            $month = $stat['month'] ?? '';
-            $domains = [];
-            foreach ($stat['domains'] ?? [] as $domain => $count) {
-                $domains[] = new \App\Dto\DomainCount($domain, (int)$count);
-            }
-            $total = isset($stat[$totalKey]) ? (int)$stat[$totalKey] : array_sum($stat['domains'] ?? []);
-            $dtos[] = new \App\Dto\MonthlyDomainStatistic($month, $domains, $total);
-        }
-        return $dtos;
     }
 
     /**
