@@ -49,13 +49,24 @@ ini_set('log_errors', '1');
 define('LOG_FILE', __DIR__ . '/webhook-deploy.log');
 
 // Define project root path - can be set via environment variable or adjusted manually
-// Priority: 1. Environment variable, 2. Relative path from webhook directory, 3. Error
+// Priority: 1. Environment variable, 2. Relative path from webhook directory
+// Expected structure: webhook-receiver.php is in a subdirectory of project root
+//   e.g., /var/www/phpticketmailer/webhook/webhook-receiver.php -> /var/www/phpticketmailer
+//   or:   /var/www/webhook/webhook-receiver.php -> /var/www (if set via PROJECT_ROOT env)
 $projectRoot = getenv('PROJECT_ROOT') ?: realpath(__DIR__ . '/..');
 if (!$projectRoot || !is_dir($projectRoot)) {
     http_response_code(500);
     die(json_encode([
         'status' => 'error',
-        'message' => 'PROJECT_ROOT not configured. Set PROJECT_ROOT environment variable or place webhook-receiver.php in project directory.'
+        'message' => 'PROJECT_ROOT not configured. Set PROJECT_ROOT environment variable or place webhook-receiver.php in a subdirectory of the project.'
+    ]));
+}
+// Validate that the project root looks like a valid project directory
+if (!file_exists($projectRoot . '/Makefile')) {
+    http_response_code(500);
+    die(json_encode([
+        'status' => 'error',
+        'message' => 'Invalid PROJECT_ROOT: Makefile not found. Please verify PROJECT_ROOT is set correctly.'
     ]));
 }
 define('PROJECT_ROOT', $projectRoot);
@@ -172,7 +183,8 @@ try {
         if (file_exists($envFile)) {
             $envContent = file_get_contents($envFile);
             // Match WEBHOOK_SECRET at start of line, handle quoted and unquoted values
-            if (preg_match('/^WEBHOOK_SECRET=(["\']?)(.+?)\1$/m', $envContent, $matches)) {
+            // Only match non-newline characters to avoid multiline issues
+            if (preg_match('/^WEBHOOK_SECRET=(["\']?)([^\r\n]+?)\1$/m', $envContent, $matches)) {
                 $webhookSecret = trim($matches[2]);
             }
         }
