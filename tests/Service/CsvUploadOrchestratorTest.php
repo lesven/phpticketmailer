@@ -21,6 +21,7 @@ class CsvUploadOrchestratorTest extends TestCase
     private CsvFieldConfigRepository $csvFieldConfigRepository;
     private SessionManager $sessionManager;
     private UserCreator $userCreator;
+    private \App\Service\StatisticsService $statisticsService;
 
     protected function setUp(): void
     {
@@ -28,12 +29,14 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->csvFieldConfigRepository = $this->createMock(CsvFieldConfigRepository::class);
         $this->sessionManager = $this->createMock(SessionManager::class);
         $this->userCreator = $this->createMock(UserCreator::class);
+        $this->statisticsService = $this->createMock(\App\Service\StatisticsService::class);
 
         $this->orchestrator = new CsvUploadOrchestrator(
             $this->csvProcessor,
             $this->csvFieldConfigRepository,
             $this->sessionManager,
-            $this->userCreator
+            $this->userCreator,
+            $this->statisticsService
         );
     }
 
@@ -61,6 +64,9 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->sessionManager->expects($this->once())
             ->method('storeUploadResults')
             ->with($processingResult);
+
+        $this->statisticsService->expects($this->once())
+            ->method('clearCache');
 
         $result = $this->orchestrator->processUpload($csvFile, true, false, $csvFieldConfig);
 
@@ -96,6 +102,9 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->sessionManager->expects($this->once())
             ->method('storeUploadResults')
             ->with($processingResult);
+
+        $this->statisticsService->expects($this->once())
+            ->method('clearCache');
 
         $result = $this->orchestrator->processUpload($csvFile, false, true, $csvFieldConfig);
 
@@ -255,9 +264,15 @@ class CsvUploadOrchestratorTest extends TestCase
                 $callOrder[] = 'storeUploadResults';
             });
 
+        $this->statisticsService->expects($this->once())
+            ->method('clearCache')
+            ->willReturnCallback(function() use (&$callOrder) {
+                $callOrder[] = 'clearCache';
+            });
+
         $this->orchestrator->processUpload($csvFile, false, false, $csvFieldConfig);
 
-        $this->assertEquals(['saveConfig', 'process', 'storeUploadResults'], $callOrder);
+        $this->assertEquals(['saveConfig', 'process', 'storeUploadResults', 'clearCache'], $callOrder);
     }
 
     public function testConstructorAcceptsDependencies(): void
@@ -266,12 +281,14 @@ class CsvUploadOrchestratorTest extends TestCase
         $repository = $this->createMock(CsvFieldConfigRepository::class);
         $sessionManager = $this->createMock(SessionManager::class);
         $userCreator = $this->createMock(UserCreator::class);
+        $statisticsService = $this->createMock(\App\Service\StatisticsService::class);
 
         $orchestrator = new CsvUploadOrchestrator(
             $csvProcessor,
             $repository,
             $sessionManager,
-            $userCreator
+            $userCreator,
+            $statisticsService
         );
 
         $this->assertInstanceOf(CsvUploadOrchestrator::class, $orchestrator);

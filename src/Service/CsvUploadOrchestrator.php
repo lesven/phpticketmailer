@@ -18,7 +18,8 @@ class CsvUploadOrchestrator
         private readonly CsvProcessor $csvProcessor,
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly SessionManager $sessionManager,
-        private readonly UserCreator $userCreator
+        private readonly UserCreator $userCreator,
+        private readonly StatisticsService $statisticsService
     ) {}
 
     /**
@@ -46,7 +47,10 @@ class CsvUploadOrchestrator
         // 3. Ergebnisse in Session speichern
         $this->sessionManager->storeUploadResults($processingResult);
 
-        // 4. Entscheidung über nächsten Schritt treffen
+        // 4. Statistik-Cache löschen, da neue Daten verarbeitet werden
+        $this->statisticsService->clearCache();
+
+        // 5. Entscheidung über nächsten Schritt treffen
         if (!empty($processingResult['unknownUsers'])) {
             return UploadResult::redirectToUnknownUsers(
                 $testMode,

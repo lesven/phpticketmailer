@@ -39,7 +39,14 @@ class StatisticsServiceTest extends TestCase
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
-        $service = new StatisticsService($repo, $clock);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+        $cache->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(\Symfony\Contracts\Cache\ItemInterface::class);
+                return $callback($item);
+            });
+
+        $service = new StatisticsService($repo, $clock, $cache);
         $dtos = $service->getMonthlyUserStatisticsByDomain();
 
         $this->assertIsArray($dtos);
@@ -97,7 +104,14 @@ class StatisticsServiceTest extends TestCase
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
-        $service = new StatisticsService($repo, $clock);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+        $cache->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(\Symfony\Contracts\Cache\ItemInterface::class);
+                return $callback($item);
+            });
+
+        $service = new StatisticsService($repo, $clock, $cache);
         $dtos = $service->getMonthlyTicketStatisticsByDomain();
 
         $this->assertIsArray($dtos);
@@ -152,7 +166,14 @@ class StatisticsServiceTest extends TestCase
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
-        $service = new StatisticsService($repo, $clock);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+        $cache->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(\Symfony\Contracts\Cache\ItemInterface::class);
+                return $callback($item);
+            });
+
+        $service = new StatisticsService($repo, $clock, $cache);
         $dtos = $service->getMonthlyUserStatisticsByDomain();
 
         // Find DTO for 2026-01
@@ -212,7 +233,14 @@ class StatisticsServiceTest extends TestCase
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
-        $service = new StatisticsService($repo, $clock);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+        $cache->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(\Symfony\Contracts\Cache\ItemInterface::class);
+                return $callback($item);
+            });
+
+        $service = new StatisticsService($repo, $clock, $cache);
         $dtos = $service->getMonthlyTicketStatisticsByDomain();
 
         // Find DTO for 2026-01
@@ -271,7 +299,14 @@ class StatisticsServiceTest extends TestCase
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
-        $service = new StatisticsService($repo, $clock);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+        $cache->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(\Symfony\Contracts\Cache\ItemInterface::class);
+                return $callback($item);
+            });
+
+        $service = new StatisticsService($repo, $clock, $cache);
         $dtos = $service->getMonthlyUserStatisticsByDomain();
 
         // Find DTO for 2026-01
@@ -296,5 +331,21 @@ class StatisticsServiceTest extends TestCase
                 $this->assertEquals('66.7', $domainCount->percentage());
             }
         }
+    }
+
+    public function testClearCacheDeletesAllCacheKeys(): void
+    {
+        $repo = $this->createMock(EmailSentRepository::class);
+        $clock = $this->createMock(\App\Service\ClockInterface::class);
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+
+        // Expect delete to be called for all possible month variations (1-12)
+        $expectedDeleteCalls = 24; // 12 for user stats + 12 for ticket stats
+        $cache->expects($this->exactly($expectedDeleteCalls))
+            ->method('delete')
+            ->willReturn(true);
+
+        $service = new StatisticsService($repo, $clock, $cache);
+        $service->clearCache();
     }
 }
