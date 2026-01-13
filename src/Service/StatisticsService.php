@@ -91,10 +91,14 @@ class StatisticsService
 
     /**
      * Löscht den Statistik-Cache
+     * 
+     * Clears cache entries for months 1-12, which covers all typical use cases.
+     * The default parameter in the getter methods is 6 months, and there's no
+     * UI to change this value. Cache entries with TTL of 1 hour expire automatically.
      */
     public function clearCache(): void
     {
-        // Clear all possible cache keys for user statistics (default is 6 months)
+        // Clear cache keys for months 1-12 (covers default 6 months and extended ranges)
         for ($months = 1; $months <= 12; $months++) {
             $this->cache->delete(self::CACHE_KEY_USER_STATS . '_' . $months);
             $this->cache->delete(self::CACHE_KEY_TICKET_STATS . '_' . $months);
