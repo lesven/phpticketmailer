@@ -77,9 +77,13 @@ define('PROJECT_ROOT', $projectRoot);
  */
 function logMessage($message, $level = 'INFO') {
     $timestamp = date('Y-m-d H:i:s');
-    $logEntry = "[{$timestamp}] [{$level}] {$message}\n";
-    file_put_contents(LOG_FILE, $logEntry, FILE_APPEND);
+    // Sanitize message: remove newlines and control characters to prevent log injection
+    $sanitizedMessage = preg_replace('/[\x00-\x1F\x7F]/', '', str_replace(["\r", "\n"], ' ', $message));
+    $logEntry = "[{$timestamp}] [{$level}] {$sanitizedMessage}\n";
+    // Use LOCK_EX for atomic writes to prevent corruption from concurrent requests
+    file_put_contents(LOG_FILE, $logEntry, FILE_APPEND | LOCK_EX);
 }
+
 
 /**
  * Send JSON response and exit
@@ -132,19 +136,30 @@ function executeDeploy() {
         sendResponse(500, 'Project directory not found');
     }
     
-    chdir(PROJECT_ROOT);
+    // Validate and sanitize PROJECT_ROOT before using in exec
+    // Only allow alphanumeric, dash, underscore, slash, and dot
+    if (!preg_match('|^[a-zA-Z0-9/_.-]+$|', PROJECT_ROOT)) {
+        logMessage('Invalid PROJECT_ROOT path contains unsafe characters: ' . PROJECT_ROOT, 'ERROR');
+        sendResponse(500, 'Invalid project path configuration');
+    }
     
-    // Build the command - redirect output to both stdout and log file
+    // Change to project directory
+    if (!chdir(PROJECT_ROOT)) {
+        logMessage('Failed to change to project directory: ' . PROJECT_ROOT, 'ERROR');
+        sendResponse(500, 'Failed to change directory');
+    }
+    
+    // Build the command - use explicit path
     $command = 'make deploy 2>&1';
     $output = [];
     $returnCode = 0;
     
-    logMessage('Executing: ' . $command);
+    logMessage('Executing: ' . $command . ' in directory: ' . PROJECT_ROOT);
     
     // Execute the deployment
     exec($command, $output, $returnCode);
     
-    // Log output
+    // Log output (output array items are already sanitized by logMessage)
     $outputStr = implode("\n", $output);
     logMessage("Deployment output:\n" . $outputStr);
     
@@ -183,8 +198,8 @@ try {
         if (file_exists($envFile)) {
             $envContent = file_get_contents($envFile);
             // Match WEBHOOK_SECRET at start of line, handle quoted and unquoted values
-            // Only match non-newline characters to avoid multiline issues
-            if (preg_match('/^WEBHOOK_SECRET=(["\']?)([^\r\n]+?)\1$/m', $envContent, $matches)) {
+            // Only match non-newline, non-quote characters for unquoted values
+            if (preg_match('/^WEBHOOK_SECRET=(["\']?)([^\r\n"\']+)\1$/m', $envContent, $matches)) {
                 $webhookSecret = trim($matches[2]);
             }
         }
