@@ -19,7 +19,43 @@ class StatisticsService
      */
     public function getMonthlyUserStatisticsByDomain(int $months = 6): array
     {
-        return $this->getMonthlyStatisticsByDomain('username', 'total_users', $months);
+        $range = \App\ValueObject\MonthRange::lastMonths($months, $this->clock);
+        $since = $range->start();
+        
+        // Get domain statistics
+        $rows = $this->emailSentRepository->getMonthlyDomainCountsRows('username', $since);
+
+        // Get new users by month
+        $newUsersByMonth = $this->emailSentRepository->getNewUsersByMonth($since);
+
+        // aggregate rows into month->domain->count map
+        $map = [];
+        foreach ($rows as $r) {
+            $m = $r['month'];
+            $d = $r['domain'];
+            $c = $r['count'];
+            $map[$m][$d] = $c;
+        }
+
+        // build full months array and map to DTOs
+        $monthlyStats = [];
+        foreach ($range->months() as $monthKey) {
+            $domains = $map[$monthKey] ?? [];
+            // ensure domains sorted desc
+            arsort($domains, SORT_NUMERIC);
+            $newUsers = $newUsersByMonth[$monthKey] ?? 0;
+            $monthlyStats[] = [
+                'month' => $monthKey, 
+                'domains' => $domains, 
+                'total_users' => array_sum($domains),
+                'new_users' => $newUsers
+            ];
+        }
+
+        // months() returns oldest->newest; for UI we want newest first
+        $monthlyStats = array_reverse($monthlyStats);
+
+        return $this->mapToDtos($monthlyStats, 'total_users');
     }
 
     /**
@@ -87,7 +123,8 @@ class StatisticsService
                 $domains[] = new DomainCount($domain, (int)$count);
             }
             $total = isset($stat[$totalKey]) ? (int)$stat[$totalKey] : array_sum($stat['domains'] ?? []);
-            $dtos[] = new MonthlyDomainStatistic($month, $domains, $total);
+            $newUsers = isset($stat['new_users']) ? (int)$stat['new_users'] : 0;
+            $dtos[] = new MonthlyDomainStatistic($month, $domains, $total, $newUsers);
         }
         return $dtos;
     }

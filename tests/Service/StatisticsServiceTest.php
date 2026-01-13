@@ -33,6 +33,9 @@ class StatisticsServiceTest extends TestCase
                 return $rows;
             });
 
+        $repo->method('getNewUsersByMonth')
+            ->willReturn(['2026-01' => 2, '2026-02' => 0]);
+
         $clock = $this->createMock(\App\Service\ClockInterface::class);
         $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
 
@@ -64,6 +67,7 @@ class StatisticsServiceTest extends TestCase
         }
         $this->assertEquals(2, $map['example.com']);
         $this->assertEquals(1, $map['other.com']);
+        $this->assertEquals(2, $found->newUsers(), 'Expected 2 new users in 2026-01');
     }
 
     public function testGetMonthlyTicketStatisticsByDomain(): void

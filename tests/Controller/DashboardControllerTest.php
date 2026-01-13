@@ -61,12 +61,12 @@ class DashboardControllerTest extends TestCase
 
         // Erstelle DTO-Mocks für die Controller-Test
         $monthlyDomainStatistics = [
-            new \App\Dto\MonthlyDomainStatistic('2025-08', [new \App\Dto\DomainCount('example.com', 2)], 2),
-            new \App\Dto\MonthlyDomainStatistic('2025-09', [new \App\Dto\DomainCount('example.com', 4), new \App\Dto\DomainCount('subsidiary.com', 3)], 7),
-            new \App\Dto\MonthlyDomainStatistic('2025-10', [new \App\Dto\DomainCount('example.com', 3)], 3),
-            new \App\Dto\MonthlyDomainStatistic('2025-11', [], 0),
-            new \App\Dto\MonthlyDomainStatistic('2025-12', [new \App\Dto\DomainCount('subsidiary.com', 5)], 5),
-            new \App\Dto\MonthlyDomainStatistic('2026-01', [], 0),
+            new \App\Dto\MonthlyDomainStatistic('2025-08', [new \App\Dto\DomainCount('example.com', 2)], 2, 1),
+            new \App\Dto\MonthlyDomainStatistic('2025-09', [new \App\Dto\DomainCount('example.com', 4), new \App\Dto\DomainCount('subsidiary.com', 3)], 7, 3),
+            new \App\Dto\MonthlyDomainStatistic('2025-10', [new \App\Dto\DomainCount('example.com', 3)], 3, 2),
+            new \App\Dto\MonthlyDomainStatistic('2025-11', [], 0, 0),
+            new \App\Dto\MonthlyDomainStatistic('2025-12', [new \App\Dto\DomainCount('subsidiary.com', 5)], 5, 4),
+            new \App\Dto\MonthlyDomainStatistic('2026-01', [], 0, 0),
         ];
 
         $monthlyTicketStatistics = [
