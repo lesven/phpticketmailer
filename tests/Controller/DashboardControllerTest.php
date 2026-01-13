@@ -27,7 +27,7 @@ class DashboardControllerTest extends TestCase
 
         $this->controller = new DashboardController($this->emailSentRepository, $this->statisticsService);
 
-        // Inject mocked services using reflection
+        // Inject mocked Twig service using reflection
         $reflectionClass = new \ReflectionClass($this->controller);
         $containerProperty = $reflectionClass->getParentClass()->getProperty('container');
         $containerProperty->setAccessible(true);
