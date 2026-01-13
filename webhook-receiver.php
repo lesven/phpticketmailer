@@ -49,8 +49,17 @@ ini_set('log_errors', '1');
 define('LOG_FILE', __DIR__ . '/webhook-deploy.log');
 
 // Define project root path - can be set via environment variable or adjusted manually
-// Priority: 1. Environment variable, 2. Relative path, 3. Default path
-define('PROJECT_ROOT', getenv('PROJECT_ROOT') ?: realpath(__DIR__ . '/..') ?: '/var/www/phpticketmailer');
+// Priority: 1. Environment variable, 2. Relative path from webhook directory, 3. Error
+$projectRoot = getenv('PROJECT_ROOT') ?: realpath(__DIR__ . '/..');
+if (!$projectRoot || !is_dir($projectRoot)) {
+    http_response_code(500);
+    die(json_encode([
+        'status' => 'error',
+        'message' => 'PROJECT_ROOT not configured. Set PROJECT_ROOT environment variable or place webhook-receiver.php in project directory.'
+    ]));
+}
+define('PROJECT_ROOT', $projectRoot);
+
 
 /**
  * Log message to file with timestamp
@@ -162,8 +171,9 @@ try {
         $envFile = PROJECT_ROOT . '/.env';
         if (file_exists($envFile)) {
             $envContent = file_get_contents($envFile);
-            if (preg_match('/WEBHOOK_SECRET=(.+)/', $envContent, $matches)) {
-                $webhookSecret = trim($matches[1]);
+            // Match WEBHOOK_SECRET at start of line, handle quoted and unquoted values
+            if (preg_match('/^WEBHOOK_SECRET=(["\']?)(.+?)\1$/m', $envContent, $matches)) {
+                $webhookSecret = trim($matches[2]);
             }
         }
     }
@@ -213,5 +223,6 @@ try {
 } catch (Exception $e) {
     logMessage('Exception occurred: ' . $e->getMessage(), 'ERROR');
     logMessage('Stack trace: ' . $e->getTraceAsString(), 'ERROR');
-    sendResponse(500, 'Internal server error: ' . $e->getMessage());
+    // Don't expose exception details in production
+    sendResponse(500, 'Internal server error occurred. Check logs for details.');
 }

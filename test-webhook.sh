@@ -11,10 +11,13 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Standardwerte
+DEFAULT_REPOSITORY="your-user/your-repo"
+
 # Konfiguration
 WEBHOOK_URL="${WEBHOOK_URL:-}"
 WEBHOOK_SECRET="${WEBHOOK_SECRET:-}"
-REPOSITORY="${REPOSITORY:-your-user/your-repo}"
+REPOSITORY="${REPOSITORY:-$DEFAULT_REPOSITORY}"
 
 # Hilfsfunktionen
 log_info() {
@@ -48,7 +51,7 @@ Optionen:
 Umgebungsvariablen:
   WEBHOOK_URL      Webhook URL
   WEBHOOK_SECRET   Webhook Secret
-  REPOSITORY       Repository Name (Standard: your-user/your-repo)
+  REPOSITORY       Repository Name (Standard: $DEFAULT_REPOSITORY)
 
 Beispiel:
   $0 -u https://testserver.example.com/deploy-webhook -s mein-secret-hier

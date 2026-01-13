@@ -23,13 +23,24 @@ jobs:
           # Generate timestamp
           TIMESTAMP=$(date +%s)
           
+          # Safely escape commit message for JSON
+          # Use jq if available, otherwise use basic escaping
+          COMMIT_MSG='${{ github.event.head_commit.message }}'
+          if command -v jq >/dev/null 2>&1; then
+            COMMIT_MSG_JSON=$(echo "$COMMIT_MSG" | jq -Rs .)
+          else
+            # Basic JSON escaping: escape backslashes, quotes, newlines
+            COMMIT_MSG_JSON=$(echo "$COMMIT_MSG" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+            COMMIT_MSG_JSON="\"$COMMIT_MSG_JSON\""
+          fi
+          
           # Create payload
           PAYLOAD=$(cat <<EOF
           {
             "ref": "${{ github.ref }}",
             "repository": "${{ github.repository }}",
             "commit": "${{ github.sha }}",
-            "commit_message": $(echo '${{ github.event.head_commit.message }}' | jq -Rs .),
+            "commit_message": $COMMIT_MSG_JSON,
             "pusher": "${{ github.actor }}",
             "timestamp": $TIMESTAMP
           }
