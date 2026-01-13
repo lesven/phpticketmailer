@@ -664,9 +664,7 @@ SQL;
             $newUsersByMonth = [];
             foreach ($firstEmailByUser as $username => $firstTimestamp) {
                 // Convert to DateTimeImmutable for type-consistent comparison
-                $firstTimestampImmutable = $firstTimestamp instanceof \DateTimeImmutable 
-                    ? $firstTimestamp 
-                    : \DateTimeImmutable::createFromMutable($firstTimestamp);
+                $firstTimestampImmutable = $firstTimestamp instanceof \DateTimeImmutable ? $firstTimestamp : \DateTimeImmutable::createFromMutable($firstTimestamp);
                 
                 if ($firstTimestampImmutable >= $since) {
                     $month = $firstTimestampImmutable->format('Y-m');
