@@ -584,6 +584,102 @@ SQL;
     }
 
     /**
+     * Gibt die Anzahl neuer Benutzer pro Monat zurück
+     * Ein neuer Benutzer ist ein Benutzer, der in diesem Monat zum ersten Mal eine E-Mail erhalten hat
+     *
+     * @param \DateTimeImmutable $since Startdatum für die Berechnung
+     * @return array<string, int> Array mit Monat als Key (YYYY-MM) und Anzahl neuer Benutzer als Value
+     */
+    public function getNewUsersByMonth(\DateTimeImmutable $since): array
+    {
+        try {
+            $conn = $this->getEntityManager()->getConnection();
+
+            // Find the first email timestamp for each user
+            $sql = <<<SQL
+SELECT 
+    e.username,
+    DATE_FORMAT(MIN(e.timestamp), '%Y-%m') AS first_month
+FROM emails_sent e
+WHERE (e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)
+GROUP BY e.username
+HAVING MIN(e.timestamp) >= :since
+SQL;
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue('since', $since->format('Y-m-d H:i:s'));
+            $stmt->bindValue('status', \App\ValueObject\EmailStatus::sent()->getValue());
+            $stmt->bindValue('status_plain', 'sent');
+            $stmt->bindValue('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%');
+
+            $results = $stmt->executeQuery()->fetchAllAssociative();
+
+            // Count new users per month
+            $newUsersByMonth = [];
+            foreach ($results as $row) {
+                $month = $row['first_month'];
+                if (!isset($newUsersByMonth[$month])) {
+                    $newUsersByMonth[$month] = 0;
+                }
+                $newUsersByMonth[$month]++;
+            }
+
+            return $newUsersByMonth;
+
+        } catch (\Throwable $e) {
+            // Fallback to PHP-based aggregation
+            $qb = $this->createQueryBuilder('e')
+                ->select('e.username, e.timestamp')
+                ->where('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
+                ->setParameter('status_plain', 'sent')
+                ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
+                ->orderBy('e.timestamp', 'ASC');
+
+            $rows = $qb->getQuery()->getArrayResult();
+
+            // Find first timestamp for each user
+            $firstEmailByUser = [];
+            foreach ($rows as $row) {
+                $username = $this->normalizeDistinctValue($row['username']);
+                if ($username === null) {
+                    continue;
+                }
+
+                $timestamp = $row['timestamp'];
+                if (!$timestamp instanceof \DateTimeInterface) {
+                    try {
+                        $timestamp = new \DateTime($timestamp);
+                    } catch (\Exception $ex) {
+                        continue;
+                    }
+                }
+
+                if (!isset($firstEmailByUser[$username]) || $timestamp < $firstEmailByUser[$username]) {
+                    $firstEmailByUser[$username] = $timestamp;
+                }
+            }
+
+            // Count new users per month (only those whose first email is after $since)
+            $newUsersByMonth = [];
+            foreach ($firstEmailByUser as $username => $firstTimestamp) {
+                // Convert to DateTimeImmutable for type-consistent comparison
+                $firstTimestampImmutable = $firstTimestamp instanceof \DateTimeImmutable ? $firstTimestamp : \DateTimeImmutable::createFromMutable($firstTimestamp);
+                
+                if ($firstTimestampImmutable >= $since) {
+                    $month = $firstTimestampImmutable->format('Y-m');
+                    if (!isset($newUsersByMonth[$month])) {
+                        $newUsersByMonth[$month] = 0;
+                    }
+                    $newUsersByMonth[$month]++;
+                }
+            }
+
+            return $newUsersByMonth;
+        }
+    }
+
+    /**
      * Normalisiert einen distinct-Wert (Username oder TicketId) zu einem String-Key.
      * Unterstützt Strings, skalare Werte, ValueObjects mit getValue() oder Objekte mit __toString().
      *

@@ -500,6 +500,65 @@ class EmailSentRepositoryTest extends KernelTestCase
         }
     }
 
+    public function testGetNewUsersByMonthCountsFirstTimeUsers(): void
+    {
+        $now = new \DateTime();
+        
+        // User1: First email in current month - should be counted as new
+        $this->createEmailSentWithDomain('user1', 'example.com', $now);
+        
+        // User2: First email in previous month, second email in current month - should NOT be counted as new in current month
+        $prevMonth = (clone $now)->modify('-1 month');
+        $this->createEmailSentWithDomain('user2', 'example.com', $prevMonth);
+        $this->createEmailSentWithDomain('user2', 'example.com', $now);
+        
+        // User3: First email in current month - should be counted as new
+        $this->createEmailSentWithDomain('user3', 'other.com', $now);
+        
+        // User4: First email 2 months ago - should be counted in that month
+        $twoMonthsAgo = (clone $now)->modify('-2 months');
+        $this->createEmailSentWithDomain('user4', 'example.com', $twoMonthsAgo);
+        
+        $this->entityManager->flush();
+        
+        $since = (clone $now)->modify('-5 months first day of this month')->setTime(0, 0, 0);
+        $newUsersByMonth = $this->repository->getNewUsersByMonth(new \DateTimeImmutable($since->format('Y-m-d H:i:s')));
+        
+        $currentMonthKey = $now->format('Y-m');
+        $prevMonthKey = $prevMonth->format('Y-m');
+        $twoMonthsAgoKey = $twoMonthsAgo->format('Y-m');
+        
+        // Current month should have 2 new users (user1 and user3)
+        $this->assertEquals(2, $newUsersByMonth[$currentMonthKey] ?? 0);
+        
+        // Previous month should have 1 new user (user2)
+        $this->assertEquals(1, $newUsersByMonth[$prevMonthKey] ?? 0);
+        
+        // Two months ago should have 1 new user (user4)
+        $this->assertEquals(1, $newUsersByMonth[$twoMonthsAgoKey] ?? 0);
+    }
+
+    public function testGetNewUsersByMonthIgnoresFailedEmails(): void
+    {
+        $now = new \DateTime();
+        
+        // User1: First email failed - should NOT be counted
+        $this->createEmailSentWithDomain('user1', 'example.com', $now, 'error: SMTP failed');
+        
+        // User2: First email sent successfully - should be counted
+        $this->createEmailSentWithDomain('user2', 'example.com', $now, 'sent');
+        
+        $this->entityManager->flush();
+        
+        $since = (clone $now)->modify('-5 months first day of this month')->setTime(0, 0, 0);
+        $newUsersByMonth = $this->repository->getNewUsersByMonth(new \DateTimeImmutable($since->format('Y-m-d H:i:s')));
+        
+        $currentMonthKey = $now->format('Y-m');
+        
+        // Only user2 should be counted as new
+        $this->assertEquals(1, $newUsersByMonth[$currentMonthKey] ?? 0);
+    }
+
     private function createEmailSentWithDomainAndTicket(
         string $username,
         string $domain,

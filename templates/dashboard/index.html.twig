@@ -126,6 +126,7 @@
                                     <th style="width:100px; white-space:nowrap;">Monat</th>
                                     <th>Domain</th>
                                     <th>Anzahl Benutzer</th>
+                                    <th>Neue Benutzer</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -143,6 +144,7 @@
                                             {% endif %}
                                         </td>
                                         <td><strong>{{ stat.total }}</strong></td>
+                                        <td><strong>{{ stat.newUsers }}</strong></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
