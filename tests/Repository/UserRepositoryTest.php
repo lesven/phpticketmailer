@@ -5,6 +5,7 @@ namespace App\Tests\Repository;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\ValueObject\Username;
+use App\ValueObject\EmailAddress;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -87,7 +88,7 @@ class UserRepositoryTest extends TestCase
              ->willReturn(Username::fromString($username));
         if ($email !== null) {
             $user->method('getEmail')
-                 ->willReturn($email);
+                 ->willReturn(EmailAddress::fromString($email));
         }
         return $user;
     }
