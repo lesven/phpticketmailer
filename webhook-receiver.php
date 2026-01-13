@@ -14,9 +14,10 @@
  * 1. Place this file in a web-accessible directory (e.g., /var/www/webhook/)
  * 2. Configure your web server (nginx/apache) to serve this script via HTTPS
  * 3. Set the WEBHOOK_SECRET in your .env file or environment variables
- * 4. Ensure the web server user has permission to execute 'make deploy'
- * 5. Add the webhook URL to GitHub repository secrets as DEPLOY_WEBHOOK_URL
- * 6. Add the webhook secret to GitHub repository secrets as DEPLOY_WEBHOOK_SECRET
+ * 4. (Optional) Set PROJECT_ROOT environment variable or let it auto-detect
+ * 5. Ensure the web server user has permission to execute 'make deploy'
+ * 6. Add the webhook URL to GitHub repository secrets as DEPLOY_WEBHOOK_URL
+ * 7. Add the webhook secret to GitHub repository secrets as DEPLOY_WEBHOOK_SECRET
  * 
  * Example nginx configuration:
  * 
@@ -39,16 +40,17 @@
  * }
  */
 
-// Set error reporting for debugging (disable in production)
-error_reporting(E_ALL);
+// Set error reporting - restrictive for production
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
 ini_set('display_errors', '0'); // Don't display errors to client
 ini_set('log_errors', '1');
 
 // Define log file path
 define('LOG_FILE', __DIR__ . '/webhook-deploy.log');
 
-// Define project root path - adjust this to your actual project path
-define('PROJECT_ROOT', '/var/www/phpticketmailer'); // CHANGE THIS TO YOUR PROJECT PATH
+// Define project root path - can be set via environment variable or adjusted manually
+// Priority: 1. Environment variable, 2. Relative path, 3. Default path
+define('PROJECT_ROOT', getenv('PROJECT_ROOT') ?: realpath(__DIR__ . '/..') ?: '/var/www/phpticketmailer');
 
 /**
  * Log message to file with timestamp

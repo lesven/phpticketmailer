@@ -36,7 +36,8 @@ Das automatische Deployment funktioniert wie folgt:
 ```bash
 # Als Benutzer mit entsprechenden Rechten
 cd /var/www
-git clone https://github.com/lesven/phpticketmailer.git
+# Ersetzen Sie YOUR_USER/YOUR_REPO mit Ihrer tatsächlichen Repository-URL
+git clone https://github.com/YOUR_USER/YOUR_REPO.git phpticketmailer
 cd phpticketmailer
 git checkout develop
 ```
@@ -76,13 +77,30 @@ chmod 755 /var/www/webhook
 chmod 644 /var/www/webhook/webhook-receiver.php
 ```
 
-#### 1.5 Projekt-Pfad im Webhook-Receiver anpassen
+#### 1.5 Projekt-Pfad konfigurieren (Optional)
 
-Bearbeiten Sie `/var/www/webhook/webhook-receiver.php` und passen Sie den Projekt-Pfad an:
+Der Webhook-Receiver erkennt automatisch den Projekt-Pfad, wenn er im Projekt-Verzeichnis liegt.
 
+**Automatische Erkennung:**
+- Wenn `webhook-receiver.php` im Projekt-Root liegt, wird der Pfad automatisch erkannt
+- Wenn es in einem Unterverzeichnis liegt (z.B. `/var/www/webhook/`), versucht es `__DIR__ . '/..`
+
+**Manuelle Konfiguration (falls nötig):**
+
+Option 1 - Umgebungsvariable (empfohlen):
+```bash
+# In nginx/apache PHP-FPM Konfiguration oder systemd service
+fastcgi_param PROJECT_ROOT /var/www/phpticketmailer;
+```
+
+Option 2 - .env Datei:
+```bash
+echo "PROJECT_ROOT=/var/www/phpticketmailer" >> /var/www/phpticketmailer/.env
+```
+
+Option 3 - Direkt in webhook-receiver.php anpassen (Zeile ~50):
 ```php
-// Zeile 48 ca.:
-define('PROJECT_ROOT', '/var/www/phpticketmailer'); // Ihr tatsächlicher Pfad
+define('PROJECT_ROOT', '/var/www/phpticketmailer');
 ```
 
 ### 2. Web-Server Konfiguration
@@ -216,7 +234,7 @@ sudo systemctl restart php8.3-fpm
 
 ### 4. GitHub Secrets konfigurieren
 
-1. Gehen Sie zu Ihrem GitHub Repository: `https://github.com/lesven/phpticketmailer`
+1. Gehen Sie zu Ihrem GitHub Repository: `https://github.com/YOUR_USER/YOUR_REPO`
 2. Navigieren Sie zu **Settings** → **Secrets and variables** → **Actions**
 3. Klicken Sie auf **New repository secret**
 4. Fügen Sie zwei Secrets hinzu:
@@ -238,8 +256,8 @@ IHR_GENERIERTES_SECRET_HIER
 #### 5.1 Manueller Test des Webhook-Empfängers
 
 ```bash
-# Test-Payload erstellen
-PAYLOAD='{"ref":"refs/heads/develop","repository":"lesven/phpticketmailer","commit":"test123","commit_message":"Test deployment","pusher":"test-user","timestamp":1234567890}'
+# Test-Payload erstellen (ersetzen Sie YOUR_USER/YOUR_REPO mit Ihrem Repository)
+PAYLOAD='{"ref":"refs/heads/develop","repository":"YOUR_USER/YOUR_REPO","commit":"test123","commit_message":"Test deployment","pusher":"test-user","timestamp":1234567890}'
 
 # Secret (ersetzen Sie mit Ihrem echten Secret)
 SECRET="IHR_GENERIERTES_SECRET_HIER"

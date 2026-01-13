@@ -14,6 +14,7 @@ NC='\033[0m' # No Color
 # Konfiguration
 WEBHOOK_URL="${WEBHOOK_URL:-}"
 WEBHOOK_SECRET="${WEBHOOK_SECRET:-}"
+REPOSITORY="${REPOSITORY:-your-user/your-repo}"
 
 # Hilfsfunktionen
 log_info() {
@@ -47,6 +48,7 @@ Optionen:
 Umgebungsvariablen:
   WEBHOOK_URL      Webhook URL
   WEBHOOK_SECRET   Webhook Secret
+  REPOSITORY       Repository Name (Standard: your-user/your-repo)
 
 Beispiel:
   $0 -u https://testserver.example.com/deploy-webhook -s mein-secret-hier
@@ -123,10 +125,12 @@ log_info ""
 
 # Test-Payload erstellen
 TIMESTAMP=$(date +%s)
+# Repository name can be set via environment variable or defaults to example
+REPOSITORY="${REPOSITORY:-your-user/your-repo}"
 PAYLOAD=$(cat <<EOF
 {
   "ref": "refs/heads/develop",
-  "repository": "lesven/phpticketmailer",
+  "repository": "$REPOSITORY",
   "commit": "test-$(date +%Y%m%d-%H%M%S)",
   "commit_message": "Test deployment from test script",
   "pusher": "test-script",

@@ -18,7 +18,8 @@ Beispiel-Ausgabe: `a1b2c3d4e5f6...` (64 Zeichen)
 
 ```bash
 cd /var/www
-git clone https://github.com/lesven/phpticketmailer.git
+# Ersetzen Sie YOUR_USER/YOUR_REPO mit Ihrer tatsächlichen Repository-URL
+git clone https://github.com/YOUR_USER/YOUR_REPO.git phpticketmailer
 cd phpticketmailer
 git checkout develop
 ```
@@ -37,8 +38,8 @@ echo "WEBHOOK_SECRET=IHR_GENERIERTES_SECRET" >> .env
 mkdir -p /var/www/webhook
 cp webhook-receiver.php /var/www/webhook/
 
-# Projekt-Pfad anpassen (Zeile 48 in webhook-receiver.php)
-sed -i "s|/var/www/phpticketmailer|$(pwd)|g" /var/www/webhook/webhook-receiver.php
+# Optional: Projekt-Pfad über Umgebungsvariable setzen (falls Auto-Erkennung nicht funktioniert)
+echo "PROJECT_ROOT=$(pwd)" >> .env
 
 # Berechtigungen setzen
 touch /var/www/webhook/webhook-deploy.log
@@ -85,7 +86,7 @@ sudo systemctl restart php8.3-fpm
 
 ## 3. GitHub konfigurieren
 
-1. Gehen Sie zu: https://github.com/lesven/phpticketmailer/settings/secrets/actions
+1. Gehen Sie zu: https://github.com/YOUR_USER/YOUR_REPO/settings/secrets/actions
 2. Klicken Sie auf **New repository secret**
 3. Fügen Sie zwei Secrets hinzu:
 
@@ -131,7 +132,7 @@ docker compose logs -f
 
 ## 5. GitHub Actions überwachen
 
-- Gehen Sie zu: https://github.com/lesven/phpticketmailer/actions
+- Gehen Sie zu: https://github.com/YOUR_USER/YOUR_REPO/actions
 - Sehen Sie den Workflow "Deploy to Test Server (Develop)"
 - Prüfen Sie die Logs bei Fehlern
 
