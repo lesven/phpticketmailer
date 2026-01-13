@@ -11,6 +11,10 @@ jobs:
     name: Trigger Deployment via Webhook
     runs-on: ubuntu-latest
     
+    # Minimal permissions for security - only read access to repository contents
+    permissions:
+      contents: read
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
