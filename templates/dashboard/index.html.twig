@@ -133,15 +133,57 @@
                                     <tr>
                                         <td style="white-space:nowrap">{{ stat.month }}</td>
                                         <td>
-                                            {% if stat.domains is not empty %}
-                                                {% for domain, count in stat.domains %}
-                                                    <span class="badge bg-info">{{ domain }}: {{ count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                            {% set domainCounts = stat.domains %}
+                                            {% if domainCounts is not empty %}
+                                                {% for dc in domainCounts %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
                                                 {% endfor %}
                                             {% else %}
                                                 <span class="text-muted">Keine Daten</span>
                                             {% endif %}
                                         </td>
-                                        <td><strong>{{ stat.total_users }}</strong></td>
+                                        <td><strong>{{ stat.total }}</strong></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monatliche Ticketstatistiken nach Domain -->
+    <h2 class="mb-3">Ticketstatistik nach Domain (letzte 6 Monate)</h2>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-text">Anzahl einzigartiger Tickets pro Monat, gruppiert nach E-Mail-Domain (zur Identifikation der Tochterfirma):</p>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width:100px; white-space:nowrap;">Monat</th>
+                                    <th>Domain</th>
+                                    <th>Anzahl Tickets</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in monthlyTicketStatistics %}
+                                    <tr>
+                                        <td style="white-space:nowrap">{{ stat.month }}</td>
+                                        <td>
+                                            {% set domainCounts = stat.domains %}
+                                            {% if domainCounts is not empty %}
+                                                {% for dc in domainCounts %}
+                                                    <span class="badge bg-info">{{ dc.domain }}: {{ dc.count }}</span>{% if not loop.last %}&nbsp;{% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Keine Daten</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>{{ stat.total }}</strong></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
