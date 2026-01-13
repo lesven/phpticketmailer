@@ -662,8 +662,9 @@ SQL;
 
             // Count new users per month (only those whose first email is after $since)
             $newUsersByMonth = [];
+            $sinceDateTime = new \DateTime($since->format('Y-m-d H:i:s'));
             foreach ($firstEmailByUser as $username => $firstTimestamp) {
-                if ($firstTimestamp >= $since) {
+                if ($firstTimestamp >= $sinceDateTime) {
                     $month = $firstTimestamp->format('Y-m');
                     if (!isset($newUsersByMonth[$month])) {
                         $newUsersByMonth[$month] = 0;
