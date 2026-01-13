@@ -297,6 +297,7 @@ SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
        LOWER(TRIM(SUBSTRING_INDEX(e.email, '@', -1))) AS domain,
        COUNT(DISTINCT {$distinctSqlColumn}) AS {$countAlias}
 FROM emails_sent e
+LEFT JOIN users u ON e.username = u.username
 WHERE e.timestamp >= :since
   AND (
       e.status = :status OR
@@ -304,6 +305,7 @@ WHERE e.timestamp >= :since
       e.status LIKE :status_like
   )
   AND e.email LIKE '%@%'
+  AND (u.excluded_from_surveys = 0 OR u.excluded_from_surveys IS NULL)
 GROUP BY month, domain
 ORDER BY month ASC, {$countAlias} DESC, domain ASC
 SQL;
@@ -323,8 +325,10 @@ SQL;
             // Fallback auf PHP-basierten Aggregationspfad: lade Rohdaten und aggregiere
             $qb = $this->createQueryBuilder('e')
                 ->select('e.timestamp as ts, ' . ($distinctField === 'username' ? 'e.username as distinct_value' : 'e.ticketId as distinct_value') . ', e.email as email')
+                ->leftJoin(\App\Entity\User::class, 'u', 'WITH', 'e.username = u.username')
                 ->where('e.timestamp >= :since')
                 ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                ->andWhere('(u.excludedFromSurveys = false OR u.excludedFromSurveys IS NULL)')
                 ->setParameter('since', $since)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->setParameter('status_plain', 'sent')
@@ -426,6 +430,7 @@ SELECT DATE_FORMAT(e.timestamp, '%Y-%m') AS month,
        LOWER(TRIM(SUBSTRING_INDEX(e.email, '@', -1))) AS domain,
        COUNT(DISTINCT {$distinctSqlColumn}) AS {$countAlias}
 FROM emails_sent e
+LEFT JOIN users u ON e.username = u.username
 WHERE e.timestamp >= :fiveMonthsAgo
   AND (
       e.status = :status OR
@@ -433,6 +438,7 @@ WHERE e.timestamp >= :fiveMonthsAgo
       e.status LIKE :status_like
   )
   AND e.email LIKE '%@%'
+  AND (u.excluded_from_surveys = 0 OR u.excluded_from_surveys IS NULL)
 GROUP BY month, domain
 ORDER BY month ASC, {$countAlias} DESC, domain ASC
 SQL;
@@ -464,8 +470,10 @@ SQL;
             // Fallback auf PHP-basierte Aggregation
             $qb = $this->createQueryBuilder('e')
                 ->select('e.timestamp as ts, ' . ($distinctField === 'username' ? 'e.username as distinct_value' : 'e.ticketId as distinct_value') . ', e.email as email')
+                ->leftJoin(\App\Entity\User::class, 'u', 'WITH', 'e.username = u.username')
                 ->where('e.timestamp >= :fiveMonthsAgo')
                 ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                ->andWhere('(u.excludedFromSurveys = false OR u.excludedFromSurveys IS NULL)')
                 ->setParameter('fiveMonthsAgo', $startDate)
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->setParameter('status_plain', 'sent')
@@ -477,8 +485,10 @@ SQL;
             if (empty($rows)) {
                 $entities = $this->createQueryBuilder('e')
                     ->select('e')
+                    ->leftJoin(\App\Entity\User::class, 'u', 'WITH', 'e.username = u.username')
                     ->where('e.timestamp >= :fiveMonthsAgo')
                     ->andWhere('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                    ->andWhere('(u.excludedFromSurveys = false OR u.excludedFromSurveys IS NULL)')
                     ->setParameter('fiveMonthsAgo', $startDate)
                     ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                     ->setParameter('status_plain', 'sent')
@@ -601,7 +611,9 @@ SELECT
     e.username,
     DATE_FORMAT(MIN(e.timestamp), '%Y-%m') AS first_month
 FROM emails_sent e
+LEFT JOIN users u ON e.username = u.username
 WHERE (e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)
+  AND (u.excluded_from_surveys = 0 OR u.excluded_from_surveys IS NULL)
 GROUP BY e.username
 HAVING MIN(e.timestamp) >= :since
 SQL;
@@ -630,7 +642,9 @@ SQL;
             // Fallback to PHP-based aggregation
             $qb = $this->createQueryBuilder('e')
                 ->select('e.username, e.timestamp')
+                ->leftJoin(\App\Entity\User::class, 'u', 'WITH', 'e.username = u.username')
                 ->where('(e.status = :status OR e.status = :status_plain OR e.status LIKE :status_like)')
+                ->andWhere('(u.excludedFromSurveys = false OR u.excludedFromSurveys IS NULL)')
                 ->setParameter('status', \App\ValueObject\EmailStatus::sent()->getValue())
                 ->setParameter('status_plain', 'sent')
                 ->setParameter('status_like', \App\ValueObject\EmailStatus::sent()->getValue() . '%')
