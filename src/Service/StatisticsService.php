@@ -118,11 +118,11 @@ class StatisticsService
         $dtos = [];
         foreach ($monthlyStats as $stat) {
             $month = $stat['month'] ?? '';
+            $total = isset($stat[$totalKey]) ? (int)$stat[$totalKey] : array_sum($stat['domains'] ?? []);
             $domains = [];
             foreach ($stat['domains'] ?? [] as $domain => $count) {
-                $domains[] = new DomainCount($domain, (int)$count);
+                $domains[] = new DomainCount($domain, (int)$count, $total);
             }
-            $total = isset($stat[$totalKey]) ? (int)$stat[$totalKey] : array_sum($stat['domains'] ?? []);
             $newUsers = isset($stat['new_users']) ? (int)$stat['new_users'] : 0;
             $dtos[] = new MonthlyDomainStatistic($month, $domains, $total, $newUsers);
         }
