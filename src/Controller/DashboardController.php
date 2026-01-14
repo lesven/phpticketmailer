@@ -93,10 +93,15 @@ class DashboardController extends AbstractController
     }
 
     /**
-     * Löscht den Statistik-Cache
+     * Löscht den Statistik-Cache manuell
      *
-     * Diese Route löscht den Cache für die monatlichen Statistiken,
+     * Diese Route wird aufgerufen, wenn der Benutzer auf den "Cache löschen" Button
+     * im Dashboard klickt. Sie löscht alle Cache-Einträge für monatliche Statistiken
+     * (sowohl Benutzer- als auch Ticketstatistiken für alle Monatsbereiche 1-12),
      * sodass beim nächsten Abruf neue Daten aus der Datenbank geladen werden.
+     * 
+     * Nach dem Löschen wird eine Erfolgsmeldung angezeigt und der Benutzer wird
+     * zurück zum Dashboard weitergeleitet.
      *
      * @return Response Redirect zur Dashboard-Seite mit Erfolgsmeldung
      */

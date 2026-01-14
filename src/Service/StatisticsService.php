@@ -23,8 +23,12 @@ class StatisticsService
 
     /**
      * Liefert monatliche Benutzerstatistiken als DTOs
+     * 
+     * Diese Methode ruft die Benutzerstatistiken der letzten N Monate ab und cached sie
+     * für bessere Performance. Der Cache hat eine TTL von 48 Stunden.
      *
-     * @return MonthlyDomainStatistic[]
+     * @param int $months Anzahl der Monate (Standard: 6)
+     * @return MonthlyDomainStatistic[] Array von MonthlyDomainStatistic DTOs, sortiert vom neuesten zum ältesten Monat
      */
     public function getMonthlyUserStatisticsByDomain(int $months = 6): array
     {
@@ -75,8 +79,12 @@ class StatisticsService
 
     /**
      * Liefert monatliche Ticketstatistiken als DTOs
+     * 
+     * Diese Methode ruft die Ticketstatistiken der letzten N Monate ab und cached sie
+     * für bessere Performance. Der Cache hat eine TTL von 48 Stunden.
      *
-     * @return MonthlyDomainStatistic[]
+     * @param int $months Anzahl der Monate (Standard: 6)
+     * @return MonthlyDomainStatistic[] Array von MonthlyDomainStatistic DTOs, sortiert vom neuesten zum ältesten Monat
      */
     public function getMonthlyTicketStatisticsByDomain(int $months = 6): array
     {
@@ -92,10 +100,13 @@ class StatisticsService
     /**
      * Löscht den Cache nur für den aktuellen Monat
      * 
-     * Diese Methode wird beim Versand von E-Mails aufgerufen, um sicherzustellen,
-     * dass die Statistiken für den aktuellen Monat aktualisiert werden.
-     * Da der aktuelle Monat immer in den Statistiken enthalten ist, wird nur
-     * der Standard-Cache (6 Monate) gelöscht, der am häufigsten verwendet wird.
+     * Diese Methode wird beim Versand von E-Mails (CSV-Upload) aufgerufen, um sicherzustellen,
+     * dass die Statistiken für den aktuellen Monat aktualisiert werden. Da der aktuelle Monat
+     * immer in den Statistiken enthalten ist, wird nur der Standard-Cache (6 Monate) gelöscht,
+     * der am häufigsten verwendet wird. Andere Cache-Einträge (z.B. für 1, 3, 12 Monate) bleiben
+     * erhalten, um die Performance zu optimieren.
+     * 
+     * @return void
      */
     public function clearCurrentMonthCache(): void
     {
@@ -106,11 +117,18 @@ class StatisticsService
     }
 
     /**
-     * Löscht den Statistik-Cache
+     * Löscht den gesamten Statistik-Cache
      * 
-     * Clears cache entries for months 1-12, which covers all typical use cases.
-     * The default parameter in the getter methods is 6 months, and there's no
-     * UI to change this value. Cache entries with TTL of 48 hours expire automatically.
+     * Diese Methode löscht alle Cache-Einträge für Statistiken (1-12 Monate).
+     * Sie wird aufgerufen, wenn der Benutzer manuell über die Dashboard-UI den
+     * "Cache löschen" Button klickt. Im Gegensatz zu clearCurrentMonthCache()
+     * werden hier alle möglichen Cache-Varianten gelöscht, um eine vollständige
+     * Aktualisierung zu gewährleisten.
+     * 
+     * Cache-Einträge haben eine TTL von 48 Stunden und verfallen automatisch,
+     * aber diese Methode ermöglicht eine sofortige manuelle Aktualisierung.
+     * 
+     * @return void
      */
     public function clearCache(): void
     {
