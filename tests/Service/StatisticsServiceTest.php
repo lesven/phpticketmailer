@@ -361,11 +361,13 @@ class StatisticsServiceTest extends TestCase
         $expectedDeleteCalls = 2;
         $cache->expects($this->exactly($expectedDeleteCalls))
             ->method('delete')
-            ->withConsecutive(
-                ['statistics.monthly_user_by_domain_6'],
-                ['statistics.monthly_ticket_by_domain_6']
-            )
-            ->willReturn(true);
+            ->willReturnCallback(function($key) {
+                $this->assertContains($key, [
+                    'statistics.monthly_user_by_domain_6',
+                    'statistics.monthly_ticket_by_domain_6'
+                ]);
+                return true;
+            });
 
         $service = new StatisticsService($repo, $clock, $cache);
         $service->clearCurrentMonthCache();

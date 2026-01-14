@@ -130,39 +130,38 @@ class DashboardControllerTest extends TestCase
 
     public function testClearCacheClearsStatisticsAndRedirects(): void
     {
+        // Mock EmailSentRepository for constructor
+        $emailSentRepository = $this->createMock(\App\Repository\EmailSentRepository::class);
+        
+        // Create a partial mock of the controller to mock addFlash
+        $controller = $this->getMockBuilder(DashboardController::class)
+            ->setConstructorArgs([$emailSentRepository, $this->statisticsService])
+            ->onlyMethods(['addFlash', 'redirectToRoute'])
+            ->getMock();
+
         // Expect clearCache to be called on the statistics service
         $this->statisticsService->expects($this->once())
             ->method('clearCache');
 
-        // Mock the router service for redirect
-        $router = $this->createMock(\Symfony\Component\Routing\RouterInterface::class);
-        $router->method('generate')
+        // Expect addFlash to be called with success message
+        $controller->expects($this->once())
+            ->method('addFlash')
+            ->with('success', 'Statistik-Cache wurde erfolgreich gelöscht');
+
+        // Expect redirect to dashboard
+        $response = $this->createMock(\Symfony\Component\HttpFoundation\RedirectResponse::class);
+        $response->method('getStatusCode')->willReturn(302);
+        $response->method('getTargetUrl')->willReturn('/');
+
+        $controller->expects($this->once())
+            ->method('redirectToRoute')
             ->with('dashboard')
-            ->willReturn('/');
+            ->willReturn($response);
 
-        // Inject router into controller
-        $reflectionClass = new \ReflectionClass($this->controller);
-        $containerProperty = $reflectionClass->getParentClass()->getProperty('container');
-        $containerProperty->setAccessible(true);
-        $container = $containerProperty->getValue($this->controller);
+        $result = $controller->clearCache();
 
-        // Create a new container that also returns the router
-        $newContainer = $this->createMock(\Psr\Container\ContainerInterface::class);
-        $newContainer->method('get')
-            ->willReturnCallback(function($service) use ($router) {
-                return match($service) {
-                    'twig' => $this->twig,
-                    'router' => $router,
-                    default => null
-                };
-            });
-        $newContainer->method('has')->willReturn(true);
-        $containerProperty->setValue($this->controller, $newContainer);
-
-        $response = $this->controller->clearCache();
-
-        $this->assertEquals(302, $response->getStatusCode());
-        $this->assertEquals('/', $response->getTargetUrl());
+        $this->assertEquals(302, $result->getStatusCode());
+        $this->assertEquals('/', $result->getTargetUrl());
     }
 
     private function createMockEmailSent(string $ticketId, string $status, string $email): EmailSent

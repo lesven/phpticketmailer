@@ -27,12 +27,14 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
         $this->userCreator = $this->createMock(UserCreator::class);
         $this->csvFieldConfigRepository = $this->createMock(CsvFieldConfigRepository::class);
         $this->sessionManager = $this->createMock(SessionManager::class);
+        $statisticsService = $this->createMock(\App\Service\StatisticsService::class);
 
         $this->orchestrator = new CsvUploadOrchestrator(
             $this->csvProcessor,
             $this->csvFieldConfigRepository,
             $this->sessionManager,
-            $this->userCreator
+            $this->userCreator,
+            $statisticsService
         );
     }
 
