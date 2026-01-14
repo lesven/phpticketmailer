@@ -33,6 +33,8 @@ Umgebung konfigurieren (`.env.local`):
 ```env
 APP_SECRET=2cf7a8f6b1a3668d88ae797af6388f1a
 DATABASE_URL="mysql://ticketuser:ticketpassword@database:3306/ticket_mailer_db?serverVersion=mariadb-10.11.2&charset=utf8mb4"
+# Optional: set GITHUB_WEBHOOK_SECRET to the same secret used in your GitHub Actions (DEPLOY_WEBHOOK_SECRET)
+# Optional: set DEPLOY_COMMAND if you want to override the default deploy command (default: "make deploy")
 ```
 
 Container starten:

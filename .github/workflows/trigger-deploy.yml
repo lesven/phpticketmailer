@@ -1,0 +1,24 @@
+name: Trigger remote deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger web deployment via webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
+        run: |
+          PAYLOAD=$(jq -n --arg ref "refs/heads/${{ github.ref_name }}" '{ref: $ref}')
+          SIGNATURE="sha256=$(printf "%s" "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -binary | xxd -p -c 256)"
+
+          curl -v -X POST "$WEBHOOK_URL" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -H "X-GitHub-Event: push" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
