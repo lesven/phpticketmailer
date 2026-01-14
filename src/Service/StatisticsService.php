@@ -12,7 +12,7 @@ class StatisticsService
 {
     private const CACHE_KEY_USER_STATS = 'statistics.monthly_user_by_domain';
     private const CACHE_KEY_TICKET_STATS = 'statistics.monthly_ticket_by_domain';
-    private const CACHE_TTL = 3600; // 1 hour
+    private const CACHE_TTL = 172800; // 48 hours
 
     public function __construct(
         private readonly EmailSentRepository $emailSentRepository, 
@@ -90,11 +90,27 @@ class StatisticsService
     }
 
     /**
+     * Löscht den Cache nur für den aktuellen Monat
+     * 
+     * Diese Methode wird beim Versand von E-Mails aufgerufen, um sicherzustellen,
+     * dass die Statistiken für den aktuellen Monat aktualisiert werden.
+     * Da der aktuelle Monat immer in den Statistiken enthalten ist, wird nur
+     * der Standard-Cache (6 Monate) gelöscht, der am häufigsten verwendet wird.
+     */
+    public function clearCurrentMonthCache(): void
+    {
+        // Clear only the default 6-month cache which is used by the dashboard
+        // This affects the current month's statistics while preserving other cached ranges
+        $this->cache->delete(self::CACHE_KEY_USER_STATS . '_6');
+        $this->cache->delete(self::CACHE_KEY_TICKET_STATS . '_6');
+    }
+
+    /**
      * Löscht den Statistik-Cache
      * 
      * Clears cache entries for months 1-12, which covers all typical use cases.
      * The default parameter in the getter methods is 6 months, and there's no
-     * UI to change this value. Cache entries with TTL of 1 hour expire automatically.
+     * UI to change this value. Cache entries with TTL of 48 hours expire automatically.
      */
     public function clearCache(): void
     {

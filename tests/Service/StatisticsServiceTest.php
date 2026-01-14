@@ -348,4 +348,26 @@ class StatisticsServiceTest extends TestCase
         $service = new StatisticsService($repo, $clock, $cache);
         $service->clearCache();
     }
+
+    public function testClearCurrentMonthCacheDeletesOnlyDefaultCache(): void
+    {
+        $repo = $this->createMock(EmailSentRepository::class);
+        $clock = $this->createMock(\App\Service\ClockInterface::class);
+        $clock->method('now')->willReturn(new \DateTimeImmutable('2026-01-15'));
+        
+        $cache = $this->createMock(\Symfony\Contracts\Cache\CacheInterface::class);
+
+        // Expect delete to be called only for the default 6-month cache (2 calls: user + ticket)
+        $expectedDeleteCalls = 2;
+        $cache->expects($this->exactly($expectedDeleteCalls))
+            ->method('delete')
+            ->withConsecutive(
+                ['statistics.monthly_user_by_domain_6'],
+                ['statistics.monthly_ticket_by_domain_6']
+            )
+            ->willReturn(true);
+
+        $service = new StatisticsService($repo, $clock, $cache);
+        $service->clearCurrentMonthCache();
+    }
 }

@@ -4,6 +4,11 @@
 **Title:** Statistik cachen  
 **Description:** Die Statistik kann gecached werden. Der Cache soll beim Versand neuer E-Mails, also beim einlesen der CSV Datei gelöscht werden. Zusätzlich soll es auf der Dashboard Seite im Statistik Block einen Button Cache löschen geben.
 
+## Updates (Latest)
+- **Cache TTL increased to 48 hours** (from 1 hour)
+- **Selective cache clearing on CSV upload** - Only clears current month cache (6-month default view) instead of all caches
+- Added `clearCurrentMonthCache()` method for efficient cache invalidation during email sending
+
 ## Solution Implemented
 
 ### 1. Cache Implementation in StatisticsService
@@ -14,11 +19,12 @@
 - Added `CacheInterface` dependency via constructor injection
 - Wrapped `getMonthlyUserStatisticsByDomain()` with cache logic
 - Wrapped `getMonthlyTicketStatisticsByDomain()` with cache logic
-- Added `clearCache()` method to delete all statistics cache entries
+- Added `clearCurrentMonthCache()` method to delete only the default 6-month cache (used during CSV upload)
+- Added `clearCache()` method to delete all statistics cache entries (1-12 months, used by manual clear button)
 
 **Cache Strategy:**
 - Cache keys: `statistics.monthly_user_by_domain_{months}` and `statistics.monthly_ticket_by_domain_{months}`
-- TTL: 1 hour (3600 seconds)
+- TTL: 48 hours (172800 seconds)
 - Cache adapter: Symfony's default file-based cache (configurable in `cache.yaml`)
 
 ### 2. Automatic Cache Clearing on CSV Upload
@@ -27,12 +33,13 @@
 
 **Changes:**
 - Added `StatisticsService` dependency
-- Call `statisticsService->clearCache()` after CSV processing, before redirecting
+- Call `statisticsService->clearCurrentMonthCache()` after CSV processing, before redirecting
+- Only clears the default 6-month cache to optimize performance
 
 **Flow:**
 1. CSV file is uploaded and validated
 2. CSV data is processed and stored in session
-3. **Cache is cleared** ← NEW
+3. **Current month cache is cleared** ← NEW (only 6-month default view)
 4. User is redirected to next step (unknown users or email sending)
 
 ### 3. Manual Cache Clearing via Dashboard
@@ -44,7 +51,7 @@
 **Changes:**
 - Added new route `/cache/clear` (name: `cache_clear`)
 - Added `clearCache()` controller action that:
-  - Calls `statisticsService->clearCache()`
+  - Calls `statisticsService->clearCache()` (clears ALL caches 1-12 months)
   - Shows success flash message
   - Redirects back to dashboard
 - Added "Cache löschen" button in dashboard statistics section header
@@ -66,8 +73,9 @@
 **Changes:**
 - Added `CacheInterface` mocks to all StatisticsService tests
 - Mock cache to execute callback immediately (bypass cache in tests)
-- Added test for `clearCache()` method
-- Added expectations for `clearCache()` calls in orchestrator tests
+- Added test for `clearCache()` method (deletes all 1-12 month caches)
+- Added test for `clearCurrentMonthCache()` method (deletes only default 6-month cache)
+- Updated orchestrator tests to expect `clearCurrentMonthCache()` calls
 - Added test for `clearCache` route in controller tests
 
 ### 5. Documentation
@@ -81,9 +89,11 @@
 
 1. **Performance Improvement:** Statistics queries are expensive, caching reduces database load
 2. **User Experience:** Dashboard loads faster with cached statistics
-3. **Automatic Refresh:** Cache is automatically cleared when new data arrives
-4. **Manual Control:** Users can force a cache refresh if needed
-5. **Minimal Changes:** Implementation follows existing patterns and architecture
+3. **Longer Cache Duration:** 48-hour TTL reduces database queries significantly
+4. **Selective Invalidation:** Only clears necessary cache on email sending for better performance
+5. **Automatic Refresh:** Cache is automatically cleared when new data arrives
+6. **Manual Control:** Users can force a complete cache refresh if needed
+7. **Minimal Changes:** Implementation follows existing patterns and architecture
 
 ## Testing
 

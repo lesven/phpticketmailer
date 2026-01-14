@@ -66,7 +66,7 @@ class CsvUploadOrchestratorTest extends TestCase
             ->with($processingResult);
 
         $this->statisticsService->expects($this->once())
-            ->method('clearCache');
+            ->method('clearCurrentMonthCache');
 
         $result = $this->orchestrator->processUpload($csvFile, true, false, $csvFieldConfig);
 
@@ -104,7 +104,7 @@ class CsvUploadOrchestratorTest extends TestCase
             ->with($processingResult);
 
         $this->statisticsService->expects($this->once())
-            ->method('clearCache');
+            ->method('clearCurrentMonthCache');
 
         $result = $this->orchestrator->processUpload($csvFile, false, true, $csvFieldConfig);
 
@@ -265,14 +265,14 @@ class CsvUploadOrchestratorTest extends TestCase
             });
 
         $this->statisticsService->expects($this->once())
-            ->method('clearCache')
+            ->method('clearCurrentMonthCache')
             ->willReturnCallback(function() use (&$callOrder) {
-                $callOrder[] = 'clearCache';
+                $callOrder[] = 'clearCurrentMonthCache';
             });
 
         $this->orchestrator->processUpload($csvFile, false, false, $csvFieldConfig);
 
-        $this->assertEquals(['saveConfig', 'process', 'storeUploadResults', 'clearCache'], $callOrder);
+        $this->assertEquals(['saveConfig', 'process', 'storeUploadResults', 'clearCurrentMonthCache'], $callOrder);
     }
 
     public function testConstructorAcceptsDependencies(): void

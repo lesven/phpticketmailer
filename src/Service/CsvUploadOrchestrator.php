@@ -47,8 +47,8 @@ class CsvUploadOrchestrator
         // 3. Ergebnisse in Session speichern
         $this->sessionManager->storeUploadResults($processingResult);
 
-        // 4. Statistik-Cache löschen, da neue Daten verarbeitet werden
-        $this->statisticsService->clearCache();
+        // 4. Statistik-Cache für aktuellen Monat löschen, da neue Daten verarbeitet werden
+        $this->statisticsService->clearCurrentMonthCache();
 
         // 5. Entscheidung über nächsten Schritt treffen
         if (!empty($processingResult['unknownUsers'])) {
