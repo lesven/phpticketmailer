@@ -128,6 +128,43 @@ class DashboardControllerTest extends TestCase
         $this->assertEquals(1, $data['errorsToday']);
     }
 
+    public function testClearCacheClearsStatisticsAndRedirects(): void
+    {
+        // Expect clearCache to be called on the statistics service
+        $this->statisticsService->expects($this->once())
+            ->method('clearCache');
+
+        // Mock the router service for redirect
+        $router = $this->createMock(\Symfony\Component\Routing\RouterInterface::class);
+        $router->method('generate')
+            ->with('dashboard')
+            ->willReturn('/');
+
+        // Inject router into controller
+        $reflectionClass = new \ReflectionClass($this->controller);
+        $containerProperty = $reflectionClass->getParentClass()->getProperty('container');
+        $containerProperty->setAccessible(true);
+        $container = $containerProperty->getValue($this->controller);
+
+        // Create a new container that also returns the router
+        $newContainer = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $newContainer->method('get')
+            ->willReturnCallback(function($service) use ($router) {
+                return match($service) {
+                    'twig' => $this->twig,
+                    'router' => $router,
+                    default => null
+                };
+            });
+        $newContainer->method('has')->willReturn(true);
+        $containerProperty->setValue($this->controller, $newContainer);
+
+        $response = $this->controller->clearCache();
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $this->assertEquals('/', $response->getTargetUrl());
+    }
+
     private function createMockEmailSent(string $ticketId, string $status, string $email): EmailSent
     {
         $emailSent = $this->createMock(EmailSent::class);

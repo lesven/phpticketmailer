@@ -91,4 +91,27 @@ class DashboardController extends AbstractController
 
         return new JsonResponse($statistics);
     }
+
+    /**
+     * Löscht den Statistik-Cache manuell
+     *
+     * Diese Route wird aufgerufen, wenn der Benutzer auf den "Cache löschen" Button
+     * im Dashboard klickt. Sie löscht alle Cache-Einträge für monatliche Statistiken
+     * (sowohl Benutzer- als auch Ticketstatistiken für alle Monatsbereiche 1-12),
+     * sodass beim nächsten Abruf neue Daten aus der Datenbank geladen werden.
+     * 
+     * Nach dem Löschen wird eine Erfolgsmeldung angezeigt und der Benutzer wird
+     * zurück zum Dashboard weitergeleitet.
+     *
+     * @return Response Redirect zur Dashboard-Seite mit Erfolgsmeldung
+     */
+    #[Route('/cache/clear', name: 'cache_clear')]
+    public function clearCache(): Response
+    {
+        $this->statisticsService->clearCache();
+        
+        $this->addFlash('success', 'Statistik-Cache wurde erfolgreich gelöscht');
+        
+        return $this->redirectToRoute('dashboard');
+    }
 }

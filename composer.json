@@ -24,6 +24,7 @@
         "symfony/runtime": "^7.3",
         "symfony/security-csrf": "7.3.*",
         "symfony/twig-bundle": "^7.3",
+        "symfony/type-info": "^7.4.1",
         "symfony/validator": "^7.3",
         "symfony/yaml": "^7.3",
         "twig/extra-bundle": "^3.5",
