@@ -175,4 +175,5 @@ deploy:
 	make up
 	make composer-install
 	make migrate
+	make cache-clear
 	make cache-warmup
