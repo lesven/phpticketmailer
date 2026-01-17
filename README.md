@@ -105,6 +105,28 @@ ticketId,username,ticketName
 - **MailHog** (E-Mail-Test): http://localhost:8025
 - **Datenbank**: localhost:3306 (ticketuser/ticketpassword)
 
+## Automatisches Deployment
+
+Das Projekt unterstützt automatisches Deployment über GitHub Actions und Webhooks. Bei jeder Änderung im `develop` Branch wird automatisch ein Deployment auf dem Test-Server ausgelöst.
+
+### Quick Start
+
+1. **GitHub Secrets konfigurieren**:
+   - `DEPLOY_WEBHOOK_URL`: https://ihr-server.example.com/deploy-webhook
+   - `DEPLOY_WEBHOOK_SECRET`: Generiert mit `openssl rand -hex 32`
+
+2. **Server vorbereiten**:
+   - Webhook-Receiver auf HTTPS-Server installieren
+   - `WEBHOOK_SECRET` in `.env` konfigurieren
+   - Web-Server (nginx/Apache) konfigurieren
+
+3. **Deployment auslösen**:
+   ```bash
+   git push origin develop
+   ```
+
+**Detaillierte Anleitung:** Siehe [DEPLOYMENT_WEBHOOK.md](DEPLOYMENT_WEBHOOK.md)
+
 ## Systemüberwachung
 
 Die Anwendung stellt eine Überwachungsschnittstelle bereit, die in Zabbix oder andere Monitoring-Systeme integriert werden kann.
