@@ -27,6 +27,7 @@ class CsvFieldConfigTypeTest extends TestCase
         $this->assertTrue($form->has('ticketIdField'));
         $this->assertTrue($form->has('usernameField'));
         $this->assertTrue($form->has('ticketNameField'));
+        $this->assertTrue($form->has('createdField'));
     }
 
     public function testMaxLengthConstraints(): void
@@ -37,6 +38,7 @@ class CsvFieldConfigTypeTest extends TestCase
             'ticketIdField' => str_repeat('a', 60),
             'usernameField' => str_repeat('b', 60),
             'ticketNameField' => str_repeat('c', 60),
+            'createdField' => str_repeat('d', 60),
         ];
 
         $form->submit($data);
