@@ -68,7 +68,11 @@ class CsvProcessor
 
         // Konfigurierte Feldnamen holen
         $fieldMapping = $csvFieldConfig->getFieldMapping();
-        $requiredColumns = array_values($fieldMapping);
+        $requiredColumns = [
+            $fieldMapping['ticketId'],
+            $fieldMapping['username'],
+            $fieldMapping['ticketName'],
+        ];
         
         $handle = null;
         try {
@@ -185,8 +189,7 @@ class CsvProcessor
     private function isRowValid(array $row, array $columnIndices, array $fieldMapping): bool
     {
         return isset($row[$columnIndices[$fieldMapping['ticketId']]]) && !empty($row[$columnIndices[$fieldMapping['ticketId']]]) &&
-               isset($row[$columnIndices[$fieldMapping['username']]]) && !empty($row[$columnIndices[$fieldMapping['username']]]) &&
-               isset($row[$columnIndices[$fieldMapping['ticketName']]]);
+               isset($row[$columnIndices[$fieldMapping['username']]]) && !empty($row[$columnIndices[$fieldMapping['username']]]);
     }
     
     /**
@@ -199,11 +202,15 @@ class CsvProcessor
     private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): TicketData
     {
         $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
+        $createdRaw = isset($fieldMapping['created'], $columnIndices[$fieldMapping['created']])
+            ? ($row[$columnIndices[$fieldMapping['created']]] ?? null)
+            : null;
 
         return TicketData::fromStrings(
             $row[$columnIndices[$fieldMapping['ticketId']]],
             $row[$columnIndices[$fieldMapping['username']]],
-            $ticketNameRaw
+            $ticketNameRaw,
+            $createdRaw
         );
     }
     

@@ -80,8 +80,8 @@ class EmailServiceTest extends TestCase
     public function testPrepareEmailContentReplacesPlaceholdersAndAddsTestPrefix(): void
     {
         // Prepare template
-        $template = "Hallo {{username}},\nTicket: {{ticketId}}\nLink: {{ticketLink}}\nFällig: {{dueDate}}\n{{ticketName}}";
-        $ticketData = \App\ValueObject\TicketData::fromStrings('T-123', 'jsmith', 'Problem');
+        $template = "Hallo {{username}},\nTicket: {{ticketId}}\nLink: {{ticketLink}}\nFällig: {{dueDate}}\nErstellt: {{created}}\n{{ticketName}}";
+        $ticketData = \App\ValueObject\TicketData::fromStrings('T-123', 'jsmith', 'Problem', '04/02/26 10:25');
 
     $user = $this->createMock(\App\Entity\User::class);
     $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('jsmith@example.com'));
@@ -101,6 +101,7 @@ class EmailServiceTest extends TestCase
         $this->assertStringContainsString('T-123', $result);
         $this->assertStringContainsString('https://tickets.example/T-123', $result);
         $this->assertStringContainsString('Problem', $result);
+        $this->assertStringContainsString('Erstellt: 04/02/26 10:25', $result);
 
         // due date present (formatted with a month name in German)
         $this->assertMatchesRegularExpression('/\d{1,2}\.\s+\p{L}+\s+\d{4}/u', $result);
@@ -353,15 +354,16 @@ class EmailServiceTest extends TestCase
     {
         $user = $this->createMock(\App\Entity\User::class);
         $user->method('getEmail')->willReturn(\App\ValueObject\EmailAddress::fromString('u@example.com'));
-        $template = "Hello {{username}} - {{ticketId}} - {{ticketLink}} - {{dueDate}}";
+        $template = "Hello {{username}} - {{ticketId}} - {{ticketLink}} - {{dueDate}} - {{created}}";
 
         $ref = new \ReflectionClass($this->service);
         $m = $ref->getMethod('prepareEmailContent');
         $m->setAccessible(true);
 
-        $out = $m->invoke($this->service, $template, \App\ValueObject\TicketData::fromStrings('ZZZ-001','bob','Test Ticket'), $user, 'https://base', false);
+        $out = $m->invoke($this->service, $template, \App\ValueObject\TicketData::fromStrings('ZZZ-001','bob','Test Ticket', '06/02/26 08:00'), $user, 'https://base', false);
         $this->assertStringNotContainsString('*** TESTMODUS', $out);
         $this->assertStringContainsString('ZZZ-001', $out);
+        $this->assertStringContainsString('06/02/26 08:00', $out);
     }
 
     public function testGetEmailConfigurationUsesDbConfig(): void

@@ -36,7 +36,8 @@ class TemplateController extends AbstractController
             'ticketId' => 'TICKET-12345',
             'ticketName' => TicketName::fromString('Beispiel Support-Anfrage'),
             'username' => 'max.mustermann',
-            'ticketLink' => 'https://www.ticket.de/TICKET-12345'
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
+            'created' => '04/02/26 10:25'
         ];
         
         // Fälligkeitsdatum für die Vorschau hinzufügen
@@ -166,7 +167,8 @@ class TemplateController extends AbstractController
             '{{ticketName}}' => isset($data['ticketName']) ? (string) $data['ticketName'] : 'Ticket-Name',
             '{{username}}' => $data['username'] ?? 'Benutzername',
             '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id',
-            '{{dueDate}}' => $data['dueDate'] ?? $formattedDueDate
+            '{{dueDate}}' => $data['dueDate'] ?? $formattedDueDate,
+            '{{created}}' => $data['created'] ?? ''
         ];
         
         return str_replace(array_keys($placeholders), array_values($placeholders), $template);
@@ -188,6 +190,8 @@ class TemplateController extends AbstractController
 <p>Um das Ticket anzusehen und Feedback zu geben, <a href="{{ticketLink}}">klicken Sie bitte hier</a>.</p>
 
 <p>Bitte beantworten Sie die Umfrage bis zum {{dueDate}}.</p>
+
+<p><small>Erstellt am: {{created}}</small></p>
 
 <p>Vielen Dank für Ihre Rückmeldung!</p>
 

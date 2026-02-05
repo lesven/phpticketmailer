@@ -37,14 +37,17 @@
                                 {% set username = unknownUser.getUsernameString is defined ? unknownUser.getUsernameString : unknownUser %}
                                 {% set ticketId = unknownUser.getTicketIdString is defined ? unknownUser.getTicketIdString : null %}
                                 {% set ticketName = unknownUser.getTicketNameString is defined ? unknownUser.getTicketNameString : null %}
+                                {% set created = unknownUser.getCreatedString is defined ? unknownUser.getCreatedString : null %}
                                 <tr>
                                     <td>{{ username|e }}</td>
                                     <td>
                                         {% if ticketId and ticketName %}
                                             <strong>Ticket-ID:</strong> {{ ticketId|e }}<br>
                                             <strong>Ticket-Name:</strong> {{ ticketName|e }}
+                                            {% if created %}<br><strong>Erstellt:</strong> {{ created|e }}{% endif %}
                                         {% elseif ticketId %}
                                             <strong>Ticket-ID:</strong> {{ ticketId|e }}
+                                            {% if created %}<br><strong>Erstellt:</strong> {{ created|e }}{% endif %}
                                         {% else %}
                                             <span class="text-muted">Keine Ticket-Informationen verfügbar</span>
                                         {% endif %}

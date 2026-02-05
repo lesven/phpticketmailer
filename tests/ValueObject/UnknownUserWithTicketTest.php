@@ -22,22 +22,24 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-123');
         $ticketName = TicketName::fromString('Test Ticket');
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         $this->assertEquals('testuser', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-123', $unknownUser->getTicketIdString());
         $this->assertEquals('Test Ticket', $unknownUser->getTicketNameString());
+        $this->assertEquals('04/02/26 10:25', $unknownUser->getCreatedString());
     }
 
     public function testCreationFromTicketData(): void
     {
-        $ticketData = TicketData::fromStrings('TICKET-456', 'anotheruser', 'Another Test Ticket');
+        $ticketData = TicketData::fromStrings('TICKET-456', 'anotheruser', 'Another Test Ticket', '05/02/26 14:10');
 
         $unknownUser = UnknownUserWithTicket::fromTicketData($ticketData);
 
         $this->assertEquals('anotheruser', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-456', $unknownUser->getTicketIdString());
         $this->assertEquals('Another Test Ticket', $unknownUser->getTicketNameString());
+        $this->assertEquals('05/02/26 14:10', $unknownUser->getCreatedString());
     }
 
     public function testWithoutTicketName(): void
@@ -50,6 +52,7 @@ class UnknownUserWithTicketTest extends TestCase
         $this->assertEquals('testuser', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-789', $unknownUser->getTicketIdString());
         $this->assertNull($unknownUser->getTicketNameString());
+        $this->assertNull($unknownUser->getCreatedString());
     }
 
     public function testFromTicketDataWithoutTicketName(): void
@@ -61,6 +64,7 @@ class UnknownUserWithTicketTest extends TestCase
         $this->assertEquals('usernoticket', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-999', $unknownUser->getTicketIdString());
         $this->assertNull($unknownUser->getTicketNameString());
+        $this->assertNull($unknownUser->getCreatedString());
     }
 
     /**
@@ -72,7 +76,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-SPECIAL');
         $ticketName = TicketName::fromString('Special Character Test');
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         $this->assertEquals('user.name-test_123', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-SPECIAL', $unknownUser->getTicketIdString());
@@ -88,7 +92,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-TEST_123');
         $ticketName = TicketName::fromString('Test Ticket Name');
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         $this->assertEquals('test-user_123', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-TEST_123', $unknownUser->getTicketIdString());
@@ -106,7 +110,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-NORMAL');
         $ticketName = TicketName::fromString($normalName);
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         $this->assertEquals('testuser', $unknownUser->getUsernameString());
         $this->assertEquals('TICKET-NORMAL', $unknownUser->getTicketIdString());
@@ -184,7 +188,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-READONLY');
         $ticketName = TicketName::fromString('Readonly Test');
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         // Die Properties sollten readonly sein
         $reflection = new \ReflectionClass($unknownUser);
@@ -206,7 +210,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('TICKET-IMMUTABLE');
         $ticketName = TicketName::fromString('Immutable Test');
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         // Originale Werte speichern
         $originalUsername = $unknownUser->getUsernameString();
@@ -228,7 +232,7 @@ class UnknownUserWithTicketTest extends TestCase
         $ticketId = TicketId::fromString('T12'); // 3 Zeichen minimum
         $ticketName = TicketName::fromString('X'); // Minimaler ticket name
 
-        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+        $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
 
         $this->assertEquals('abc', $unknownUser->getUsernameString());
         $this->assertEquals('T12', $unknownUser->getTicketIdString());
@@ -253,7 +257,7 @@ class UnknownUserWithTicketTest extends TestCase
 
         foreach ($formats as $format) {
             $ticketId = TicketId::fromString($format);
-            $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName);
+            $unknownUser = new UnknownUserWithTicket($username, $ticketId, $ticketName, '04/02/26 10:25');
             
             $this->assertEquals($format, $unknownUser->getTicketIdString());
         }

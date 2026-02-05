@@ -30,6 +30,7 @@
                 <li><code>{{username}}</code> - Der Benutzername des Empfängers</li>
                 <li><code>{{ticketLink}}</code> - Ein Link zum Ticket im Ticketsystem</li>
                 <li><code>{{dueDate}}</code> - Datum in 7 Tagen (z.B. für Antwortfrist)</li>
+                <li><code>{{created}}</code> - Erstellungsdatum des Tickets (optional aus CSV, Format: <code>dd/mm/yy hh:mm</code>)</li>
                 {% endverbatim %}
             </ul>
         </div>
@@ -118,6 +119,7 @@
                         <li class="list-group-item">Benutzername: {{ previewData.username }}</li>
                         <li class="list-group-item">Ticket Link: <a href="{{ previewData.ticketLink }}" target="_blank">{{ previewData.ticketLink }}</a></li>
                         <li class="list-group-item">Fälligkeitsdatum: {{ previewData.dueDate }}</li>
+                        <li class="list-group-item">Erstellt am: {{ previewData.created }}</li>
                     </ul>
                 </div>
                 <div class="col-md-8">

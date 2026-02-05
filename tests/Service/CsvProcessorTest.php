@@ -16,7 +16,7 @@ class CsvProcessorTest extends TestCase
 {
     public function testProcessReturnsValidAndInvalidRowsAndUnknownUsers(): void
     {
-        $content = "ticketId,username,ticketName\nT-001,user1,Name1\n,missing,Name2\nT-003,user3,Name3\n";
+        $content = "ticketId,username,ticketName,created\nT-001,user1,Name1,04/02/26 10:25\n,missing,Name2,\nT-003,user3,Name3,05/02/26 14:10\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
 
@@ -62,7 +62,7 @@ class CsvProcessorTest extends TestCase
     $requestStack->method('getSession')->willReturn($sessionMock);
 
         $cfg = $this->createMock(CsvFieldConfig::class);
-        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
+        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName','created'=>'created']);
 
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
@@ -79,6 +79,7 @@ class CsvProcessorTest extends TestCase
         $unknownUser = $res['unknownUsers'][0];
         $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUser);
         $this->assertEquals('user3', $unknownUser->getUsernameString());
+        $this->assertEquals('05/02/26 14:10', $unknownUser->getCreatedString());
 
         @unlink($tmp);
     }
@@ -94,6 +95,8 @@ class CsvProcessorTest extends TestCase
 
         $userRepository = $this->createMock(UserRepository::class);
         $requestStack = $this->createMock(RequestStack::class);
+        $sessionMock = $this->createMock(SessionInterface::class);
+        $requestStack->method('getSession')->willReturn($sessionMock);
         $cfg = $this->createMock(CsvFieldConfig::class);
 
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
@@ -105,7 +108,7 @@ class CsvProcessorTest extends TestCase
     public function testProcessWithHeaderOnly(): void
     {
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
-        file_put_contents($tmp, "ticketId,username,ticketName\n");
+        file_put_contents($tmp, "ticketId,username,ticketName,created\n");
         $uploaded = new UploadedFile($tmp, 'header.csv', null, null, true);
 
         $reader = new class($tmp) extends CsvFileReader {
@@ -127,7 +130,10 @@ class CsvProcessorTest extends TestCase
         };
         $userRepository = $this->createMock(UserRepository::class);
         $requestStack = $this->createMock(RequestStack::class);
+        $sessionMock = $this->createMock(SessionInterface::class);
+        $requestStack->method('getSession')->willReturn($sessionMock);
         $cfg = $this->createMock(CsvFieldConfig::class);
+        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName','created'=>'created']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $this->assertCount(0, $res['validTickets']);
@@ -137,7 +143,7 @@ class CsvProcessorTest extends TestCase
 
     public function testProcessWithDuplicateTicketIds(): void
     {
-        $content = "ticketId,username,ticketName\nT-001,user1,Name1\nT-001,user2,Name2\nT-002,user3,Name3\n";
+        $content = "ticketId,username,ticketName,created\nT-001,user1,Name1,04/02/26 10:25\nT-001,user2,Name2,04/02/26 10:25\nT-002,user3,Name3,\n";
         $tmp = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tmp, $content);
         $uploaded = new UploadedFile($tmp, 'dupes.csv', null, null, true);
@@ -166,8 +172,10 @@ class CsvProcessorTest extends TestCase
         $userRepository = $this->createMock(UserRepository::class);
         $userRepository->method('identifyUnknownUsers')->willReturn([]);
         $requestStack = $this->createMock(RequestStack::class);
+        $sessionMock = $this->createMock(SessionInterface::class);
+        $requestStack->method('getSession')->willReturn($sessionMock);
         $cfg = $this->createMock(CsvFieldConfig::class);
-        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
+        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName','created'=>'created']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $ticketIds = array_map(fn(TicketData $t) => (string) $t->ticketId, $res['validTickets']);

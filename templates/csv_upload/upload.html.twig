@@ -52,11 +52,12 @@
                 <li><strong>{{ currentConfig.ticketIdField }}</strong> - Die ID des Tickets</li>
                 <li><strong>{{ currentConfig.usernameField }}</strong> - Der Benutzername, an den die E-Mail gesendet werden soll</li>
                 <li><strong>{{ currentConfig.ticketNameField }}</strong> - (optional) Der Name/Titel des Tickets</li>
+                <li><strong>{{ currentConfig.createdField }}</strong> - (optional) Erstellungsdatum des Tickets im Format <code>dd/mm/yy hh:mm</code></li>
             </ul>
             <p>Beispiel:</p>
-            <pre>{{ currentConfig.ticketIdField }},{{ currentConfig.usernameField }},{{ currentConfig.ticketNameField }}
-123456,mustermann,Problem mit Anmeldung
-123457,schmidt,Fehler bei Dateiupload</pre>
+            <pre>{{ currentConfig.ticketIdField }},{{ currentConfig.usernameField }},{{ currentConfig.ticketNameField }},{{ currentConfig.createdField }}
+123456,mustermann,Problem mit Anmeldung,04/02/26 10:25
+123457,schmidt,Fehler bei Dateiupload,05/02/26 14:10</pre>
         </div>
     </div>
     
@@ -67,14 +68,17 @@
         <div class="card-body">
             <p class="text-muted">Konfigurieren Sie hier die Namen der Spalten in Ihrer CSV-Datei. Wenn Sie die Felder leer lassen, werden die Standardwerte verwendet.</p>
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         {{ form_row(form.csvFieldConfig.ticketIdField) }}
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         {{ form_row(form.csvFieldConfig.usernameField) }}
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         {{ form_row(form.csvFieldConfig.ticketNameField) }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form_row(form.csvFieldConfig.createdField) }}
                     </div>
                 </div>            {{ form_end(form) }}
         </div>

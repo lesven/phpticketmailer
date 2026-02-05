@@ -40,6 +40,11 @@ class CsvFieldConfig
     public const DEFAULT_TICKET_NAME_FIELD = 'Zusammenfassung';
 
     /**
+     * Standardwert für das Erstellungsdatum-Feld
+     */
+    public const DEFAULT_CREATED_FIELD = 'Erstellt';
+
+    /**
      * Einzigartige ID der Konfiguration
      */
     #[ORM\Id]
@@ -67,6 +72,13 @@ class CsvFieldConfig
      */
     #[ORM\Column(length: 50)]
     private ?string $ticketNameField = self::DEFAULT_TICKET_NAME_FIELD;
+
+    /**
+     * Name der CSV-Spalte für das Erstellungsdatum
+     * Standardwert: 'Erstellt'
+     */
+    #[ORM\Column(length: 50)]
+    private ?string $createdField = self::DEFAULT_CREATED_FIELD;
 
     /**
      * Gibt die ID der Konfiguration zurück
@@ -148,6 +160,24 @@ class CsvFieldConfig
     }
 
     /**
+     * Gibt den konfigurierten Feldnamen für das Erstellungsdatum zurück
+     */
+    public function getCreatedField(): ?string
+    {
+        return $this->createdField ?: self::DEFAULT_CREATED_FIELD;
+    }
+
+    /**
+     * Setzt den Feldnamen für das Erstellungsdatum
+     */
+    public function setCreatedField(?string $createdField): static
+    {
+        $this->createdField = $createdField ?: self::DEFAULT_CREATED_FIELD;
+
+        return $this;
+    }
+
+    /**
      * Gibt die konfigurierten Feldnamen als assoziatives Array zurück
      *
      * Diese Methode ist praktisch für die Verarbeitung von CSV-Dateien,
@@ -161,6 +191,7 @@ class CsvFieldConfig
             'ticketId' => $this->getTicketIdField(),
             'username' => $this->getUsernameField(),
             'ticketName' => $this->getTicketNameField(),
+            'created' => $this->getCreatedField(),
         ];
     }
 }

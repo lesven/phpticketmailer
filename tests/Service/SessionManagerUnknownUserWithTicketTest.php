@@ -53,7 +53,8 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
         $unknownUser1 = new UnknownUserWithTicket(
             new Username('testuser1'),
             new TicketId('T-001'),
-            new TicketName('Test Issue 1')
+            new TicketName('Test Issue 1'),
+            '04/02/26 10:25'
         );
         
         $unknownUser2 = new UnknownUserWithTicket(
@@ -80,6 +81,7 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
         $this->assertEquals('testuser1', $retrievedUsers[0]->getUsernameString());
         $this->assertEquals('T-001', $retrievedUsers[0]->getTicketIdString());
         $this->assertEquals('Test Issue 1', $retrievedUsers[0]->getTicketNameString());
+        $this->assertEquals('04/02/26 10:25', $retrievedUsers[0]->getCreatedString());
         
         // Prüfung zweites Objekt
         $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[1]);
@@ -292,7 +294,7 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
         // Simuliere korrupte Session-Daten - aber mit gültigen Teilen
         $this->sessionStore['unknown_users'] = [
             ['type' => 'string', 'username' => 'valid_string_user'],
-            ['type' => 'UnknownUserWithTicket', 'username' => 'valid_user', 'ticketId' => 'T-001', 'ticketName' => 'Valid'],
+            ['type' => 'UnknownUserWithTicket', 'username' => 'valid_user', 'ticketId' => 'T-001', 'ticketName' => 'Valid', 'created' => '04/02/26 10:25'],
             'plain_string_legacy',
         ];
 
@@ -308,6 +310,7 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
         // Zweites Element: Rekonstruiertes Objekt
         $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[1]);
         $this->assertEquals('valid_user', $retrievedUsers[1]->getUsernameString());
+        $this->assertEquals('04/02/26 10:25', $retrievedUsers[1]->getCreatedString());
         
         // Drittes Element: Legacy String
         $this->assertIsString($retrievedUsers[2]);

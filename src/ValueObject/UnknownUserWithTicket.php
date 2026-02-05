@@ -13,7 +13,8 @@ final readonly class UnknownUserWithTicket
     public function __construct(
         public Username $username,
         public TicketId $ticketId,
-        public ?TicketName $ticketName = null
+        public ?TicketName $ticketName = null,
+        public ?string $created = null
     ) {
     }
 
@@ -25,7 +26,8 @@ final readonly class UnknownUserWithTicket
         return new self(
             $ticketData->username,
             $ticketData->ticketId,
-            $ticketData->ticketName
+            $ticketData->ticketName,
+            $ticketData->created
         );
     }
 
@@ -51,5 +53,13 @@ final readonly class UnknownUserWithTicket
     public function getTicketNameString(): ?string
     {
         return $this->ticketName?->getValue();
+    }
+
+    /**
+     * Gibt das Erstellungsdatum als String zurück oder null
+     */
+    public function getCreatedString(): ?string
+    {
+        return $this->created;
     }
 }

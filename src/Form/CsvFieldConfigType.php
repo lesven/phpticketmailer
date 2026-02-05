@@ -22,8 +22,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 /**
  * Symfony Form Type für die CSV-Feld-Konfiguration
  *
- * Definiert ein Formular mit drei Textfeldern zur Konfiguration der
- * CSV-Spalten-Namen für Ticket-ID, Benutzername und Ticket-Namen.
+ * Definiert ein Formular mit vier Textfeldern zur Konfiguration der
+ * CSV-Spalten-Namen für Ticket-ID, Benutzername, Ticket-Namen und Erstellungsdatum.
  */
 class CsvFieldConfigType extends AbstractType
 {
@@ -80,6 +80,20 @@ class CsvFieldConfigType extends AbstractType
                     'maxlength' => 50
                 ],
                 'help' => 'Name der Spalte für den Ticket-Namen (Standard: Zusammenfassung)',
+                'constraints' => [
+                    new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
+                ]
+            ])
+
+            ->add('createdField', TextType::class, [
+                'label' => 'Erstellungsdatum Spaltenname',
+                'required' => false,
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => 'Erstellt (Standard)',
+                    'maxlength' => 50
+                ],
+                'help' => 'Name der Spalte für das Erstellungsdatum (Standard: Erstellt)',
                 'constraints' => [
                     new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
