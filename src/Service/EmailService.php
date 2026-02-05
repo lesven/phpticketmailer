@@ -466,6 +466,7 @@ class EmailService
         $emailBody = str_replace('{{ticketLink}}', $ticketLink, $emailBody);
         $emailBody = str_replace('{{ticketName}}', (string) $ticketData->ticketName, $emailBody);
         $emailBody = str_replace('{{username}}', (string) $ticketData->username, $emailBody);
+        $emailBody = str_replace('{{created}}', $ticketData->created ?? '', $emailBody);
         
         // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
         $dueDate = new \DateTime();
