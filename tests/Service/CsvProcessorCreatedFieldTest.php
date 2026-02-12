@@ -30,7 +30,7 @@ class CsvProcessorCreatedFieldTest extends TestCase
 
         $requestStack = $this->createMock(RequestStack::class);
         $sessionMock = $this->createMock(SessionInterface::class);
-        $sessionMock->method('set')->willReturn(null);
+        $sessionMock->method('set');
         $requestStack->method('getSession')->willReturn($sessionMock);
 
         $cfg = new CsvFieldConfig();
@@ -68,7 +68,7 @@ class CsvProcessorCreatedFieldTest extends TestCase
 
         $requestStack = $this->createMock(RequestStack::class);
         $sessionMock = $this->createMock(SessionInterface::class);
-        $sessionMock->method('set')->willReturn(null);
+        $sessionMock->method('set');
         $requestStack->method('getSession')->willReturn($sessionMock);
 
         $cfg = new CsvFieldConfig();
@@ -107,7 +107,7 @@ class CsvProcessorCreatedFieldTest extends TestCase
 
         $requestStack = $this->createMock(RequestStack::class);
         $sessionMock = $this->createMock(SessionInterface::class);
-        $sessionMock->method('set')->willReturn(null);
+        $sessionMock->method('set');
         $requestStack->method('getSession')->willReturn($sessionMock);
 
         $cfg = new CsvFieldConfig();

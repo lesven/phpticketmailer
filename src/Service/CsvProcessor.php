@@ -68,6 +68,9 @@ class CsvProcessor
 
         // Konfigurierte Feldnamen holen
         $fieldMapping = $csvFieldConfig->getFieldMapping();
+        if (!is_array($fieldMapping) || empty($fieldMapping)) {
+            $fieldMapping = (new \App\Entity\CsvFieldConfig())->getFieldMapping();
+        }
         // Required columns exclude the optional 'created' field
         $requiredColumns = [
             $fieldMapping['ticketId'],
@@ -83,9 +86,11 @@ class CsvProcessor
             $columnIndices = $this->csvFileReader->validateRequiredColumns($header, $requiredColumns);
             
             // Add optional created field index if the column exists in CSV
-            $createdIndex = array_search($fieldMapping['created'], $header);
-            if ($createdIndex !== false) {
-                $columnIndices[$fieldMapping['created']] = $createdIndex;
+            if (isset($fieldMapping['created'])) {
+                $createdIndex = array_search($fieldMapping['created'], $header);
+                if ($createdIndex !== false) {
+                    $columnIndices[$fieldMapping['created']] = $createdIndex;
+                }
             }
             
             // Daten zur Ticketverarbeitung
@@ -211,9 +216,9 @@ class CsvProcessor
     {
         $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
         
-        // Extract optional created field if it exists in the CSV
+        // Extract optional created field if it exists in the CSV and in the mapping
         $createdRaw = null;
-        if (isset($columnIndices[$fieldMapping['created']])) {
+        if (isset($fieldMapping['created']) && isset($columnIndices[$fieldMapping['created']])) {
             $createdRaw = $row[$columnIndices[$fieldMapping['created']]] ?? null;
         }
 
