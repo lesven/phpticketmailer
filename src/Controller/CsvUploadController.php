@@ -160,7 +160,8 @@ class CsvUploadController extends AbstractController
         
         return $this->render('csv_upload/send_result.html.twig', [
             'sentEmails' => $sentEmails ?? [],
-            'testMode' => $testMode
+            'testMode' => $testMode,
+            'templateDebug' => $this->emailService->getTemplateDebugInfo(),
         ]);
     }    /**
      * Extrahiert E-Mail-Zuordnungen aus dem Request für unbekannte Benutzer

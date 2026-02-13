@@ -31,6 +31,7 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use App\ValueObject\EmailAddress;
+use App\Service\TemplateService;
 
 class EmailService
 {
@@ -86,6 +87,18 @@ class EmailService
      * @param ParameterBagInterface $params Der Parameter-Bag für Konfigurationswerte
      * @param string $projectDir Der Pfad zum Projektverzeichnis
      */
+    /**
+     * Der TemplateService für datumbasierte Template-Auswahl
+     * @var TemplateService
+     */
+    private $templateService;
+
+    /**
+     * Debug-Infos zur Template-Auswahl pro Ticket (Ticket-ID => Debug-Array)
+     * @var array<string, array<string, mixed>>
+     */
+    private array $templateDebugInfo = [];
+
     public function __construct(
         MailerInterface $mailer,
         EntityManagerInterface $entityManager,
@@ -94,7 +107,8 @@ class EmailService
         EmailSentRepository $emailSentRepository,
         ParameterBagInterface $params,
         string $projectDir,
-        private readonly EventDispatcherInterface $eventDispatcher
+        private readonly EventDispatcherInterface $eventDispatcher,
+        TemplateService $templateService
     ) {
         $this->mailer = $mailer;
         $this->entityManager = $entityManager;
@@ -103,6 +117,7 @@ class EmailService
         $this->emailSentRepository = $emailSentRepository;
         $this->params = $params;
         $this->projectDir = $projectDir;
+        $this->templateService = $templateService;
     }
     
     /**
@@ -144,7 +159,9 @@ class EmailService
             $emailConfig['testEmail'] = trim($customTestEmail);
         }
         
-        $templateContent = $this->getEmailTemplate();
+        // Template wird jetzt pro Ticket via TemplateService geladen (basierend auf created-Datum)
+        // Fallback: globales Template wird nur noch als letzter Fallback genutzt
+        $globalTemplateContent = $this->getEmailTemplate();
 
         // Prüfe bereits verarbeitete Tickets in der Datenbank, wenn forceResend deaktiviert ist
         $existingTickets = [];
@@ -252,11 +269,21 @@ class EmailService
                 continue;
             }
             
+            // Template basierend auf Ticket-Erstelldatum auswählen
+            $resolved = $this->templateService->resolveTemplateForTicketDate($ticketObj->created);
+            $ticketTemplateContent = $resolved['content'];
+            $this->templateDebugInfo[(string) $ticketId] = $resolved['debug'];
+            // Fallback auf globales Template wenn TemplateService nichts findet
+            if (empty(trim($ticketTemplateContent))) {
+                $ticketTemplateContent = $globalTemplateContent;
+                $this->templateDebugInfo[(string) $ticketId]['selectionMethod'] .= ' → fallback_global';
+            }
+
             // Normaler E-Mail-Versand (User existiert und ist nicht ausgeschlossen)
             $emailRecord = $this->processTicketEmail(
                 $ticketObj, 
                 $emailConfig, 
-                $templateContent, 
+                $ticketTemplateContent, 
                 $testMode, 
                 $currentTime
             );
@@ -604,5 +631,15 @@ Ihr Support-Team</p>";
         }
         
         return file_get_contents($templatePath);
+    }
+
+    /**
+     * Gibt die Template-Debug-Infos pro Ticket zurück (nach sendTicketEmailsWithDuplicateCheck).
+     *
+     * @return array<string, array<string, mixed>> Ticket-ID => Debug-Array
+     */
+    public function getTemplateDebugInfo(): array
+    {
+        return $this->templateDebugInfo;
     }
 }

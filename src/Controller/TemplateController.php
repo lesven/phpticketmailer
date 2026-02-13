@@ -2,229 +2,267 @@
 
 namespace App\Controller;
 
+use App\Entity\EmailTemplate;
+use App\Service\TemplateService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\String\Slugger\SluggerInterface;
 use App\ValueObject\TicketName;
 
 #[Route('/template')]
 class TemplateController extends AbstractController
 {
-    private $projectDir;
-    private $slugger;
-    
-    public function __construct(string $projectDir, SluggerInterface $slugger)
-    {
-        $this->projectDir = $projectDir;
-        $this->slugger = $slugger;
+    public function __construct(
+        private readonly TemplateService $templateService,
+        private readonly string $projectDir
+    ) {
     }
-    
+
+    /**
+     * Hauptseite: Template-Verwaltung mit Sidebar.
+     * Wenn eine templateId übergeben wird, wird dieses Template zur Bearbeitung geladen.
+     */
     #[Route('/', name: 'template_manage')]
     public function manage(Request $request): Response
     {
-        $templatePath = $this->getTemplatePath();
-        $templateExists = file_exists($templatePath);
-        $message = null;
-        
-        // Beispieldaten für die Vorschau
-        $previewData = [
-            'ticketId' => 'TICKET-12345',
-            'ticketName' => TicketName::fromString('Beispiel Support-Anfrage'),
-            'username' => 'max.mustermann',
-            'ticketLink' => 'https://www.ticket.de/TICKET-12345'
-        ];
-        
-        // Fälligkeitsdatum für die Vorschau hinzufügen
-        $dueDate = new \DateTime();
-        $dueDate->modify('+7 days');
-        $germanMonths = [
-            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
-            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
-        ];
-        $previewData['dueDate'] = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
-          if ($request->isMethod('POST')) {
-            $file = $request->files->get('template_file');
-            
-            if ($file instanceof UploadedFile) {
-                $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
-                $newFilename = 'email_template.' . ($extension === 'html' ? 'html' : 'txt');
-                $templateDirectory = $this->getTemplateDirectory();
-                
-                try {
-                    // Stellen wir sicher, dass das Verzeichnis existiert
-                    if (!is_dir($templateDirectory)) {
-                        mkdir($templateDirectory, 0777, true);
-                    }
-                    
-                    $file->move(
-                        $templateDirectory,
-                        $newFilename
-                    );
-                    $message = 'Template wurde erfolgreich hochgeladen.';
-                    $templateExists = true;
-                } catch (\Exception $e) {
-                    $message = 'Fehler beim Hochladen des Templates: ' . $e->getMessage();
-                }
-            }
+        $templates = $this->templateService->getAllTemplates();
+        $selectedId = $request->query->getInt('templateId', 0);
+
+        // Ausgewähltes Template laden (oder null wenn keines gewählt)
+        $selectedTemplate = null;
+        if ($selectedId > 0) {
+            $selectedTemplate = $this->templateService->getTemplate($selectedId);
         }
-        
-        // Template-Inhalt laden für die Vorschau und standardmäßig erstellen, wenn nicht vorhanden
+
+        // Vorschaudaten
+        $previewData = $this->getPreviewData();
+
+        // Template-Inhalt und Vorschau
         $templateContent = '';
-        if ($templateExists) {
-            $templateContent = file_get_contents($templatePath);
-        } else {
-            $templateContent = $this->getDefaultTemplate();
-            // Standard-Template speichern
-            file_put_contents($templatePath, $templateContent);
-            $templateExists = true;
+        $previewContent = '';
+        if ($selectedTemplate !== null) {
+            $templateContent = $selectedTemplate->getContent();
+            $previewContent = $this->replacePlaceholders($templateContent, $previewData);
         }
-        
-        // Vorschau mit Beispieldaten generieren
-        $previewContent = $this->replacePlaceholders($templateContent, $previewData);
-        
+
         return $this->render('template/manage.html.twig', [
-            'templateExists' => $templateExists,
-            'message' => $message,
+            'templates' => $templates,
+            'selectedTemplate' => $selectedTemplate,
+            'templateContent' => $templateContent,
             'previewContent' => $previewContent,
             'previewData' => $previewData,
-            'templateContent' => $templateContent,
         ]);
     }
-      #[Route('/save-wysiwyg', name: 'template_save_wysiwyg', methods: ['POST'])]
-    public function saveWysiwyg(Request $request): Response
+
+    /**
+     * Neues Template erstellen.
+     */
+    #[Route('/create', name: 'template_create', methods: ['POST'])]
+    public function create(Request $request): Response
     {
-        $templateContent = $request->request->get('template_content');
-        
-        if (!empty($templateContent)) {
-            $templateDirectory = $this->getTemplateDirectory();
-            
-            // Stellen wir sicher, dass das Verzeichnis existiert
-            if (!is_dir($templateDirectory)) {
-                mkdir($templateDirectory, 0777, true);
-            }
-            
-            // Speichere das Template als HTML-Datei
-            file_put_contents($templateDirectory . '/email_template.html', $templateContent);
-            
-            $this->addFlash('success', 'Das Template wurde erfolgreich gespeichert.');
-        } else {
-            $this->addFlash('error', 'Der Template-Inhalt darf nicht leer sein.');
+        $name = trim($request->request->get('template_name', ''));
+        $validFromStr = $request->request->get('template_valid_from', '');
+
+        if ($name === '') {
+            $this->addFlash('error', 'Bitte geben Sie einen Template-Namen ein.');
+            return $this->redirectToRoute('template_manage');
         }
-        
+
+        if ($validFromStr === '') {
+            $this->addFlash('error', 'Bitte wählen Sie ein Gültig-Ab-Datum.');
+            return $this->redirectToRoute('template_manage');
+        }
+
+        $validFrom = new \DateTime($validFromStr);
+        $template = $this->templateService->createTemplate($name, $validFrom);
+
+        $this->addFlash('success', sprintf('Template "%s" wurde erstellt.', $name));
+
+        return $this->redirectToRoute('template_manage', ['templateId' => $template->getId()]);
+    }
+
+    /**
+     * Template-Metadaten (Name, Gültig-Ab) aktualisieren.
+     */
+    #[Route('/{id}/update', name: 'template_update', methods: ['POST'])]
+    public function update(int $id, Request $request): Response
+    {
+        $template = $this->templateService->getTemplate($id);
+        if ($template === null) {
+            $this->addFlash('error', 'Template nicht gefunden.');
+            return $this->redirectToRoute('template_manage');
+        }
+
+        $name = trim($request->request->get('template_name', ''));
+        $validFromStr = $request->request->get('template_valid_from', '');
+
+        if ($name !== '') {
+            $template->setName($name);
+        }
+
+        if ($validFromStr !== '') {
+            $template->setValidFrom(new \DateTime($validFromStr));
+        }
+
+        $this->templateService->saveTemplate($template);
+        $this->addFlash('success', sprintf('Template "%s" wurde aktualisiert.', $template->getName()));
+
+        return $this->redirectToRoute('template_manage', ['templateId' => $id]);
+    }
+
+    /**
+     * Template löschen.
+     */
+    #[Route('/{id}/delete', name: 'template_delete', methods: ['POST'])]
+    public function delete(int $id): Response
+    {
+        $template = $this->templateService->getTemplate($id);
+        if ($template === null) {
+            $this->addFlash('error', 'Template nicht gefunden.');
+            return $this->redirectToRoute('template_manage');
+        }
+
+        $name = $template->getName();
+        $this->templateService->deleteTemplate($template);
+        $this->addFlash('success', sprintf('Template "%s" wurde gelöscht.', $name));
+
         return $this->redirectToRoute('template_manage');
     }
-      #[Route('/download', name: 'template_download')]
-    public function download(): Response
+
+    /**
+     * WYSIWYG-Inhalt für das ausgewählte Template speichern.
+     */
+    #[Route('/{id}/save-wysiwyg', name: 'template_save_wysiwyg', methods: ['POST'])]
+    public function saveWysiwyg(int $id, Request $request): Response
     {
-        $templatePath = $this->getTemplatePath();
-        $templateDirectory = $this->getTemplateDirectory();
-        
-        // Stellen wir sicher, dass das Verzeichnis existiert
-        if (!is_dir($templateDirectory)) {
-            mkdir($templateDirectory, 0777, true);
+        $template = $this->templateService->getTemplate($id);
+        if ($template === null) {
+            $this->addFlash('error', 'Template nicht gefunden.');
+            return $this->redirectToRoute('template_manage');
         }
-        
-        if (!file_exists($templatePath)) {
-            // Falls kein Template existiert, erstellen wir ein Standard-Template
-            $defaultTemplate = $this->getDefaultTemplate();
-            file_put_contents($templatePath, $defaultTemplate);
+
+        $content = $request->request->get('template_content', '');
+        if (empty($content)) {
+            $this->addFlash('error', 'Der Template-Inhalt darf nicht leer sein.');
+            return $this->redirectToRoute('template_manage', ['templateId' => $id]);
         }
-        
-        $extension = pathinfo($templatePath, PATHINFO_EXTENSION);
-        
-        $response = new BinaryFileResponse($templatePath);
-        $response->setContentDisposition(
+
+        $template->setContent($content);
+        $this->templateService->saveTemplate($template);
+        $this->addFlash('success', 'Das Template wurde erfolgreich gespeichert.');
+
+        return $this->redirectToRoute('template_manage', ['templateId' => $id]);
+    }
+
+    /**
+     * Datei hochladen und Inhalt dem ausgewählten Template zuordnen.
+     */
+    #[Route('/{id}/upload', name: 'template_upload', methods: ['POST'])]
+    public function upload(int $id, Request $request): Response
+    {
+        $template = $this->templateService->getTemplate($id);
+        if ($template === null) {
+            $this->addFlash('error', 'Template nicht gefunden.');
+            return $this->redirectToRoute('template_manage');
+        }
+
+        $file = $request->files->get('template_file');
+        if (!$file instanceof UploadedFile) {
+            $this->addFlash('error', 'Bitte wählen Sie eine Datei aus.');
+            return $this->redirectToRoute('template_manage', ['templateId' => $id]);
+        }
+
+        $content = file_get_contents($file->getPathname());
+        if ($content === false || trim($content) === '') {
+            $this->addFlash('error', 'Die hochgeladene Datei ist leer.');
+            return $this->redirectToRoute('template_manage', ['templateId' => $id]);
+        }
+
+        $template->setContent($content);
+        $this->templateService->saveTemplate($template);
+        $this->addFlash('success', 'Template-Inhalt wurde aus Datei übernommen.');
+
+        return $this->redirectToRoute('template_manage', ['templateId' => $id]);
+    }
+
+    /**
+     * Template-Inhalt als Datei herunterladen.
+     */
+    #[Route('/{id}/download', name: 'template_download')]
+    public function download(int $id): Response
+    {
+        $template = $this->templateService->getTemplate($id);
+        if ($template === null) {
+            $this->addFlash('error', 'Template nicht gefunden.');
+            return $this->redirectToRoute('template_manage');
+        }
+
+        $content = $template->getContent();
+        $filename = $this->slugifyName($template->getName()) . '.html';
+
+        $response = new Response($content);
+        $disposition = $response->headers->makeDisposition(
             ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            'email_template.' . $extension
+            $filename
         );
-        
+        $response->headers->set('Content-Disposition', $disposition);
+        $response->headers->set('Content-Type', 'text/html');
+
         return $response;
     }
-    
-    /**
-     * Ersetzt Platzhalter im Template mit tatsächlichen Werten
-     */
-    private function replacePlaceholders(string $template, array $data): string
+
+    // ── Hilfsmethoden ──────────────────────────────────────────
+
+    private function getPreviewData(): array
     {
-        // Füge das Fälligkeitsdatum hinzu (aktuelles Datum + 7 Tage) im deutschen Format
         $dueDate = new \DateTime();
         $dueDate->modify('+7 days');
         $germanMonths = [
-            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
-            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
+            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
+            5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
         ];
-        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
-        
+
+        return [
+            'ticketId'   => 'TICKET-12345',
+            'ticketName' => TicketName::fromString('Beispiel Support-Anfrage'),
+            'username'   => 'max.mustermann',
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
+            'dueDate'    => $dueDate->format('d') . '. ' . $germanMonths[(int) $dueDate->format('n')] . ' ' . $dueDate->format('Y'),
+        ];
+    }
+
+    private function replacePlaceholders(string $template, array $data): string
+    {
+        $dueDate = new \DateTime();
+        $dueDate->modify('+7 days');
+        $germanMonths = [
+            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
+            5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
+        ];
+        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int) $dueDate->format('n')] . ' ' . $dueDate->format('Y');
+
         $placeholders = [
-            '{{ticketId}}' => $data['ticketId'] ?? 'TICKET-ID',
+            '{{ticketId}}'   => $data['ticketId']   ?? 'TICKET-ID',
             '{{ticketName}}' => isset($data['ticketName']) ? (string) $data['ticketName'] : 'Ticket-Name',
-            '{{username}}' => $data['username'] ?? 'Benutzername',
+            '{{username}}'   => $data['username']   ?? 'Benutzername',
             '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id',
-            '{{dueDate}}' => $data['dueDate'] ?? $formattedDueDate
+            '{{dueDate}}'    => $data['dueDate']    ?? $formattedDueDate,
         ];
-        
+
         return str_replace(array_keys($placeholders), array_values($placeholders), $template);
     }
-    
-    /**
-     * Liefert ein Standard-Template zurück
-     */
-    private function getDefaultTemplate(): string
+
+    private function slugifyName(string $name): string
     {
-        return <<<EOT
-<p>Sehr geehrte(r) {{username}},</p>
+        $slug = mb_strtolower($name);
+        $slug = preg_replace('/[^a-z0-9_-]+/', '_', $slug);
+        $slug = trim($slug, '_');
 
-<p>wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:</p>
-
-<p><strong>Ticket-Nr:</strong> {{ticketId}}<br>
-<strong>Betreff:</strong> {{ticketName}}</p>
-
-<p>Um das Ticket anzusehen und Feedback zu geben, <a href="{{ticketLink}}">klicken Sie bitte hier</a>.</p>
-
-<p>Bitte beantworten Sie die Umfrage bis zum {{dueDate}}.</p>
-
-<p>Vielen Dank für Ihre Rückmeldung!</p>
-
-<p>Mit freundlichen Grüßen<br>
-Ihr Support-Team</p>
-EOT;
-    }
-      private function getTemplateDirectory(): string
-    {
-        $dir = $this->projectDir . '/templates/emails';
-        
-        // Stellen wir sicher, dass das Verzeichnis existiert
-        if (!is_dir($dir)) {
-            // Versuche das Verzeichnis zu erstellen mit vollem Pfad
-            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
-                throw new \RuntimeException(sprintf('Das Verzeichnis "%s" konnte nicht erstellt werden', $dir));
-            }
-        }
-        
-        return $dir;
-    }
-      private function getTemplatePath(): string
-    {
-        // Prüfe zuerst, ob ein HTML-Template existiert
-        $htmlPath = $this->getTemplateDirectory() . '/email_template.html';
-        if (file_exists($htmlPath)) {
-            return $htmlPath;
-        }
-        
-        // Fallback auf das Text-Template
-        $txtPath = $this->getTemplateDirectory() . '/email_template.txt';
-        
-        // Stellen wir sicher, dass das Verzeichnis existiert
-        if (!is_dir(dirname($txtPath))) {
-            mkdir(dirname($txtPath), 0777, true);
-        }
-        
-        return $txtPath;
+        return $slug ?: 'template';
     }
 }
