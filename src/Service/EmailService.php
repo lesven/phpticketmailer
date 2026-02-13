@@ -161,7 +161,8 @@ class EmailService
                 $ticketObj = TicketData::fromStrings(
                     $ticket['ticketId'],
                     $ticket['username'],
-                    $ticket['ticketName'] ?? ''
+                    $ticket['ticketName'] ?? '',
+                    $ticket['created'] ?? null
                 );
             } else {
                 $ticketObj = $ticket;
@@ -278,6 +279,7 @@ class EmailService
                 $errorRecord->setEmail($emailRecord->getEmail());
                 $errorRecord->setSubject($emailRecord->getSubject());
                 $errorRecord->setTicketName($emailRecord->getTicketName());
+                $errorRecord->setTicketCreated($emailRecord->getTicketCreated());
                 // Add any other fields that need to be copied here
                 try {
                     $this->entityManager->persist($errorRecord);
@@ -338,6 +340,7 @@ class EmailService
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
         $emailRecord->setTicketName($ticketData->ticketName);
+        $emailRecord->setTicketCreated($ticketData->created ?? null);
 
         return $emailRecord;
     }
@@ -372,6 +375,7 @@ class EmailService
         $emailRecord->setTimestamp(clone $timestamp);
         $emailRecord->setTestMode($testMode);
         $emailRecord->setTicketName($ticket->ticketName);
+        $emailRecord->setTicketCreated($ticket->created ?? null);
         
         // Wenn kein Benutzer gefunden wurde
         if (!$user) {

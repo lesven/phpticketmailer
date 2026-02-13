@@ -80,6 +80,7 @@
                         <tr>
                             <th>Ticket-ID</th>
                             <th>Name</th>
+                            <th>Erstellt</th>
                             <th>Benutzer</th>
                             <th>E-Mail</th>
                             <th>Status</th>
@@ -90,6 +91,7 @@
                             <tr>
                                 <td>{{ email.ticketId }}</td>
                                 <td>{{ email.ticketName }}</td>
+                                <td>{{ email.ticketCreated }}</td>
                                 <td>{{ email.username }}</td>
                                 <td>{{ email.email }}</td>                                <td>
                                     {% if email.status.isError %}
