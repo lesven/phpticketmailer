@@ -148,7 +148,23 @@ migrate-status:
 
 migrate:
 	@echo "==> doctrine:migrations:migrate (no interaction)"
+	@$(MAKE) wait-db
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console doctrine:migrations:migrate --no-interaction
+
+.PHONY: wait-db
+wait-db:
+	@echo "==> Waiting for database to become reachable from $(PHP_SERVICE)"
+	@i=1; while [ $$i -le 30 ]; do \
+		if $(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php -r 'new PDO("mysql:host=database;port=3306", "ticketuser", "ticketpassword");' 2>/dev/null; then \
+			echo "Database is ready!"; \
+			exit 0; \
+		fi; \
+		echo "Waiting for database... attempt $$i/30"; \
+		sleep 2; \
+		i=$$((i + 1)); \
+	done; \
+	echo "ERROR: Database did not become ready in time"; \
+	exit 1
 
 ## Tests (PHPUnit)
 
