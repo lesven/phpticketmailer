@@ -12,12 +12,14 @@ final class CsvFieldConfigTest extends TestCase
         $this->assertSame('Vorgangsschlüssel', $config->getTicketIdField());
         $this->assertSame('Autor', $config->getUsernameField());
         $this->assertSame('Zusammenfassung', $config->getTicketNameField());
+        $this->assertSame('Erstellt', $config->getCreatedField());
 
         $mapping = $config->getFieldMapping();
         $this->assertIsArray($mapping);
         $this->assertSame('Vorgangsschlüssel', $mapping['ticketId']);
         $this->assertSame('Autor', $mapping['username']);
         $this->assertSame('Zusammenfassung', $mapping['ticketName']);
+        $this->assertSame('Erstellt', $mapping['created']);
     }
 
     public function testSettersAcceptNullAndFallbackToDefaults(): void
@@ -32,29 +34,37 @@ final class CsvFieldConfigTest extends TestCase
 
         $config->setTicketNameField('myTicket');
         $this->assertSame('myTicket', $config->getTicketNameField());
+
+        $config->setCreatedField('Created');
+        $this->assertSame('Created', $config->getCreatedField());
+
+        $config->setCreatedField(null);
+        $this->assertSame('Erstellt', $config->getCreatedField());
     }
 
     /**
      * @dataProvider invalidFieldProvider
      */
-    public function testInvalidFieldValuesFallback(?string $ticketId, ?string $username, ?string $ticketName, array $expected): void
+    public function testInvalidFieldValuesFallback(?string $ticketId, ?string $username, ?string $ticketName, ?string $created, array $expected): void
     {
         $c = new CsvFieldConfig();
         $c->setTicketIdField($ticketId);
         $c->setUsernameField($username);
         $c->setTicketNameField($ticketName);
+        $c->setCreatedField($created);
 
         $this->assertSame($expected['ticketId'], $c->getTicketIdField());
         $this->assertSame($expected['username'], $c->getUsernameField());
         $this->assertSame($expected['ticketName'], $c->getTicketNameField());
+        $this->assertSame($expected['created'], $c->getCreatedField());
     }
 
     public static function invalidFieldProvider(): array
     {
         return [
-            'all null' => [null, null, null, ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
-            'empty strings' => ['', '', '', ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
-            'custom mix' => ['id', null, '', ['ticketId' => 'id', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung']],
+            'all null' => [null, null, null, null, ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung', 'created' => 'Erstellt']],
+            'empty strings' => ['', '', '', '', ['ticketId' => 'Vorgangsschlüssel', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung', 'created' => 'Erstellt']],
+            'custom mix' => ['id', null, '', 'Date Created', ['ticketId' => 'id', 'username' => 'Autor', 'ticketName' => 'Zusammenfassung', 'created' => 'Date Created']],
         ];
     }
 }

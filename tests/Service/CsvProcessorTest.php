@@ -63,6 +63,7 @@ class CsvProcessorTest extends TestCase
 
         $cfg = $this->createMock(CsvFieldConfig::class);
         $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
+        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
 
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
@@ -128,6 +129,7 @@ class CsvProcessorTest extends TestCase
         $userRepository = $this->createMock(UserRepository::class);
         $requestStack = $this->createMock(RequestStack::class);
         $cfg = $this->createMock(CsvFieldConfig::class);
+        $cfg->method('getFieldMapping')->willReturn(['ticketId'=>'ticketId','username'=>'username','ticketName'=>'ticketName']);
         $processor = new CsvProcessor($reader, $userRepository, $requestStack);
         $res = $processor->process($uploaded, $cfg);
         $this->assertCount(0, $res['validTickets']);

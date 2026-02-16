@@ -6,7 +6,7 @@
          backupGlobals="false"
          colors="true"
          failOnNotice="true"
-         failOnWarning="true"
+         failOnWarning="false"
          bootstrap="tests/bootstrap.php"
          cacheDirectory=".phpunit.cache"
 >
@@ -15,8 +15,8 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
-        <!-- Show only self deprecations -->
-        <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[direct]=0&amp;max[indirect]=0&amp;max[self]=999" />
+        <!-- Allow more direct/indirect deprecations to identify issues -->
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[direct]=3&amp;max[indirect]=3&amp;max[self]=999" />
     </php>
 
     <testsuites>

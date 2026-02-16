@@ -14,6 +14,7 @@ use App\Repository\SMTPConfigRepository;
 use App\Repository\EmailSentRepository;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\Service\TemplateService;
 
 class EmailServiceTest extends TestCase
 {
@@ -26,14 +27,9 @@ class EmailServiceTest extends TestCase
     private $emailSentRepo;
     private $params;
     private $eventDispatcher;
-    private $prevErrorLog;
-
+    private $templateService;
     protected function setUp(): void
     {
-    // silence error_log output during tests to avoid noisy messages
-    $this->prevErrorLog = ini_get('error_log');
-    @ini_set('error_log', '/dev/null');
-
         $this->mailer = $this->createMock(MailerInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->userRepo = $this->createMock(UserRepository::class);
@@ -41,6 +37,22 @@ class EmailServiceTest extends TestCase
         $this->emailSentRepo = $this->createMock(EmailSentRepository::class);
         $this->params = $this->createMock(ParameterBagInterface::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->templateService = $this->createMock(TemplateService::class);
+        // Default: TemplateService returns a simple template
+        $this->templateService->method('getTemplateContentForTicketDate')
+            ->willReturn('<p>Template {{username}} {{ticketId}}</p>');
+        $this->templateService->method('resolveTemplateForTicketDate')
+            ->willReturn([
+                'content' => '<p>Template {{username}} {{ticketId}}</p>',
+                'debug' => [
+                    'inputCreated' => null,
+                    'parsedDate' => null,
+                    'selectedTemplateName' => 'default',
+                    'selectedTemplateValidFrom' => null,
+                    'selectionMethod' => 'mock_default',
+                    'allTemplates' => [],
+                ],
+            ]);
 
         // sensible defaults for parameters used in EmailService
         $this->params->method('get')->willReturnCallback(function($key, $default = null) {
@@ -65,16 +77,9 @@ class EmailServiceTest extends TestCase
             $this->emailSentRepo,
             $this->params,
             __DIR__, // projectDir not used for template path in these tests
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->templateService
         );
-    }
-
-    protected function tearDown(): void
-    {
-        // restore previous error_log setting
-        if (null !== $this->prevErrorLog) {
-            @ini_set('error_log', $this->prevErrorLog);
-        }
     }
 
     public function testPrepareEmailContentReplacesPlaceholdersAndAddsTestPrefix(): void
@@ -241,7 +246,7 @@ class EmailServiceTest extends TestCase
     public function testGetEmailTemplateFallbackReturnsDefault(): void
     {
         // Use a projectDir that doesn't contain templates
-        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, sys_get_temp_dir(), $this->eventDispatcher);
+        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, sys_get_temp_dir(), $this->eventDispatcher, $this->templateService);
         $ref = new \ReflectionClass($svc);
         $m = $ref->getMethod('getEmailTemplate');
         $m->setAccessible(true);
@@ -334,7 +339,7 @@ class EmailServiceTest extends TestCase
         $htmlPath = $tmpDir . '/templates/emails/email_template.html';
         file_put_contents($htmlPath, '<p>HTML TEMPLATE</p>');
 
-        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, $tmpDir, $this->eventDispatcher);
+        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, $tmpDir, $this->eventDispatcher, $this->templateService);
         $ref = new \ReflectionClass($svc);
         $m = $ref->getMethod('getEmailTemplate');
         $m->setAccessible(true);
@@ -385,7 +390,8 @@ class EmailServiceTest extends TestCase
             $this->emailSentRepo,
             $this->params,
             __DIR__,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->templateService
         );
 
         $ref = new \ReflectionClass($svc);
@@ -435,7 +441,8 @@ class EmailServiceTest extends TestCase
             $this->emailSentRepo,
             $this->params,
             __DIR__,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->templateService
         );
 
         $ref2 = new \ReflectionClass($svc2);

@@ -44,7 +44,8 @@ class SessionManager
                     'type' => 'UnknownUserWithTicket',
                     'username' => $unknownUser->getUsernameString(),
                     'ticketId' => $unknownUser->getTicketIdString(),
-                    'ticketName' => $unknownUser->getTicketNameString()
+                    'ticketName' => $unknownUser->getTicketNameString(),
+                    'created' => $unknownUser->getCreatedString()
                 ];
             } else {
                 // Fallback for strings (backward compatibility)
@@ -81,7 +82,8 @@ class SessionManager
                         $unknownUsers[] = new \App\ValueObject\UnknownUserWithTicket(
                             new \App\ValueObject\Username($item['username']),
                             new \App\ValueObject\TicketId($item['ticketId']),
-                            isset($item['ticketName']) && $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null
+                            isset($item['ticketName']) && $item['ticketName'] ? new \App\ValueObject\TicketName($item['ticketName']) : null,
+                            $item['created'] ?? null
                         );
                     } catch (\Exception $e) {
                         // Skip invalid entries without breaking the whole process

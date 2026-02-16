@@ -1,137 +1,258 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}E-Mail-Template - {{ parent() }}{% endblock %}
+{% block title %}E-Mail-Templates - {{ parent() }}{% endblock %}
 
 {% block stylesheets %}
 <!-- Quill CSS -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    .template-sidebar {
+        min-height: calc(100vh - 200px);
+    }
+    .template-sidebar .list-group-item.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .template-sidebar .list-group-item {
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+    .template-sidebar .list-group-item:hover:not(.active) {
+        background-color: #f0f0f0;
+    }
+    .template-badge {
+        font-size: 0.75rem;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-    <h1 class="mb-4">E-Mail-Template verwalten</h1>
-    
-    {% if message %}
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
-    
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">Hinweise zu Platzhaltern</h5>
-        </div>
-        <div class="card-body">
-            <p>Im E-Mail-Template können folgende Platzhalter verwendet werden:</p>
-            <ul>
-                {% verbatim %}
-                <li><code>{{ticketId}}</code> - Die ID des Tickets</li>
-                <li><code>{{ticketName}}</code> - Der Name/Titel des Tickets</li>
-                <li><code>{{username}}</code> - Der Benutzername des Empfängers</li>
-                <li><code>{{ticketLink}}</code> - Ein Link zum Ticket im Ticketsystem</li>
-                <li><code>{{dueDate}}</code> - Datum in 7 Tagen (z.B. für Antwortfrist)</li>
-                {% endverbatim %}
-            </ul>
-        </div>
-    </div>
-    
-    <!-- Neuer WYSIWYG Editor für das Template -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="card-title mb-0">Template im Editor bearbeiten</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" action="{{ path('template_save_wysiwyg') }}" id="template-form">
-                <div class="mb-3">
-                    <div id="editor-container" style="height: 400px;"></div>
-                    <input type="hidden" id="template_content" name="template_content" value="{{ templateContent|e('html_attr') }}">
+    <h1 class="mb-4">E-Mail-Templates verwalten</h1>
+
+    <div class="row">
+        {# ── SIDEBAR: Template-Liste ── #}
+        <div class="col-md-3">
+            <div class="card template-sidebar">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-layer-group"></i> Templates</h5>
                 </div>
-                
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Template speichern
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Template hochladen</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="template_file" class="form-label">Template-Datei</label>
-                            <input type="file" id="template_file" name="template_file" class="form-control" required>
-                            <div class="form-text">HTML oder Textdatei mit dem E-Mail-Template (.html, .txt)</div>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-upload"></i> Template hochladen
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Aktuelles Template</h5>
-                </div>
-                <div class="card-body">
-                    {% if templateExists %}
-                        <p>Ein E-Mail-Template ist vorhanden.</p>
-                        <div class="d-grid">
-                            <a href="{{ path('template_download') }}" class="btn btn-success">
-                                <i class="fas fa-download"></i> Template herunterladen
+                <div class="card-body p-0">
+                    {# Template-Liste #}
+                    <div class="list-group list-group-flush">
+                        {% for tpl in templates %}
+                            <a href="{{ path('template_manage', {templateId: tpl.id}) }}"
+                               class="list-group-item list-group-item-action {% if selectedTemplate and selectedTemplate.id == tpl.id %}active{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ tpl.name }}</strong>
+                                        <br>
+                                        <small class="template-badge {% if selectedTemplate and selectedTemplate.id == tpl.id %}text-light{% else %}text-muted{% endif %}">
+                                            <i class="fas fa-calendar-alt"></i> Ab {{ tpl.validFrom|date('d.m.Y') }}
+                                        </small>
+                                    </div>
+                                </div>
                             </a>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-warning">
-                            <p>Es wurde noch kein E-Mail-Template hochgeladen. Das Standardtemplate wird verwendet.</p>
-                        </div>
-                    {% endif %}
+                        {% else %}
+                            <div class="list-group-item text-muted text-center py-4">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                Noch keine Templates vorhanden
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Vorschau des E-Mail-Templates -->
-    <div class="card">
-        <div class="card-header bg-info text-white">
-            <h5 class="card-title mb-0">Template-Vorschau mit Beispieldaten</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <p><strong>Beispieldaten:</strong></p>
-                    <ul class="list-group">
-                        <li class="list-group-item">Ticket ID: {{ previewData.ticketId }}</li>
-                        <li class="list-group-item">Ticket Name: {{ previewData.ticketName }}</li>
-                        <li class="list-group-item">Benutzername: {{ previewData.username }}</li>
-                        <li class="list-group-item">Ticket Link: <a href="{{ previewData.ticketLink }}" target="_blank">{{ previewData.ticketLink }}</a></li>
-                        <li class="list-group-item">Fälligkeitsdatum: {{ previewData.dueDate }}</li>
-                    </ul>
-                </div>
-                <div class="col-md-8">
-                    <p><strong>Vorschau:</strong></p>
-                    <div class="border p-3 bg-light">
-                        <div>{{ previewContent|raw }}</div>
+                <div class="card-footer">
+                    {# Neues Template erstellen #}
+                    <button class="btn btn-success btn-sm w-100" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#createTemplateForm">
+                        <i class="fas fa-plus"></i> Neues Template
+                    </button>
+                    <div class="collapse mt-2" id="createTemplateForm">
+                        <form method="post" action="{{ path('template_create') }}">
+                            <div class="mb-2">
+                                <input type="text" name="template_name" class="form-control form-control-sm"
+                                       placeholder="Template-Name" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label form-label-sm mb-1">Gültig ab</label>
+                                <input type="date" name="template_valid_from" class="form-control form-control-sm"
+                                       required value="{{ 'now'|date('Y-m-d') }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-check"></i> Erstellen
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
+        </div>
+
+        {# ── HAUPTBEREICH: Editor / Details ── #}
+        <div class="col-md-9">
+            {% if selectedTemplate %}
+                {# ── Template-Einstellungen (Name, Gültig ab, Löschen) ── #}
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cog"></i> Template-Einstellungen: {{ selectedTemplate.name }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('template_update', {id: selectedTemplate.id}) }}">
+                            <div class="row align-items-end">
+                                <div class="col-md-4">
+                                    <label for="template_name" class="form-label">Name</label>
+                                    <input type="text" id="template_name" name="template_name"
+                                           class="form-control" value="{{ selectedTemplate.name }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="template_valid_from" class="form-label">Gültig ab</label>
+                                    <input type="date" id="template_valid_from" name="template_valid_from"
+                                           class="form-control" value="{{ selectedTemplate.validFrom|date('Y-m-d') }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Speichern
+                                    </button>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <form method="post" action="{{ path('template_delete', {id: selectedTemplate.id}) }}"
+                                          onsubmit="return confirm('Template wirklich löschen?');" style="display:inline">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Löschen
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {# ── Platzhalter-Info ── #}
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">Hinweise zu Platzhaltern</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Im E-Mail-Template können folgende Platzhalter verwendet werden:</p>
+                        <ul>
+                            {% verbatim %}
+                            <li><code>{{ticketId}}</code> - Die ID des Tickets</li>
+                            <li><code>{{ticketName}}</code> - Der Name/Titel des Tickets</li>
+                            <li><code>{{username}}</code> - Der Benutzername des Empfängers</li>
+                            <li><code>{{ticketLink}}</code> - Ein Link zum Ticket im Ticketsystem</li>
+                            <li><code>{{created}}</code> - Das Erstellungsdatum des Tickets (falls in CSV vorhanden)</li>
+                            <li><code>{{dueDate}}</code> - Datum in 7 Tagen (z.B. für Antwortfrist)</li>
+                            {% endverbatim %}
+                        </ul>
+                    </div>
+                </div>
+
+                {# ── WYSIWYG Editor ── #}
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">Template im Editor bearbeiten</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('template_save_wysiwyg', {id: selectedTemplate.id}) }}" id="template-form">
+                            <div class="mb-3">
+                                <div id="editor-container" style="height: 400px;"></div>
+                                <input type="hidden" id="template_content" name="template_content" value="{{ templateContent|e('html_attr') }}">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Template-Inhalt speichern
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {# ── Upload / Download ── #}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Template hochladen</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{{ path('template_upload', {id: selectedTemplate.id}) }}" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="template_file" class="form-label">Template-Datei</label>
+                                        <input type="file" id="template_file" name="template_file" class="form-control" required>
+                                        <div class="form-text">HTML oder Textdatei mit dem E-Mail-Template (.html, .txt)</div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-upload"></i> Template hochladen
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Template herunterladen</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Den Inhalt des aktuellen Templates als Datei herunterladen.</p>
+                                <div class="d-grid">
+                                    <a href="{{ path('template_download', {id: selectedTemplate.id}) }}" class="btn btn-success">
+                                        <i class="fas fa-download"></i> Template herunterladen
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Vorschau ── #}
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">Template-Vorschau mit Beispieldaten</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Beispieldaten:</strong></p>
+                                <ul class="list-group">
+                                    <li class="list-group-item">Ticket ID: {{ previewData.ticketId }}</li>
+                                    <li class="list-group-item">Ticket Name: {{ previewData.ticketName }}</li>
+                                    <li class="list-group-item">Benutzername: {{ previewData.username }}</li>
+                                    <li class="list-group-item">Ticket Link: <a href="{{ previewData.ticketLink }}" target="_blank">{{ previewData.ticketLink }}</a></li>
+                                    <li class="list-group-item">Fälligkeitsdatum: {{ previewData.dueDate }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-8">
+                                <p><strong>Vorschau:</strong></p>
+                                <div class="border p-3 bg-light">
+                                    <div>{{ previewContent|raw }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                {# Kein Template ausgewählt #}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-hand-pointer fa-3x text-muted mb-3 d-block"></i>
+                        <h4 class="text-muted">Bitte wählen Sie ein Template aus der Seitenleiste</h4>
+                        <p class="text-muted">
+                            Oder erstellen Sie ein neues Template mit dem Button
+                            <strong>"Neues Template"</strong> in der Seitenleiste.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
 
 {% block javascripts %}
+{% if selectedTemplate %}
 <!-- Quill JS -->
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
@@ -148,15 +269,16 @@
             },
             theme: 'snow'
         });
-        
+
         // Editor mit bestehendem Inhalt befüllen
         const initialContent = document.getElementById('template_content').value;
         editor.root.innerHTML = initialContent;
-        
+
         // Bei Formularabsendung den Inhalt des Editors ins versteckte Feld übertragen
         document.getElementById('template-form').addEventListener('submit', function() {
             document.getElementById('template_content').value = editor.root.innerHTML;
         });
     });
 </script>
+{% endif %}
 {% endblock %}

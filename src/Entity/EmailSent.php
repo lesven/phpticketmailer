@@ -83,6 +83,12 @@ class EmailSent
     private ?TicketName $ticketName = null;
 
     /**
+     * Optional: Erstellungsdatum des Tickets (aus CSV)
+     */
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $ticketCreated = null;
+
+    /**
      * Gibt die ID der E-Mail-Protokollierung zurück
      * 
      * @return int|null Die ID der Protokollierung
@@ -310,6 +316,29 @@ class EmailSent
         } else {
             $this->ticketName = $ticketName;
         }
+
+        return $this;
+    }
+
+    /**
+     * Gibt das Erstellungsdatum des Tickets zurück
+     *
+     * @return string|null
+     */
+    public function getTicketCreated(): ?string
+    {
+        return $this->ticketCreated;
+    }
+
+    /**
+     * Setzt das Erstellungsdatum des Tickets
+     *
+     * @param string|null $ticketCreated
+     * @return self
+     */
+    public function setTicketCreated(?string $ticketCreated): self
+    {
+        $this->ticketCreated = $ticketCreated !== null && trim($ticketCreated) === '' ? null : $ticketCreated;
 
         return $this;
     }

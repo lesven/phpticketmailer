@@ -68,7 +68,15 @@ class CsvProcessor
 
         // Konfigurierte Feldnamen holen
         $fieldMapping = $csvFieldConfig->getFieldMapping();
-        $requiredColumns = array_values($fieldMapping);
+        if (!is_array($fieldMapping) || empty($fieldMapping)) {
+            $fieldMapping = (new \App\Entity\CsvFieldConfig())->getFieldMapping();
+        }
+        // Required columns exclude the optional 'created' field
+        $requiredColumns = [
+            $fieldMapping['ticketId'],
+            $fieldMapping['username'],
+            $fieldMapping['ticketName']
+        ];
         
         $handle = null;
         try {
@@ -76,6 +84,14 @@ class CsvProcessor
             $handle = $this->csvFileReader->openCsvFile($file);
             $header = $this->csvFileReader->readHeader($handle);
             $columnIndices = $this->csvFileReader->validateRequiredColumns($header, $requiredColumns);
+            
+            // Add optional created field index if the column exists in CSV
+            if (isset($fieldMapping['created'])) {
+                $createdIndex = array_search($fieldMapping['created'], $header);
+                if ($createdIndex !== false) {
+                    $columnIndices[$fieldMapping['created']] = $createdIndex;
+                }
+            }
             
             // Daten zur Ticketverarbeitung
             $validTickets = [];
@@ -199,11 +215,18 @@ class CsvProcessor
     private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): TicketData
     {
         $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
+        
+        // Extract optional created field if it exists in the CSV and in the mapping
+        $createdRaw = null;
+        if (isset($fieldMapping['created']) && isset($columnIndices[$fieldMapping['created']])) {
+            $createdRaw = $row[$columnIndices[$fieldMapping['created']]] ?? null;
+        }
 
         return TicketData::fromStrings(
             $row[$columnIndices[$fieldMapping['ticketId']]],
             $row[$columnIndices[$fieldMapping['username']]],
-            $ticketNameRaw
+            $ticketNameRaw,
+            $createdRaw
         );
     }
     
