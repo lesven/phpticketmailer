@@ -76,9 +76,22 @@ class EmailService
      * @var string
      */
     private $projectDir;
-      /**
-     * Konstruktor mit Dependency Injection aller benötigten Services
-     * 
+
+    /**
+     * Der TemplateService für datumbasierte Template-Auswahl.
+     */
+    private $templateService;
+
+    /**
+     * Debug-Infos zur Template-Auswahl pro Ticket (Ticket-ID => Debug-Array).
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $templateDebugInfo = [];
+
+    /**
+     * Konstruktor mit Dependency Injection aller benötigten Services.
+     *
      * @param MailerInterface $mailer Der Symfony Mailer Service
      * @param EntityManagerInterface $entityManager Der Doctrine Entity Manager
      * @param UserRepository $userRepository Das User Repository
@@ -86,19 +99,9 @@ class EmailService
      * @param EmailSentRepository $emailSentRepository Das EmailSent Repository
      * @param ParameterBagInterface $params Der Parameter-Bag für Konfigurationswerte
      * @param string $projectDir Der Pfad zum Projektverzeichnis
+     * @param EventDispatcherInterface $eventDispatcher Der Event-Dispatcher für E-Mail-Events
+     * @param TemplateService $templateService Service für datumbasierte Template-Auswahl
      */
-    /**
-     * Der TemplateService für datumbasierte Template-Auswahl
-     * @var TemplateService
-     */
-    private $templateService;
-
-    /**
-     * Debug-Infos zur Template-Auswahl pro Ticket (Ticket-ID => Debug-Array)
-     * @var array<string, array<string, mixed>>
-     */
-    private array $templateDebugInfo = [];
-
     public function __construct(
         MailerInterface $mailer,
         EntityManagerInterface $entityManager,
@@ -271,12 +274,13 @@ class EmailService
             
             // Template basierend auf Ticket-Erstelldatum auswählen
             $resolved = $this->templateService->resolveTemplateForTicketDate($ticketObj->created);
-            $ticketTemplateContent = $resolved['content'];
-            $this->templateDebugInfo[(string) $ticketId] = $resolved['debug'];
+            $ticketTemplateContent = $resolved['content'] ?? '';
+            $this->templateDebugInfo[(string) $ticketId] = $resolved['debug'] ?? [];
             // Fallback auf globales Template wenn TemplateService nichts findet
-            if (empty(trim($ticketTemplateContent))) {
+            if ($ticketTemplateContent === '' || trim($ticketTemplateContent) === '') {
                 $ticketTemplateContent = $globalTemplateContent;
-                $this->templateDebugInfo[(string) $ticketId]['selectionMethod'] .= ' → fallback_global';
+                $selectionMethod = $this->templateDebugInfo[(string) $ticketId]['selectionMethod'] ?? '';
+                $this->templateDebugInfo[(string) $ticketId]['selectionMethod'] = $selectionMethod . ' → fallback_global';
             }
 
             // Normaler E-Mail-Versand (User existiert und ist nicht ausgeschlossen)
@@ -294,7 +298,6 @@ class EmailService
                 $this->entityManager->flush();
                 $sentEmails[] = $emailRecord;
             } catch (\Exception $e) {
-                error_log('Error saving email record for ticket ' . (string) $ticket->ticketId . ': ' . $e->getMessage());
                 // Erstelle einen Fehler-Datensatz stattdessen
                 $errorRecord = new EmailSent();
                 // Copy relevant fields from $emailRecord to $errorRecord
@@ -518,18 +521,15 @@ class EmailService
     }
     
     /**
-     * Sendet die E-Mail über den konfigurierten Transport
-     * 
-     * Diese Methode verwendet entweder die konfigurierte SMTP-Verbindung
-     * oder den Standard-Mailer von Symfony, um die E-Mail zu versenden.
-     * 
-     * @param string $recipient Die E-Mail-Adresse des Empfängers
+     * Sendet die E-Mail über den konfigurierten Transport.
+     *
+     * Verwendet entweder die konfigurierte SMTP-Verbindung oder den
+     * Standard-Mailer von Symfony. HTML-Inhalte werden automatisch erkannt.
+     *
+     * @param EmailAddress|string $recipient Die E-Mail-Adresse des Empfängers
      * @param string $subject Der Betreff der E-Mail
-     * @param string $content Der Inhalt der E-Mail
-     * @param array $config Die E-Mail-Konfiguration
-     */
-    /**
-     * @param EmailAddress|string $recipient
+     * @param string $content Der Inhalt der E-Mail (HTML oder Text)
+     * @param array $config Die E-Mail-Konfiguration (senderEmail, senderName, useCustomSMTP, etc.)
      */
     private function sendEmail(
         EmailAddress|string $recipient,

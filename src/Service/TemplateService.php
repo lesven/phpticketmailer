@@ -29,6 +29,12 @@ class TemplateService
         return $this->repository->findAllOrderedByValidFrom();
     }
 
+    /**
+     * Lädt ein einzelnes Template anhand seiner ID.
+     *
+     * @param int $id Die Template-ID
+     * @return EmailTemplate|null Das Template oder null wenn nicht gefunden
+     */
     public function getTemplate(int $id): ?EmailTemplate
     {
         return $this->repository->find($id);
@@ -48,11 +54,21 @@ class TemplateService
         return $template;
     }
 
+    /**
+     * Speichert Änderungen an einem bestehenden Template.
+     *
+     * @param EmailTemplate $template Das zu speichernde Template
+     */
     public function saveTemplate(EmailTemplate $template): void
     {
         $this->repository->save($template);
     }
 
+    /**
+     * Löscht ein Template aus der Datenbank.
+     *
+     * @param EmailTemplate $template Das zu löschende Template
+     */
     public function deleteTemplate(EmailTemplate $template): void
     {
         $this->repository->remove($template);

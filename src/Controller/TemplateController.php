@@ -15,6 +15,10 @@ use App\ValueObject\TicketName;
 #[Route('/template')]
 class TemplateController extends AbstractController
 {
+    /**
+     * @param TemplateService $templateService Service für Template-CRUD und -Auswahl
+     * @param string $projectDir Absoluter Pfad zum Projektverzeichnis
+     */
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly string $projectDir
@@ -216,6 +220,11 @@ class TemplateController extends AbstractController
 
     // ── Hilfsmethoden ──────────────────────────────────────────
 
+    /**
+     * Erzeugt Beispieldaten für die Template-Vorschau im Editor.
+     *
+     * @return array<string, string|TicketName> Platzhalter-Schlüssel => Beispielwerte
+     */
     private function getPreviewData(): array
     {
         $dueDate = new \DateTime();
@@ -235,6 +244,13 @@ class TemplateController extends AbstractController
         ];
     }
 
+    /**
+     * Ersetzt Template-Platzhalter (z.B. {{ticketId}}) durch die übergebenen Daten.
+     *
+     * @param string $template  Der Template-Inhalt mit Platzhaltern
+     * @param array  $data      Assoziatives Array mit Ersetzungswerten
+     * @return string Der Template-Inhalt mit eingesetzten Werten
+     */
     private function replacePlaceholders(string $template, array $data): string
     {
         $dueDate = new \DateTime();
@@ -257,6 +273,12 @@ class TemplateController extends AbstractController
         return str_replace(array_keys($placeholders), array_values($placeholders), $template);
     }
 
+    /**
+     * Wandelt einen Template-Namen in einen dateisystemfreundlichen Slug um.
+     *
+     * @param string $name Der Template-Name
+     * @return string Der Slug (Kleinbuchstaben, Sonderzeichen als Unterstriche)
+     */
     private function slugifyName(string $name): string
     {
         $slug = mb_strtolower($name);

@@ -12,6 +12,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class EmailTemplateRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry Die Doctrine-Registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, EmailTemplate::class);
@@ -58,6 +61,12 @@ class EmailTemplateRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Speichert ein Template in der Datenbank (persist + optional flush).
+     *
+     * @param EmailTemplate $template Das zu speichernde Template
+     * @param bool $flush Ob sofort geflusht werden soll (default: true)
+     */
     public function save(EmailTemplate $template, bool $flush = true): void
     {
         $this->getEntityManager()->persist($template);
@@ -66,6 +75,12 @@ class EmailTemplateRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * Entfernt ein Template aus der Datenbank (remove + optional flush).
+     *
+     * @param EmailTemplate $template Das zu löschende Template
+     * @param bool $flush Ob sofort geflusht werden soll (default: true)
+     */
     public function remove(EmailTemplate $template, bool $flush = true): void
     {
         $this->getEntityManager()->remove($template);

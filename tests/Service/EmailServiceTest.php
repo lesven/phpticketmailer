@@ -28,14 +28,8 @@ class EmailServiceTest extends TestCase
     private $params;
     private $eventDispatcher;
     private $templateService;
-    private $prevErrorLog;
-
     protected function setUp(): void
     {
-    // silence error_log output during tests to avoid noisy messages
-    $this->prevErrorLog = ini_get('error_log');
-    @ini_set('error_log', '/dev/null');
-
         $this->mailer = $this->createMock(MailerInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->userRepo = $this->createMock(UserRepository::class);
@@ -47,6 +41,18 @@ class EmailServiceTest extends TestCase
         // Default: TemplateService returns a simple template
         $this->templateService->method('getTemplateContentForTicketDate')
             ->willReturn('<p>Template {{username}} {{ticketId}}</p>');
+        $this->templateService->method('resolveTemplateForTicketDate')
+            ->willReturn([
+                'content' => '<p>Template {{username}} {{ticketId}}</p>',
+                'debug' => [
+                    'inputCreated' => null,
+                    'parsedDate' => null,
+                    'selectedTemplateName' => 'default',
+                    'selectedTemplateValidFrom' => null,
+                    'selectionMethod' => 'mock_default',
+                    'allTemplates' => [],
+                ],
+            ]);
 
         // sensible defaults for parameters used in EmailService
         $this->params->method('get')->willReturnCallback(function($key, $default = null) {
@@ -74,14 +80,6 @@ class EmailServiceTest extends TestCase
             $this->eventDispatcher,
             $this->templateService
         );
-    }
-
-    protected function tearDown(): void
-    {
-        // restore previous error_log setting
-        if (null !== $this->prevErrorLog) {
-            @ini_set('error_log', $this->prevErrorLog);
-        }
     }
 
     public function testPrepareEmailContentReplacesPlaceholdersAndAddsTestPrefix(): void
