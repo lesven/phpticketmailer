@@ -2,6 +2,7 @@
 
 namespace App\Tests\Service;
 
+use App\Dto\EmailConfig;
 use App\Service\EmailService;
 use App\Entity\EmailSent;
 use App\ValueObject\EmailStatus;
@@ -121,8 +122,17 @@ class EmailServiceTest extends TestCase
         $method = $ref->getMethod('processTicketEmail');
         $method->setAccessible(true);
 
+    $config = new EmailConfig(
+            subject: 'subj',
+            ticketBaseUrl: 'https://tickets.example',
+            senderEmail: 'noreply@example.com',
+            senderName: 'Ticket-System',
+            testEmail: 'test@example.com',
+            useCustomSMTP: false,
+        );
+
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], '', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, $config, '', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
         $this->assertEquals(EmailStatus::error('no email found'), $emailSent->getStatus());
@@ -149,8 +159,17 @@ class EmailServiceTest extends TestCase
         $method = $ref->getMethod('processTicketEmail');
         $method->setAccessible(true);
 
+    $config = new EmailConfig(
+            subject: 'subj',
+            ticketBaseUrl: 'https://tickets.example',
+            senderEmail: 'noreply@example.com',
+            senderName: 'Ticket-System',
+            testEmail: 'test@example.com',
+            useCustomSMTP: false,
+        );
+
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, $config, 'template content', false, new \DateTime());
 
         $this->assertInstanceOf(EmailSent::class, $emailSent);
         $this->assertEquals(EmailStatus::sent(), $emailSent->getStatus());
@@ -174,8 +193,17 @@ class EmailServiceTest extends TestCase
         $method = $ref->getMethod('processTicketEmail');
         $method->setAccessible(true);
 
+    $config = new EmailConfig(
+            subject: 'subj',
+            ticketBaseUrl: 'https://tickets.example',
+            senderEmail: 'noreply@example.com',
+            senderName: 'Ticket-System',
+            testEmail: 'test@example.com',
+            useCustomSMTP: false,
+        );
+
     /** @var EmailSent $emailSent */
-    $emailSent = $method->invoke($this->service, $ticketData, ['subject' => 'subj', 'ticketBaseUrl' => 'https://tickets.example', 'testEmail' => 'test@example.com', 'useCustomSMTP' => false, 'senderEmail' => 'noreply@example.com', 'senderName' => 'Ticket-System'], 'template content', false, new \DateTime());
+    $emailSent = $method->invoke($this->service, $ticketData, $config, 'template content', false, new \DateTime());
 
         $this->assertStringStartsWith('Fehler:', $emailSent->getStatus()->getValue());
     }
@@ -268,7 +296,14 @@ class EmailServiceTest extends TestCase
         $m = $ref->getMethod('sendEmail');
         $m->setAccessible(true);
 
-        $config = ['senderEmail' => 's@d', 'senderName' => 'n', 'useCustomSMTP' => false];
+        $config = new EmailConfig(
+            subject: 'sub',
+            ticketBaseUrl: 'https://example.com',
+            senderEmail: 's@d',
+            senderName: 'n',
+            testEmail: 'test@example.com',
+            useCustomSMTP: false,
+        );
         $m->invoke($this->service, 'r@x', 'sub', '<html><p>hi</p></html>', $config);
 
         $this->assertTrue($called);
@@ -395,15 +430,17 @@ class EmailServiceTest extends TestCase
         );
 
         $ref = new \ReflectionClass($svc);
-        $m = $ref->getMethod('getEmailConfiguration');
+        $m = $ref->getMethod('buildEmailConfig');
         $m->setAccessible(true);
 
-        $out = $m->invoke($svc);
+        /** @var EmailConfig $out */
+        $out = $m->invoke($svc, false, null);
 
-    $this->assertIsArray($out);
-    // Ensure DB config produced a DSN and applied the ticket base URL
-    $this->assertEquals('https://db.example', $out['ticketBaseUrl']);
-    $this->assertStringContainsString('smtp://', $out['smtpDSN']);
+    $this->assertInstanceOf(EmailConfig::class, $out);
+    $this->assertEquals('https://db.example', $out->ticketBaseUrl);
+    $this->assertStringContainsString('smtp://', $out->smtpDSN);
+    $this->assertTrue($out->useCustomSMTP);
+    $this->assertEquals('DB Sender', $out->senderName);
     }
 
     public function testCreateSkippedEmailRecordWithAndWithoutUser(): void
