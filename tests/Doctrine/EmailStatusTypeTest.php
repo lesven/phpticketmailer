@@ -72,7 +72,7 @@ class EmailStatusTypeTest extends TestCase
     public function testConvertToDatabaseValueThrowsExceptionForWrongType(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Expected EmailStatus');
+        $this->expectExceptionMessageMatches('/^Expected EmailStatus/');
 
         $this->type->convertToDatabaseValue(new \stdClass(), $this->platform);
     }
