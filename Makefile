@@ -12,11 +12,21 @@ COMPOSE_FILE := docker-compose.yml
 DC_BASE := docker
 DC_ARGS := compose -f $(COMPOSE_FILE)
 
+# Use bash for advanced shell features (pipefail etc.)
+SHELL := /bin/bash
+
 # Service-Namen wie in docker-compose.yml
 PHP_SERVICE := php
 WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
+
+# Database defaults (matching docker-compose.yml)
+DB_USER := ticketuser
+DB_PASSWORD := ticketpassword
+DB_NAME := ticket_mailer_db
+# Default dump file on host (can be overridden: `make db-dump DUMP_FILE=./backups/my.sql`)
+DUMP_FILE ?= ./db-dump.sql
 
 .PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
@@ -183,6 +193,33 @@ recreate-db:
 	@echo "==> Recreate DB volume and start database"
 	@$(DC_BASE) $(DC_ARGS) down --volumes --remove-orphans
 	@$(DC_BASE) $(DC_ARGS) up -d $(DB_SERVICE)
+
+
+## Database dump to host file (default: ./db-dump.sql)
+## Usage: make db-dump OR make db-dump DUMP_FILE=./backups/my.sql
+db-dump:
+	@echo "==> Dumping database $(DB_NAME) to $(DUMP_FILE)"
+	@set -o pipefail; \
+	if $(DC_BASE) $(DC_ARGS) exec -T $(DB_SERVICE) mariadb-dump -u$(DB_USER) -p"$(DB_PASSWORD)" --databases $(DB_NAME) --single-transaction --quick --skip-lock-tables > $(DUMP_FILE) 2>/dev/null; then \
+		echo "Dump created using $(DB_SERVICE) container"; \
+	else \
+		echo "mariadb-dump not found via exec, using temporary client container"; \
+		$(DC_BASE) $(DC_ARGS) run --rm --no-deps $(DB_SERVICE) sh -c "mariadb-dump -h database -P 3306 -u$(DB_USER) -p'$(DB_PASSWORD)' --databases $(DB_NAME) --single-transaction --quick --skip-lock-tables" > $(DUMP_FILE); \
+	fi
+
+
+## Restore database from host file
+## Usage: make db-restore DUMP_FILE=./backups/my.sql
+db-restore:
+	@echo "==> Restoring database $(DB_NAME) from $(DUMP_FILE)"
+	@$(MAKE) wait-db
+	@set -o pipefail; \
+	if cat $(DUMP_FILE) | $(DC_BASE) $(DC_ARGS) exec -T $(DB_SERVICE) mariadb -u$(DB_USER) -p"$(DB_PASSWORD)" $(DB_NAME) 2>/dev/null; then \
+		echo "Restore completed using $(DB_SERVICE) container"; \
+	else \
+		echo "mariadb client not found via exec, using temporary client container"; \
+		cat $(DUMP_FILE) | $(DC_BASE) $(DC_ARGS) run --rm --no-deps $(DB_SERVICE) sh -c "mariadb -h database -P 3306 -u$(DB_USER) -p'$(DB_PASSWORD)' $(DB_NAME)"; \
+	fi
 
 deploy:
 	git pull

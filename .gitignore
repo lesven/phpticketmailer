@@ -19,3 +19,6 @@ phpunit-events.log
 phpunit-results.xml
 e2e-events.log
 phpunit-main-events.log
+backup_Sunday.sql
+backup_Sunday.sql:Zone.Identifier
+db-dump.sql
