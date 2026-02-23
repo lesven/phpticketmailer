@@ -74,23 +74,6 @@ services:
       - proxy-tier
     restart: unless-stopped
 
-  # phpMyAdmin (lokal, Port 8088)
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: ticketumfrage_phpmyadmin
-    environment:
-      - PMA_HOST=database
-      - PMA_PORT=3306
-      - PMA_USER=ticketuser
-      - PMA_PASSWORD=ticketpassword
-    ports:
-      - "8087:80"
-    depends_on:
-      - database
-    networks:
-      - proxy-tier
-    restart: unless-stopped
-
   # Eigener SMTP-Server für ARM-Kompatibilität (als Backup oder Alternative zu MailHog)
   mailserver:
     build:

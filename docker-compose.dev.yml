@@ -1,0 +1,21 @@
+# Dev-only overrides (not for production)
+# Verwendung: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Oder einfach: make deploy-dev
+
+services:
+  # phpMyAdmin nur in der Dev-Umgebung
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ticketumfrage_phpmyadmin
+    environment:
+      - PMA_HOST=database
+      - PMA_PORT=3306
+      - PMA_USER=ticketuser
+      - PMA_PASSWORD=ticketpassword
+    ports:
+      - "8087:80"
+    depends_on:
+      - database
+    networks:
+      - proxy-tier
+    restart: unless-stopped
