@@ -77,10 +77,10 @@ class TemplateService
     /**
      * Findet das passende Template für ein Ticket-Erstelldatum.
      *
-     * Es wird das Template gewählt, dessen validFrom >= dem Ticket-Erstelldatum
-     * ist (das nächste gültige Template ab dem Ticket-Datum).
-     * Beispiel: Templates mit validFrom 03.02. und 13.02., Ticket vom 10.02.
-     * → Template vom 13.02. wird gewählt (nächstes ab Ticket-Datum).
+     * Es wird das Template gewählt, dessen validFrom <= dem Ticket-Erstelldatum
+     * ist (das Template, das zum Zeitpunkt der Ticket-Erstellung aktiv war).
+     * Beispiel: Templates mit validFrom 01.01. und 23.02., Ticket vom 26.01.
+     * → Template vom 01.01. wird gewählt (zum Ticket-Datum aktives Template).
      *
      * Wenn kein created-Datum vorhanden ist, wird das neueste Template
      * verwendet. Wenn gar kein Template existiert, wird das Dateisystem-
