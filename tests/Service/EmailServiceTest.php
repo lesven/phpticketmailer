@@ -15,6 +15,7 @@ use App\Repository\SMTPConfigRepository;
 use App\Repository\EmailSentRepository;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\Dto\TemplateResolutionResult;
 use App\Service\TemplateService;
 
 class EmailServiceTest extends TestCase
@@ -43,17 +44,40 @@ class EmailServiceTest extends TestCase
         $this->templateService->method('getTemplateContentForTicketDate')
             ->willReturn('<p>Template {{username}} {{ticketId}}</p>');
         $this->templateService->method('resolveTemplateForTicketDate')
-            ->willReturn([
-                'content' => '<p>Template {{username}} {{ticketId}}</p>',
-                'debug' => [
-                    'inputCreated' => null,
-                    'parsedDate' => null,
-                    'selectedTemplateName' => 'default',
-                    'selectedTemplateValidFrom' => null,
-                    'selectionMethod' => 'mock_default',
-                    'allTemplates' => [],
-                ],
-            ]);
+            ->willReturn(new TemplateResolutionResult(
+                content: '<p>Template {{username}} {{ticketId}}</p>',
+                inputCreated: null,
+                parsedDate: null,
+                selectedTemplateName: 'default',
+                selectedTemplateValidFrom: null,
+                selectionMethod: 'mock_default',
+                allTemplates: [],
+            ));
+        $this->templateService->method('getDefaultContent')
+            ->willReturn('<p>Template {{username}} {{ticketId}}</p>');
+        $this->templateService->method('replacePlaceholders')
+            ->willReturnCallback(function (string $template, array $variables): string {
+                // Simulate the real TemplateService defaults including German dueDate
+                $dueDate = new \DateTime('+7 days');
+                $germanMonths = [
+                    1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
+                    5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
+                    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
+                ];
+                $defaults = [
+                    'ticketId'   => 'TICKET-ID',
+                    'ticketName' => 'Ticket-Name',
+                    'username'   => 'Benutzername',
+                    'ticketLink' => 'https://www.ticket.de/ticket-id',
+                    'dueDate'    => $dueDate->format('d') . '. ' . $germanMonths[(int) $dueDate->format('n')] . ' ' . $dueDate->format('Y'),
+                    'created'    => '',
+                ];
+                $merged = array_merge($defaults, $variables);
+                foreach ($merged as $key => $value) {
+                    $template = str_replace('{{' . $key . '}}', (string) $value, $template);
+                }
+                return $template;
+            });
 
         // sensible defaults for parameters used in EmailService
         $this->params->method('get')->willReturnCallback(function($key, $default = null) {
@@ -273,14 +297,15 @@ class EmailServiceTest extends TestCase
 
     public function testGetEmailTemplateFallbackReturnsDefault(): void
     {
-        // Use a projectDir that doesn't contain templates
+        // getEmailTemplate now delegates to TemplateService::getDefaultContent()
         $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, sys_get_temp_dir(), $this->eventDispatcher, $this->templateService);
         $ref = new \ReflectionClass($svc);
         $m = $ref->getMethod('getEmailTemplate');
         $m->setAccessible(true);
 
         $tpl = $m->invoke($svc);
-        $this->assertStringContainsString('Sehr geehrte', $tpl);
+        // Verifies delegation to TemplateService mock
+        $this->assertStringContainsString('Template', $tpl);
     }
 
     public function testSendEmailUsesHtmlWhenContentLooksLikeHtml(): void
@@ -367,26 +392,17 @@ class EmailServiceTest extends TestCase
         $this->assertStringContainsString('Fehler: database save failed', $result[0]->getStatus()->getValue());
     }
 
-    public function testGetEmailTemplateReadsHtmlFileIfPresent(): void
+    public function testGetEmailTemplateReadsFromTemplateService(): void
     {
-        $tmpDir = sys_get_temp_dir() . '/email_templates_' . uniqid();
-        mkdir($tmpDir . '/templates/emails', 0777, true);
-        $htmlPath = $tmpDir . '/templates/emails/email_template.html';
-        file_put_contents($htmlPath, '<p>HTML TEMPLATE</p>');
-
-        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, $tmpDir, $this->eventDispatcher, $this->templateService);
+        // getEmailTemplate() now delegates to TemplateService::getDefaultContent()
+        $svc = new EmailService($this->mailer, $this->entityManager, $this->userRepo, $this->smtpRepo, $this->emailSentRepo, $this->params, sys_get_temp_dir(), $this->eventDispatcher, $this->templateService);
         $ref = new \ReflectionClass($svc);
         $m = $ref->getMethod('getEmailTemplate');
         $m->setAccessible(true);
 
         $tpl = $m->invoke($svc);
-        $this->assertStringContainsString('HTML TEMPLATE', $tpl);
-
-        // cleanup
-        unlink($htmlPath);
-        rmdir($tmpDir . '/templates/emails');
-        rmdir($tmpDir . '/templates');
-        rmdir($tmpDir);
+        // Should return what TemplateService::getDefaultContent() provides
+        $this->assertStringContainsString('Template', $tpl);
     }
 
     public function testPrepareEmailContentNonTestModeDoesNotPrefix(): void

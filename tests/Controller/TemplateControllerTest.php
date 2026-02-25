@@ -19,6 +19,20 @@ class TemplateControllerTest extends TestCase
     protected function setUp(): void
     {
         $this->templateService = $this->createMock(TemplateService::class);
+        $this->templateService->method('getPreviewData')->willReturn([
+            'ticketId'   => 'TICKET-12345',
+            'ticketName' => 'Beispiel Support-Anfrage',
+            'username'   => 'max.mustermann',
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
+            'dueDate'    => '04. März 2026',
+        ]);
+        $this->templateService->method('replacePlaceholders')
+            ->willReturnCallback(function (string $template, array $variables): string {
+                foreach ($variables as $key => $value) {
+                    $template = str_replace('{{' . $key . '}}', (string) $value, $template);
+                }
+                return $template;
+            });
 
         $this->controller = new TemplateController($this->templateService, '/tmp');
 

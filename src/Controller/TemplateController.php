@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
-use App\ValueObject\TicketName;
 
 #[Route('/template')]
 class TemplateController extends AbstractController
@@ -223,29 +222,19 @@ class TemplateController extends AbstractController
     /**
      * Erzeugt Beispieldaten für die Template-Vorschau im Editor.
      *
-     * @return array<string, string|TicketName> Platzhalter-Schlüssel => Beispielwerte
+     * Delegiert an TemplateService::getPreviewData().
+     *
+     * @return array<string, string> Platzhalter-Schlüssel => Beispielwerte
      */
     private function getPreviewData(): array
     {
-        $dueDate = new \DateTime();
-        $dueDate->modify('+7 days');
-        $germanMonths = [
-            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
-            5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
-        ];
-
-        return [
-            'ticketId'   => 'TICKET-12345',
-            'ticketName' => TicketName::fromString('Beispiel Support-Anfrage'),
-            'username'   => 'max.mustermann',
-            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
-            'dueDate'    => $dueDate->format('d') . '. ' . $germanMonths[(int) $dueDate->format('n')] . ' ' . $dueDate->format('Y'),
-        ];
+        return $this->templateService->getPreviewData();
     }
 
     /**
      * Ersetzt Template-Platzhalter (z.B. {{ticketId}}) durch die übergebenen Daten.
+     *
+     * Delegiert an TemplateService::replacePlaceholders().
      *
      * @param string $template  Der Template-Inhalt mit Platzhaltern
      * @param array  $data      Assoziatives Array mit Ersetzungswerten
@@ -253,24 +242,7 @@ class TemplateController extends AbstractController
      */
     private function replacePlaceholders(string $template, array $data): string
     {
-        $dueDate = new \DateTime();
-        $dueDate->modify('+7 days');
-        $germanMonths = [
-            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
-            5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
-        ];
-        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int) $dueDate->format('n')] . ' ' . $dueDate->format('Y');
-
-        $placeholders = [
-            '{{ticketId}}'   => $data['ticketId']   ?? 'TICKET-ID',
-            '{{ticketName}}' => isset($data['ticketName']) ? (string) $data['ticketName'] : 'Ticket-Name',
-            '{{username}}'   => $data['username']   ?? 'Benutzername',
-            '{{ticketLink}}' => $data['ticketLink'] ?? 'https://www.ticket.de/ticket-id',
-            '{{dueDate}}'    => $data['dueDate']    ?? $formattedDueDate,
-        ];
-
-        return str_replace(array_keys($placeholders), array_values($placeholders), $template);
+        return $this->templateService->replacePlaceholders($template, $data);
     }
 
     /**

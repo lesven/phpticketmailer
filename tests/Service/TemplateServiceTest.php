@@ -2,8 +2,10 @@
 
 namespace App\Tests\Service;
 
+use App\Dto\TemplateResolutionResult;
 use App\Entity\EmailTemplate;
 use App\Repository\EmailTemplateRepository;
+use App\Service\DateParserService;
 use App\Service\TemplateService;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +21,11 @@ class TemplateServiceTest extends TestCase
         $this->tmpDir = sys_get_temp_dir() . '/tpl_svc_' . uniqid();
         mkdir($this->tmpDir, 0777, true);
 
-        $this->service = new TemplateService($this->repository, $this->tmpDir);
+        $this->service = new TemplateService(
+            $this->repository,
+            new DateParserService(),
+            $this->tmpDir
+        );
     }
 
     protected function tearDown(): void
@@ -223,8 +229,9 @@ class TemplateServiceTest extends TestCase
 
         $result = $this->service->resolveTemplateForTicketDate('2026-01-26');
 
-        $this->assertEquals('date_match', $result['debug']['selectionMethod']);
-        $this->assertEquals('Template Base', $result['debug']['selectedTemplateName']);
+        $this->assertInstanceOf(TemplateResolutionResult::class, $result);
+        $this->assertEquals('date_match', $result->selectionMethod);
+        $this->assertEquals('Template Base', $result->selectedTemplateName);
     }
 
     // ── deleteTemplate ──

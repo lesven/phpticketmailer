@@ -98,7 +98,7 @@ class EmailService
         $processedTicketIds = [];
         $currentTime = new \DateTime();
         $emailConfig = $this->buildEmailConfig($testMode, $customTestEmail);
-        $globalTemplateContent = $this->getEmailTemplate();
+        $globalTemplateContent = $this->templateService->getDefaultContent();
 
         $existingTickets = $forceResend
             ? []
@@ -344,6 +344,8 @@ class EmailService
 
     /**
      * Bereitet den E-Mail-Inhalt vor, indem Platzhalter ersetzt werden.
+     *
+     * Delegiert die Placeholder-Ersetzung an TemplateService.
      */
     private function prepareEmailContent(
         string $template,
@@ -353,21 +355,14 @@ class EmailService
         bool $testMode
     ): string {
         $ticketLink = rtrim($ticketBaseUrl, '/') . '/' . (string) $ticketData->ticketId;
-        $emailBody = $template;
-        $emailBody = str_replace('{{ticketId}}', (string) $ticketData->ticketId, $emailBody);
-        $emailBody = str_replace('{{ticketLink}}', $ticketLink, $emailBody);
-        $emailBody = str_replace('{{ticketName}}', (string) $ticketData->ticketName, $emailBody);
-        $emailBody = str_replace('{{username}}', (string) $ticketData->username, $emailBody);
-        $emailBody = str_replace('{{created}}', $ticketData->created ?? '', $emailBody);
 
-        $dueDate = new \DateTime();
-        $dueDate->modify('+7 days');
-        $germanMonths = [
-            1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni',
-            7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'
-        ];
-        $formattedDueDate = $dueDate->format('d') . '. ' . $germanMonths[(int)$dueDate->format('n')] . ' ' . $dueDate->format('Y');
-        $emailBody = str_replace('{{dueDate}}', $formattedDueDate, $emailBody);
+        $emailBody = $this->templateService->replacePlaceholders($template, [
+            'ticketId'   => (string) $ticketData->ticketId,
+            'ticketName' => (string) $ticketData->ticketName,
+            'username'   => (string) $ticketData->username,
+            'ticketLink' => $ticketLink,
+            'created'    => $ticketData->created ?? '',
+        ]);
 
         if ($testMode) {
             $emailBody = "*** TESTMODUS - E-Mail wäre an {$user->getEmail()} gegangen ***\n\n" . $emailBody;
@@ -463,36 +458,14 @@ class EmailService
     }
 
     /**
-     * Lädt die E-Mail-Vorlage aus der Datei oder erstellt eine Standard-Vorlage.
+     * Lädt die E-Mail-Vorlage.
+     *
+     * @deprecated Verwende TemplateService::resolveTemplateForTicketDate() stattdessen.
+     *             Wird nur noch als Legacy-Fallback in getEmailConfiguration() referenziert.
      */
     private function getEmailTemplate(): string
     {
-        $htmlPath = $this->projectDir . '/templates/emails/email_template.html';
-        if (file_exists($htmlPath)) {
-            return file_get_contents($htmlPath);
-        }
-
-        $templatePath = $this->projectDir . '/templates/emails/email_template.txt';
-
-        if (!file_exists($templatePath)) {
-            return "<p>Sehr geehrte(r) {{username}},</p>
-
-<p>wir möchten gerne Ihre Meinung zu dem kürzlich bearbeiteten Ticket erfahren:</p>
-
-<p><strong>Ticket-Nr:</strong> {{ticketId}}<br>
-<strong>Betreff:</strong> {{ticketName}}</p>
-
-<p>Um das Ticket anzusehen und Feedback zu geben, <a href=\"{{ticketLink}}\">klicken Sie bitte hier</a>.</p>
-
-<p>Bitte beantworten Sie die Umfrage bis zum {{dueDate}}.</p>
-
-<p>Vielen Dank für Ihre Rückmeldung!</p>
-
-<p>Mit freundlichen Grüßen<br>
-Ihr Support-Team</p>";
-        }
-
-        return file_get_contents($templatePath);
+        return $this->templateService->getDefaultContent();
     }
 
     /**
@@ -544,8 +517,8 @@ Ihr Support-Team</p>";
     {
         $ticketIdStr = (string) $ticketObj->ticketId;
         $resolved = $this->templateService->resolveTemplateForTicketDate($ticketObj->created);
-        $templateContent = $resolved['content'] ?? '';
-        $this->templateDebugInfo[$ticketIdStr] = $resolved['debug'] ?? [];
+        $templateContent = $resolved->content;
+        $this->templateDebugInfo[$ticketIdStr] = $resolved->toDebugArray();
 
         if ($templateContent === '' || trim($templateContent) === '') {
             $templateContent = $globalFallback;
