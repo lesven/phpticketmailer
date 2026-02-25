@@ -233,6 +233,7 @@ deploy:
 	make migrate
 	make cache-clear
 	make cache-warmup
+	make up
 
 deploy-dev:
 	@echo "==> Dev-Deploy (mit phpMyAdmin)"
@@ -243,3 +244,4 @@ deploy-dev:
 	$(MAKE) composer-install
 	$(MAKE) migrate
 	$(MAKE) cache-clear
+	$(MAKE) up
