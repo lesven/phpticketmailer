@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\CsvProcessingResult;
 use App\Entity\CsvFieldConfig;
 use App\Repository\CsvFieldConfigRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -51,11 +52,11 @@ class CsvUploadOrchestrator
         $this->statisticsService->clearCurrentMonthCache();
 
         // 5. Entscheidung über nächsten Schritt treffen
-        if (!empty($processingResult['unknownUsers'])) {
+        if (!empty($processingResult->unknownUsers)) {
             return UploadResult::redirectToUnknownUsers(
                 $testMode,
                 $forceResend,
-                count($processingResult['unknownUsers'])
+                count($processingResult->unknownUsers)
             );
         }
 
@@ -91,8 +92,7 @@ class CsvUploadOrchestrator
     private function createUsersFromMappings(array $emailMappings, array $unknownUsers): int
     {
         foreach ($unknownUsers as $unknownUser) {
-            // Handle both old format (strings) and new format (UnknownUserWithTicket objects)
-            $username = is_string($unknownUser) ? $unknownUser : $unknownUser->getUsernameString();
+            $username = $unknownUser->getUsernameString();
             
             if (isset($emailMappings[$username])) {
                 try {

@@ -45,7 +45,10 @@ class SessionManagerCreatedFieldTest extends TestCase
         $this->assertInstanceOf(\App\ValueObject\UnknownUserWithTicket::class, $result[0]);
         $this->assertEquals('user1', $result[0]->getUsernameString());
         $this->assertNull($result[0]->getCreatedString()); // Should be null for old data
-        $this->assertEquals('user2', $result[1]); // String fallback
+        // type=string entries are now also deserialized as UnknownUserWithTicket with TicketId('UNKNOWN')
+        $this->assertInstanceOf(\App\ValueObject\UnknownUserWithTicket::class, $result[1]);
+        $this->assertEquals('user2', $result[1]->getUsernameString());
+        $this->assertEquals('UNKNOWN', $result[1]->getTicketIdString());
     }
 
     public function testNewSessionDataWithCreatedField(): void

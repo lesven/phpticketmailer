@@ -15,10 +15,10 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Tests für CsvUploadController mit gemischten unknown user types
+ * Tests für CsvUploadController mit UnknownUserWithTicket
  * 
- * Diese Tests überprüfen die Logik-Funktionen des Controllers ohne 
- * die komplexe Symfony Container-Integration.
+ * Diese Tests überprüfen die Logik-Funktionen des Controllers
+ * mit ausschließlich typisierten UnknownUserWithTicket-Objekten.
  */
 class CsvUploadControllerMixedUnknownUsersTest extends TestCase
 {
@@ -44,10 +44,9 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
     }
 
     /**
-     * Testet extractEmailMappingsFromRequest mit gemischten unknown user types
-     * Prüft nur die Logik ohne HTTP-Response
+     * Testet extractEmailMappingsFromRequest mit UnknownUserWithTicket-Objekten
      */
-    public function testUnknownUsersWithMixedTypes(): void
+    public function testUnknownUsersWithTicketObjects(): void
     {
         $unknownUserObject = new UnknownUserWithTicket(
             new Username('objectuser'),
@@ -55,10 +54,22 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
             new TicketName('Object User Issue')
         );
 
-        $mixedUsers = [
-            'stringuser1',
+        $user1 = new UnknownUserWithTicket(
+            new Username('stringuser1'),
+            new TicketId('UNKNOWN'),
+            null
+        );
+
+        $user2 = new UnknownUserWithTicket(
+            new Username('stringuser2'),
+            new TicketId('UNKNOWN'),
+            null
+        );
+
+        $users = [
+            $user1,
             $unknownUserObject,
-            'stringuser2'
+            $user2
         ];
 
         // Test der extractEmailMappingsFromRequest-Logik
@@ -67,17 +78,17 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
         $request->request->set('email_objectuser', 'object@example.com');
         $request->request->set('email_stringuser2', 'string2@example.com');
 
-        // Da wir den Controller-Extractor nicht direkt aufrufen können,
-        // testen wir die interne Logik indirekt
-        $this->assertIsArray($mixedUsers);
-        $this->assertCount(3, $mixedUsers);
-        $this->assertInstanceOf(UnknownUserWithTicket::class, $mixedUsers[1]);
+        $this->assertIsArray($users);
+        $this->assertCount(3, $users);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $users[0]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $users[1]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $users[2]);
     }
 
     /**
-     * Testet extractEmailMappingsFromRequest mit gemischten Typen
+     * Testet extractEmailMappingsFromRequest mit UnknownUserWithTicket-Objekten
      */
-    public function testExtractEmailMappingsFromMixedTypes(): void
+    public function testExtractEmailMappingsFromTicketObjects(): void
     {
         $unknownUserObject = new UnknownUserWithTicket(
             new Username('object.user'),
@@ -85,8 +96,14 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
             new TicketName('Object User Issue')
         );
 
-        $mixedUsers = [
-            'string_user',
+        $stringUser = new UnknownUserWithTicket(
+            new Username('string_user'),
+            new TicketId('UNKNOWN'),
+            null
+        );
+
+        $users = [
+            $stringUser,
             $unknownUserObject
         ];
 
@@ -105,7 +122,7 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
         $method = $reflection->getMethod('extractEmailMappingsFromRequest');
         $method->setAccessible(true);
 
-        $result = $method->invoke($this->controller, $request, $mixedUsers);
+        $result = $method->invoke($this->controller, $request, $users);
 
         $this->assertArrayHasKey('string_user', $result);
         $this->assertArrayHasKey('object.user', $result);
@@ -226,9 +243,9 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
     }
 
     /**
-     * Testet POST-Request-Verarbeitung mit gemischten Typen - vereinfacht
+     * Testet POST-Request-Verarbeitung mit typisierten UnknownUserWithTicket
      */
-    public function testPostRequestWithMixedUnknownUserTypes(): void
+    public function testPostRequestWithTypedUnknownUsers(): void
     {
         $unknownUserObject = new UnknownUserWithTicket(
             new Username('objectuser'),
@@ -236,16 +253,24 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
             new TicketName('Object User Issue')
         );
 
-        $mixedUsers = [
-            'stringuser',
+        $unknownUser = new UnknownUserWithTicket(
+            new Username('stringuser'),
+            new TicketId('UNKNOWN'),
+            null
+        );
+
+        $users = [
+            $unknownUser,
             $unknownUserObject
         ];
 
-        // Einfacher Logik-Test ohne HTTP-Verarbeitung
-        $this->assertIsArray($mixedUsers);
-        $this->assertCount(2, $mixedUsers);
-        $this->assertIsString($mixedUsers[0]);
-        $this->assertInstanceOf(UnknownUserWithTicket::class, $mixedUsers[1]);
+        // Typisierter Logik-Test
+        $this->assertIsArray($users);
+        $this->assertCount(2, $users);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $users[0]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $users[1]);
+        $this->assertEquals('stringuser', $users[0]->getUsernameString());
+        $this->assertEquals('UNKNOWN', $users[0]->getTicketIdString());
         
         // Test der E-Mail-Normalisierung
         $this->emailNormalizer->method('normalizeEmail')

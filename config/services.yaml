@@ -25,6 +25,9 @@ services:
     # Interface-Binding für EmailService
     App\Service\EmailServiceInterface: '@App\Service\EmailService'
 
+    # Interface-Binding für CsvFileReader
+    App\Service\CsvFileReaderInterface: '@App\Service\CsvFileReader'
+
     # Explicit helper service for CSV operations
     App\Service\UserCsvHelper: ~
       # Explizite Konfiguration für den MonitoringService

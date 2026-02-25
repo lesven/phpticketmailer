@@ -175,8 +175,7 @@ class CsvUploadController extends AbstractController
         $emailMappings = [];
         
         foreach ($unknownUsers as $unknownUser) {
-            // Handle both old format (strings) and new format (UnknownUserWithTicket objects)
-            $username = is_string($unknownUser) ? $unknownUser : $unknownUser->getUsernameString();
+            $username = $unknownUser->getUsernameString();
             
             // Benutzername für HTML-Attribut konvertieren (gleiche Logik wie im Template)
             $htmlSafeUsername = $this->convertUsernameForHtmlAttribute($username);

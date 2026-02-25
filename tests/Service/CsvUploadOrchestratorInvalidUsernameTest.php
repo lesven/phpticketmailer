@@ -6,10 +6,13 @@ namespace App\Tests\Service;
 
 use App\Service\CsvUploadOrchestrator;
 use App\Service\CsvProcessor;
+use App\Dto\CsvProcessingResult;
 use App\Service\UserCreator;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\SessionManager;
 use App\ValueObject\Username;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\TicketId;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -41,7 +44,12 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
     public function testCreateUsersFromMappingsHandlesInvalidUsernames(): void
     {
         // Setup: Unbekannte User mit ungültigen Benutzernamen
-        $unknownUsers = ['valid.user', '.invalid.start', 'invalid.end.', 'another.valid'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('valid.user'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('.invalid.start'), new TicketId('T-002')),
+            new UnknownUserWithTicket(new Username('invalid.end.'), new TicketId('T-003')),
+            new UnknownUserWithTicket(new Username('another.valid'), new TicketId('T-004')),
+        ];
         $emailMappings = [
             'valid.user' => 'valid@example.com',
             '.invalid.start' => 'invalid1@example.com',
