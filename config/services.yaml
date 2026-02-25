@@ -22,6 +22,9 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    # Interface-Binding für EmailService
+    App\Service\EmailServiceInterface: '@App\Service\EmailService'
+
     # Explicit helper service for CSV operations
     App\Service\UserCsvHelper: ~
       # Explizite Konfiguration für den MonitoringService

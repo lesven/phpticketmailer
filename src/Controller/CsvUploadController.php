@@ -9,7 +9,7 @@ use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
 use App\Service\UploadResult;
 use App\Service\UnknownUsersResult;
-use App\Service\EmailService;
+use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
 use App\Exception\TicketMailerException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +31,7 @@ class CsvUploadController extends AbstractController
     public function __construct(
         private readonly CsvUploadOrchestrator $csvUploadOrchestrator,
         private readonly SessionManager $sessionManager,
-        private readonly EmailService $emailService,
+        private readonly EmailServiceInterface $emailService,
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly EmailNormalizer $emailNormalizer,
         private readonly ParameterBagInterface $params

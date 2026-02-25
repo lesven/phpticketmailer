@@ -36,7 +36,7 @@ class CsvUploadControllerMixedUnknownUsersTest extends TestCase
         $this->controller = new CsvUploadController(
             $this->orchestrator,
             $this->sessionManager,
-            $this->createMock(\App\Service\EmailService::class),
+            $this->createMock(\App\Service\EmailServiceInterface::class),
             $this->createMock(\App\Repository\CsvFieldConfigRepository::class),
             $this->emailNormalizer,
             $this->createMock(\Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface::class)

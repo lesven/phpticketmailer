@@ -8,7 +8,7 @@ use App\Form\CsvUploadType;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
-use App\Service\EmailService;
+use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
 use App\Service\UploadResult;
 use App\Exception\TicketMailerException;
@@ -27,7 +27,7 @@ class CsvUploadControllerTest extends TestCase
     private CsvUploadController $controller;
     private CsvUploadOrchestrator $csvUploadOrchestrator;
     private SessionManager $sessionManager;
-    private EmailService $emailService;
+    private EmailServiceInterface $emailService;
     private CsvFieldConfigRepository $csvFieldConfigRepository;
     private EmailNormalizer $emailNormalizer;
     private FormFactoryInterface $formFactory;
@@ -39,7 +39,7 @@ class CsvUploadControllerTest extends TestCase
     {
         $this->csvUploadOrchestrator = $this->createMock(CsvUploadOrchestrator::class);
         $this->sessionManager = $this->createMock(SessionManager::class);
-        $this->emailService = $this->createMock(EmailService::class);
+        $this->emailService = $this->createMock(EmailServiceInterface::class);
         $this->csvFieldConfigRepository = $this->createMock(CsvFieldConfigRepository::class);
         $this->emailNormalizer = $this->createMock(EmailNormalizer::class);
         $this->formFactory = $this->createMock(FormFactoryInterface::class);
