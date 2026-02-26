@@ -6,10 +6,10 @@ use App\Controller\SMTPConfigController;
 use App\Entity\SMTPConfig;
 use App\Form\SMTPConfigType;
 use App\Repository\SMTPConfigRepository;
+use App\Service\EmailTransportService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
@@ -20,7 +20,7 @@ class SMTPConfigControllerTest extends TestCase
     private SMTPConfigController $controller;
     private EntityManagerInterface $entityManager;
     private SMTPConfigRepository $smtpConfigRepository;
-    private MailerInterface $mailer;
+    private EmailTransportService $emailTransportService;
     private FormFactoryInterface $formFactory;
     private Environment $twig;
 
@@ -28,11 +28,15 @@ class SMTPConfigControllerTest extends TestCase
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->smtpConfigRepository = $this->createMock(SMTPConfigRepository::class);
-        $this->mailer = $this->createMock(MailerInterface::class);
+        $this->emailTransportService = $this->createMock(EmailTransportService::class);
         $this->formFactory = $this->createMock(FormFactoryInterface::class);
         $this->twig = $this->createMock(Environment::class);
 
-        $this->controller = new SMTPConfigController($this->entityManager, $this->smtpConfigRepository);
+        $this->controller = new SMTPConfigController(
+            $this->entityManager,
+            $this->smtpConfigRepository,
+            $this->emailTransportService,
+        );
 
         // Inject mocked services using reflection
         $reflectionClass = new \ReflectionClass($this->controller);
@@ -80,7 +84,7 @@ class SMTPConfigControllerTest extends TestCase
             }))
             ->willReturn('<html>SMTP Config Form</html>');
 
-        $response = $this->controller->edit($request, $this->mailer);
+        $response = $this->controller->edit($request);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('<html>SMTP Config Form</html>', $response->getContent());
@@ -111,7 +115,7 @@ class SMTPConfigControllerTest extends TestCase
         $this->twig->method('render')
             ->willReturn('<html>New SMTP Config Form</html>');
 
-        $response = $this->controller->edit($request, $this->mailer);
+        $response = $this->controller->edit($request);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('<html>New SMTP Config Form</html>', $response->getContent());

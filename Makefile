@@ -5,12 +5,14 @@
 # Versucht zuerst "docker-compose", dann "docker compose". Auf Windows kann "docker compose"
 # nur als zwei-token-Aufruf funktionieren, daher bauen wir die Argumente in DC_ARGS.
 COMPOSE_FILE := docker-compose.yml
+COMPOSE_DEV_FILE := docker-compose.dev.yml
 
 # Vereinfachte Verwendung: verwende standardmäßig `docker compose -f docker-compose.yml`.
 # Das vermeidet shell-Aufrufe beim Parsen des Makefiles, die auf Windows Fehlermeldungen
 # wie "Das System kann den angegebenen Pfad nicht finden." auslösen können.
 DC_BASE := docker
 DC_ARGS := compose -f $(COMPOSE_FILE)
+DC_DEV_ARGS := compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE)
 
 # Use bash for advanced shell features (pipefail etc.)
 SHELL := /bin/bash
@@ -28,7 +30,7 @@ DB_NAME := ticket_mailer_db
 # Default dump file on host (can be overridden: `make db-dump DUMP_FILE=./backups/my.sql`)
 DUMP_FILE ?= ./db-dump.sql
 
-.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
@@ -44,7 +46,8 @@ help:
 	@echo "  make logs-php        -> Logs des PHP-Service"
 	@echo "  make exec-php        -> Interaktiv in den PHP-Container (bash)"
 	@echo "  make console         -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
-	@echo "  make deploy          -> Vollständiger Deploy-Flow"
+	@echo "  make deploy          -> Vollständiger Deploy-Flow (Production, ohne phpMyAdmin)"
+	@echo "  make deploy-dev      -> Deploy-Flow für Development (mit phpMyAdmin auf Port 8087)"
 	@echo "  make composer-install-> composer install im PHP-Container"
 	@echo "  make composer-update -> composer update im PHP-Container"
 	@echo "  make cache-clear     -> Symfony Cache leeren (dev & prod)"
@@ -230,3 +233,15 @@ deploy:
 	make migrate
 	make cache-clear
 	make cache-warmup
+	make up
+
+deploy-dev:
+	@echo "==> Dev-Deploy (mit phpMyAdmin)"
+	git pull
+	$(MAKE) down
+	$(DC_BASE) $(DC_ARGS) build --pull --no-cache --build-arg ENABLE_XDEBUG=true
+	$(DC_BASE) $(DC_DEV_ARGS) up -d
+	$(MAKE) composer-install
+	$(MAKE) migrate
+	$(MAKE) cache-clear
+	$(MAKE) up

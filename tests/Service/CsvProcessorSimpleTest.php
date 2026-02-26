@@ -3,30 +3,46 @@ namespace App\Tests\Service;
 
 use PHPUnit\Framework\TestCase;
 use App\Service\CsvProcessor;
+use App\Service\CsvFileReaderInterface;
+use App\Dto\CsvProcessingResult;
+use App\Entity\CsvFieldConfig;
 use App\ValueObject\TicketData;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class CsvProcessorSimpleTest extends TestCase
 {
     public function testTicketNameIsTruncatedTo50Chars()
     {
-        // Dummy-Objekte für die Abhängigkeiten
-        $reader = $this->createMock(\App\Service\CsvFileReader::class);
+        $longName = str_repeat('X', 60);
+        
+        $reader = $this->createMock(CsvFileReaderInterface::class);
+        $reader->method('openCsvFile')->willReturn('mock_handle');
+        $reader->method('readHeader')->willReturn(['ticketId', 'username', 'ticketName']);
+        $reader->method('validateRequiredColumns')->willReturn([
+            'ticketId' => 0, 'username' => 1, 'ticketName' => 2
+        ]);
+        $reader->method('processRows')->willReturnCallback(
+            function ($handle, callable $rowProcessor) use ($longName) {
+                $rowProcessor(['123', 'user', $longName], 2);
+            }
+        );
+        $reader->method('closeHandle');
+
         $userRepository = $this->createMock(\App\Repository\UserRepository::class);
-        $requestStack = $this->createMock(\Symfony\Component\HttpFoundation\RequestStack::class);
+        $userRepository->method('identifyUnknownUsers')->willReturn([]);
 
-        $processor = new CsvProcessor($reader, $userRepository, $requestStack);
+        $cfg = $this->createMock(CsvFieldConfig::class);
+        $cfg->method('getFieldMapping')->willReturn([
+            'ticketId' => 'ticketId', 'username' => 'username', 'ticketName' => 'ticketName'
+        ]);
 
-        $row = [0 => '123', 1 => 'user', 2 => str_repeat('X', 60)];
-        $columnIndices = ['ticketId' => 0, 'username' => 1, 'ticketName' => 2];
-        $fieldMapping = ['ticketId' => 'ticketId', 'username' => 'username', 'ticketName' => 'ticketName'];
+        $processor = new CsvProcessor($reader, $userRepository);
 
-        // Nutze Reflection, um die private Methode zu testen
-        $method = new \ReflectionMethod($processor, 'createTicketFromRow');
-        $method->setAccessible(true);
-        /** @var TicketData $result */
-        $result = $method->invoke($processor, $row, $columnIndices, $fieldMapping);
+        $uploaded = $this->createMock(UploadedFile::class);
+        $res = $processor->process($uploaded, $cfg);
 
-        $this->assertEquals(50, mb_strlen((string) $result->ticketName));
-        $this->assertEquals(substr(str_repeat('X', 60), 0, 50), (string) $result->ticketName);
+        $this->assertCount(1, $res->validTickets);
+        $this->assertEquals(50, mb_strlen((string) $res->validTickets[0]->ticketName));
+        $this->assertEquals(substr($longName, 0, 50), (string) $res->validTickets[0]->ticketName);
     }
 }

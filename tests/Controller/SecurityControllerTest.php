@@ -3,40 +3,32 @@
 namespace App\Tests\Controller;
 
 use App\Controller\SecurityController;
-use App\Entity\AdminPassword;
-use App\Repository\AdminPasswordRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Exception\WeakPasswordException;
+use App\Service\AuthenticationService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
-use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 
 class SecurityControllerTest extends TestCase
 {
     private SecurityController $controller;
-    private EntityManagerInterface $entityManager;
+    private AuthenticationService $authenticationService;
     private CsrfTokenManagerInterface $csrfTokenManager;
-    private AdminPasswordRepository $adminPasswordRepository;
     private UrlGeneratorInterface $urlGenerator;
     private Environment $twig;
 
     protected function setUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->authenticationService = $this->createMock(AuthenticationService::class);
         $this->csrfTokenManager = $this->createMock(CsrfTokenManagerInterface::class);
-        $this->adminPasswordRepository = $this->createMock(AdminPasswordRepository::class);
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $this->twig = $this->createMock(Environment::class);
 
-        $this->entityManager->method('getRepository')
-            ->with(AdminPassword::class)
-            ->willReturn($this->adminPasswordRepository);
-
-        $this->controller = new SecurityController($this->entityManager, $this->csrfTokenManager);
+        $this->controller = new SecurityController($this->authenticationService, $this->csrfTokenManager);
 
         // Inject mocked services using reflection
         $reflectionClass = new \ReflectionClass($this->controller);
@@ -110,12 +102,9 @@ class SecurityControllerTest extends TestCase
             }))
             ->willReturn(true);
 
-        $adminPassword = new AdminPassword();
-        $adminPassword->setPasswordFromPlaintext('correct_password');
-        
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn($adminPassword);
+        $this->authenticationService->method('authenticate')
+            ->with('correct_password')
+            ->willReturn(true);
 
         $session->expects($this->once())
             ->method('set')
@@ -145,12 +134,9 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
-        $adminPassword = new AdminPassword();
-        $adminPassword->setPasswordFromPlaintext('correct_password');
-        
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn($adminPassword);
+        $this->authenticationService->method('authenticate')
+            ->with('wrong_password')
+            ->willReturn(false);
 
         $this->twig->method('render')
             ->with('security/login.html.twig', [
@@ -188,47 +174,6 @@ class SecurityControllerTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('<html>Login Form with CSRF Error</html>', $response->getContent());
-    }
-
-    public function testLoginCreatesDefaultPasswordWhenNoneExists(): void
-    {
-        $request = new Request([], [
-            'password' => 'DefaultP@ssw0rd123!',
-            '_csrf_token' => 'valid_token'
-        ]);
-        $request->setMethod('POST');
-        
-        $session = $this->createMock(SessionInterface::class);
-        $session->method('get')->with('is_authenticated')->willReturn(false);
-        
-        $this->csrfTokenManager->method('isTokenValid')
-            ->willReturn(true);
-
-        // No existing admin password
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn(null);
-
-        // Should create and persist new AdminPassword
-        $this->entityManager->expects($this->once())
-            ->method('persist')
-            ->with($this->isInstanceOf(AdminPassword::class));
-        
-        $this->entityManager->expects($this->once())
-            ->method('flush');
-
-        $session->expects($this->once())
-            ->method('set')
-            ->with('is_authenticated', true);
-
-        $this->urlGenerator->method('generate')
-            ->with('dashboard')
-            ->willReturn('/dashboard');
-
-        $response = $this->controller->login($request, $session);
-
-        $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('/dashboard', $response->headers->get('Location'));
     }
 
     public function testLogoutRemovesAuthenticationAndRedirects(): void
@@ -281,15 +226,9 @@ class SecurityControllerTest extends TestCase
             }))
             ->willReturn(true);
 
-        $adminPassword = new AdminPassword();
-        $adminPassword->setPasswordFromPlaintext('old_password');
-        
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn($adminPassword);
-
-        $this->entityManager->expects($this->once())
-            ->method('flush');
+        $this->authenticationService->method('changePassword')
+            ->with('old_password', 'new_password_123')
+            ->willReturn(true);
 
         $this->twig->method('render')
             ->with('security/change_password.html.twig', [
@@ -302,9 +241,6 @@ class SecurityControllerTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('<html>Password Changed</html>', $response->getContent());
-        
-        // Verify the password was actually changed
-        $this->assertTrue($adminPassword->verifyPassword('new_password_123'));
     }
 
     public function testChangePasswordWithShortNewPasswordShowsError(): void
@@ -319,12 +255,8 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
-        $adminPassword = new AdminPassword();
-        $adminPassword->setPasswordFromPlaintext('old_password');
-        
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn($adminPassword);
+        $this->authenticationService->method('changePassword')
+            ->willThrowException(new WeakPasswordException('Passwort muss mindestens 8 Zeichen lang sein'));
 
         $this->twig->method('render')
             ->with('security/change_password.html.twig', $this->callback(function($context) {
@@ -351,15 +283,9 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
-        $adminPassword = new AdminPassword();
-        $adminPassword->setPasswordFromPlaintext('correct_current_password');
-        
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn($adminPassword);
-
-        $this->entityManager->expects($this->never())
-            ->method('flush');
+        $this->authenticationService->method('changePassword')
+            ->with('wrong_current_password', 'new_password_123')
+            ->willReturn(false);
 
         $this->twig->method('render')
             ->with('security/change_password.html.twig', [
@@ -399,36 +325,7 @@ class SecurityControllerTest extends TestCase
         $this->assertEquals('<html>CSRF Error</html>', $response->getContent());
     }
 
-    public function testChangePasswordWhenNoAdminPasswordExistsShowsError(): void
-    {
-        $request = new Request([], [
-            'current_password' => 'any_password',
-            'new_password' => 'new_password_123',
-            '_csrf_token' => 'valid_token'
-        ]);
-        $request->setMethod('POST');
-        
-        $this->csrfTokenManager->method('isTokenValid')
-            ->willReturn(true);
-
-        $this->adminPasswordRepository->method('findOneBy')
-            ->with([], ['id' => 'ASC'])
-            ->willReturn(null);
-
-        $this->twig->method('render')
-            ->with('security/change_password.html.twig', [
-                'error' => 'Das aktuelle Passwort ist nicht korrekt.',
-                'success' => null,
-            ])
-            ->willReturn('<html>No Admin Password Error</html>');
-
-        $response = $this->controller->changePassword($request);
-
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('<html>No Admin Password Error</html>', $response->getContent());
-    }
-
-    public function testLoginHandlesRepositoryException(): void
+    public function testLoginHandlesAuthenticationServiceException(): void
     {
         $request = new Request([], [
             'password' => 'any_password',
@@ -442,12 +339,12 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
-        $this->adminPasswordRepository->method('findOneBy')
+        $this->authenticationService->method('authenticate')
             ->willThrowException(new \Exception('Database error'));
 
         $this->twig->method('render')
             ->with('security/login.html.twig', [
-                'error' => 'Fehler bei der Authentifizierung: Database error',
+                'error' => 'Ein Fehler ist aufgetreten: Database error',
             ])
             ->willReturn('<html>Database Error</html>');
 
@@ -457,7 +354,7 @@ class SecurityControllerTest extends TestCase
         $this->assertEquals('<html>Database Error</html>', $response->getContent());
     }
 
-    public function testChangePasswordHandlesRepositoryException(): void
+    public function testChangePasswordHandlesServiceException(): void
     {
         $request = new Request([], [
             'current_password' => 'old_password',
@@ -469,7 +366,7 @@ class SecurityControllerTest extends TestCase
         $this->csrfTokenManager->method('isTokenValid')
             ->willReturn(true);
 
-        $this->adminPasswordRepository->method('findOneBy')
+        $this->authenticationService->method('changePassword')
             ->willThrowException(new \Exception('Database error'));
 
         $this->twig->method('render')

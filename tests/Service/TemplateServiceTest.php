@@ -2,8 +2,10 @@
 
 namespace App\Tests\Service;
 
+use App\Dto\TemplateResolutionResult;
 use App\Entity\EmailTemplate;
 use App\Repository\EmailTemplateRepository;
+use App\Service\DateParserService;
 use App\Service\TemplateService;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +21,11 @@ class TemplateServiceTest extends TestCase
         $this->tmpDir = sys_get_temp_dir() . '/tpl_svc_' . uniqid();
         mkdir($this->tmpDir, 0777, true);
 
-        $this->service = new TemplateService($this->repository, $this->tmpDir);
+        $this->service = new TemplateService(
+            $this->repository,
+            new DateParserService(),
+            $this->tmpDir
+        );
     }
 
     protected function tearDown(): void
@@ -183,6 +189,49 @@ class TemplateServiceTest extends TestCase
             $result = $this->service->getTemplateContentForTicketDate($fmt);
             $this->assertEquals('<p>Dated</p>', $result, "Failed for format: $fmt");
         }
+    }
+
+    // ── Template Selection mit validFrom <= Ticket-Datum ──
+
+    /**
+     * Bug-Regression: Bei Templates Base (01.01.) und Neu (23.02.)
+     * muss ein Ticket vom 26.01. Template Base erhalten,
+     * nicht Template Neu.
+     */
+    public function testGetTemplateContentSelectsActiveTemplateNotFutureTemplate(): void
+    {
+        $templateBase = new EmailTemplate();
+        $templateBase->setName('Template Base');
+        $templateBase->setContent('<p>Base Content</p>');
+        $templateBase->setValidFrom(new \DateTime('2026-01-01'));
+
+        // Repository liefert das Template mit dem größten validFrom <= Ticket-Datum
+        $this->repository->method('findActiveTemplateForDate')
+            ->with($this->callback(function (\DateTimeInterface $date) {
+                return $date->format('Y-m-d') === '2026-01-26';
+            }))
+            ->willReturn($templateBase);
+
+        $result = $this->service->getTemplateContentForTicketDate('26.01.2026');
+
+        $this->assertEquals('<p>Base Content</p>', $result);
+    }
+
+    public function testResolveTemplateDebugShowsDateMatch(): void
+    {
+        $template = new EmailTemplate();
+        $template->setName('Template Base');
+        $template->setContent('<p>Base</p>');
+        $template->setValidFrom(new \DateTime('2026-01-01'));
+
+        $this->repository->method('findActiveTemplateForDate')->willReturn($template);
+        $this->repository->method('findAllOrderedByValidFrom')->willReturn([$template]);
+
+        $result = $this->service->resolveTemplateForTicketDate('2026-01-26');
+
+        $this->assertInstanceOf(TemplateResolutionResult::class, $result);
+        $this->assertEquals('date_match', $result->selectionMethod);
+        $this->assertEquals('Template Base', $result->selectedTemplateName);
     }
 
     // ── deleteTemplate ──

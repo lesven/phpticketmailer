@@ -2,17 +2,23 @@
 
 namespace App\Tests\Service;
 
+use App\Entity\User;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\CsvProcessor;
+use App\Dto\CsvProcessingResult;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\SessionManager;
 use App\Service\UserCreator;
-use App\Service\UploadResult;
-use App\Service\UnknownUsersResult;
+use App\Dto\UploadResult;
+use App\Dto\UnknownUsersResult;
 use App\Entity\CsvFieldConfig;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\Username;
+use App\ValueObject\TicketId;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use PHPUnit\Framework\TestCase;
 use App\ValueObject\TicketData;
+use Psr\Log\NullLogger;
 
 class CsvUploadOrchestratorTest extends TestCase
 {
@@ -36,7 +42,8 @@ class CsvUploadOrchestratorTest extends TestCase
             $this->csvFieldConfigRepository,
             $this->sessionManager,
             $this->userCreator,
-            $this->statisticsService
+            $this->statisticsService,
+            new NullLogger()
         );
     }
 
@@ -45,12 +52,14 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => ['user1', 'user2', 'user3'],
-            'validTickets' => [
-                TicketData::fromStrings('T-001', 'known_user')
-            ]
-        ];
+        $processingResult = new CsvProcessingResult(
+            validTickets: [TicketData::fromStrings('T-001', 'known_user')],
+            unknownUsers: [
+                UnknownUserWithTicket::fromTicketData(TicketData::fromStrings('T-U1', 'user1')),
+                UnknownUserWithTicket::fromTicketData(TicketData::fromStrings('T-U2', 'user2')),
+                UnknownUserWithTicket::fromTicketData(TicketData::fromStrings('T-U3', 'user3')),
+            ],
+        );
 
         $this->csvFieldConfigRepository->expects($this->once())
             ->method('saveConfig')
@@ -82,13 +91,12 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => [],
-            'validTickets' => [
+        $processingResult = new CsvProcessingResult(
+            validTickets: [
                 TicketData::fromStrings('T-001', 'known_user1'),
-                TicketData::fromStrings('T-002', 'known_user2')
-            ]
-        ];
+                TicketData::fromStrings('T-002', 'known_user2'),
+            ],
+        );
 
         $this->csvFieldConfigRepository->expects($this->once())
             ->method('saveConfig')
@@ -120,10 +128,11 @@ class CsvUploadOrchestratorTest extends TestCase
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
         
-        $processingResult = [
-            'unknownUsers' => ['unknown1'],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [
+                UnknownUserWithTicket::fromTicketData(TicketData::fromStrings('T-U1', 'unknown1')),
+            ],
+        );
 
         $this->csvProcessor->method('process')->willReturn($processingResult);
 
@@ -134,7 +143,11 @@ class CsvUploadOrchestratorTest extends TestCase
 
     public function testProcessUnknownUsersWithValidEmailMappings(): void
     {
-        $unknownUsers = ['user1', 'user2', 'user3'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('user1'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('user2'), new TicketId('T-002')),
+            new UnknownUserWithTicket(new Username('user3'), new TicketId('T-003')),
+        ];
         $emailMappings = [
             'user1' => 'user1@example.com',
             'user2' => 'user2@example.com',
@@ -150,11 +163,14 @@ class CsvUploadOrchestratorTest extends TestCase
                 // Verify correct parameters are passed
                 $this->assertContainsEquals($username, ['user1', 'user2', 'user3']);
                 $this->assertStringEndsWith('@example.com', $email);
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
             });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(3);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -167,7 +183,11 @@ class CsvUploadOrchestratorTest extends TestCase
 
     public function testProcessUnknownUsersWithPartialEmailMappings(): void
     {
-        $unknownUsers = ['user1', 'user2', 'user3'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('user1'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('user2'), new TicketId('T-002')),
+            new UnknownUserWithTicket(new Username('user3'), new TicketId('T-003')),
+        ];
         $emailMappings = [
             'user1' => 'user1@example.com',
             // user2 fehlt absichtlich
@@ -179,11 +199,16 @@ class CsvUploadOrchestratorTest extends TestCase
             ->willReturn($unknownUsers);
 
         $this->userCreator->expects($this->exactly(2))
-            ->method('createUser');
+            ->method('createUser')
+            ->willReturnCallback(function ($username, $email) {
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
+            });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -203,7 +228,7 @@ class CsvUploadOrchestratorTest extends TestCase
             ->method('createUser');
 
         $this->userCreator->expects($this->never())
-            ->method('persistUsers');
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -216,7 +241,10 @@ class CsvUploadOrchestratorTest extends TestCase
 
     public function testProcessUnknownUsersWithEmptyEmailMappings(): void
     {
-        $unknownUsers = ['user1', 'user2'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('user1'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('user2'), new TicketId('T-002')),
+        ];
         $emailMappings = [];
 
         $this->sessionManager->expects($this->once())
@@ -226,9 +254,8 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->userCreator->expects($this->never())
             ->method('createUser');
 
-        $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(0);
+        $this->userCreator->expects($this->never())
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -240,7 +267,7 @@ class CsvUploadOrchestratorTest extends TestCase
     {
         $csvFile = $this->createMockUploadedFile();
         $csvFieldConfig = $this->createMockCsvFieldConfig();
-        $processingResult = ['unknownUsers' => [], 'validTickets' => []];
+        $processingResult = new CsvProcessingResult();
 
         // Verify the order of operations
         $callOrder = [];
@@ -288,7 +315,8 @@ class CsvUploadOrchestratorTest extends TestCase
             $repository,
             $sessionManager,
             $userCreator,
-            $statisticsService
+            $statisticsService,
+            new NullLogger()
         );
 
         $this->assertInstanceOf(CsvUploadOrchestrator::class, $orchestrator);
@@ -297,7 +325,10 @@ class CsvUploadOrchestratorTest extends TestCase
     public function testProcessUnknownUsersWorkflowIntegration(): void
     {
         // Test complete workflow from session data to user creation
-        $unknownUsers = ['newuser1', 'newuser2'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('newuser1'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('newuser2'), new TicketId('T-002')),
+        ];
         $emailMappings = [
             'newuser1' => 'newuser1@company.com',
             'newuser2' => 'newuser2@company.com'
@@ -308,11 +339,16 @@ class CsvUploadOrchestratorTest extends TestCase
             ->willReturn($unknownUsers);
 
         $this->userCreator->expects($this->exactly(2))
-            ->method('createUser');
+            ->method('createUser')
+            ->willReturnCallback(function ($username, $email) {
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
+            });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 

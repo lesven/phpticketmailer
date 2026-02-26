@@ -2,6 +2,7 @@
 
 namespace App\Tests\Service;
 
+use App\Dto\CsvProcessingResult;
 use App\Service\SessionManager;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
@@ -62,10 +63,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
             new TicketName('Test Issue 2')
         );
 
-        $processingResult = [
-            'unknownUsers' => [$unknownUser1, $unknownUser2],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser1, $unknownUser2]
+        );
 
         // Speichern
         $this->sessionManager->storeUploadResults($processingResult);
@@ -99,10 +99,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
             null // Kein TicketName
         );
 
-        $processingResult = [
-            'unknownUsers' => [$unknownUser],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser]
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -115,60 +114,48 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
     }
 
     /**
-     * Testet gemischte Arrays mit UnknownUserWithTicket und Strings
+     * Testet mehrere UnknownUserWithTicket-Objekte mit verschiedenen Ticket-IDs
      */
-    public function testMixedUnknownUserTypes(): void
+    public function testMultipleUnknownUserWithTicketObjects(): void
     {
-        $unknownUserObject = new UnknownUserWithTicket(
-            new Username('objectuser'),
+        $unknownUser1 = new UnknownUserWithTicket(
+            new Username('user1'),
             new TicketId('T-001'),
-            new TicketName('Object User Issue')
+            new TicketName('Issue 1')
         );
 
-        $processingResult = [
-            'unknownUsers' => [
-                'stringuser1',
-                $unknownUserObject,
-                'stringuser2'
-            ],
-            'validTickets' => []
-        ];
+        $unknownUser2 = new UnknownUserWithTicket(
+            new Username('user2'),
+            new TicketId('T-002'),
+            new TicketName('Issue 2')
+        );
+
+        $unknownUser3 = new UnknownUserWithTicket(
+            new Username('user3'),
+            new TicketId('UNKNOWN'),
+            null
+        );
+
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser1, $unknownUser2, $unknownUser3]
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
 
         $this->assertCount(3, $retrievedUsers);
         
-        // Erster: String
-        $this->assertIsString($retrievedUsers[0]);
-        $this->assertEquals('stringuser1', $retrievedUsers[0]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[0]);
+        $this->assertEquals('user1', $retrievedUsers[0]->getUsernameString());
+        $this->assertEquals('T-001', $retrievedUsers[0]->getTicketIdString());
         
-        // Zweiter: UnknownUserWithTicket-Objekt
         $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[1]);
-        $this->assertEquals('objectuser', $retrievedUsers[1]->getUsernameString());
-        $this->assertEquals('T-001', $retrievedUsers[1]->getTicketIdString());
-        $this->assertEquals('Object User Issue', $retrievedUsers[1]->getTicketNameString());
+        $this->assertEquals('user2', $retrievedUsers[1]->getUsernameString());
+        $this->assertEquals('T-002', $retrievedUsers[1]->getTicketIdString());
         
-        // Dritter: String
-        $this->assertIsString($retrievedUsers[2]);
-        $this->assertEquals('stringuser2', $retrievedUsers[2]);
-    }
-
-    /**
-     * Testet Backward Compatibility mit alten Session-Daten (direkte Strings)
-     */
-    public function testBackwardCompatibilityWithLegacySessionData(): void
-    {
-        // Simuliere alte Session-Daten (direkte Strings statt Arrays)
-        $this->sessionStore['unknown_users'] = ['legacy_user1', 'legacy_user2'];
-
-        $retrievedUsers = $this->sessionManager->getUnknownUsers();
-
-        $this->assertCount(2, $retrievedUsers);
-        $this->assertIsString($retrievedUsers[0]);
-        $this->assertIsString($retrievedUsers[1]);
-        $this->assertEquals('legacy_user1', $retrievedUsers[0]);
-        $this->assertEquals('legacy_user2', $retrievedUsers[1]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[2]);
+        $this->assertEquals('user3', $retrievedUsers[2]->getUsernameString());
+        $this->assertEquals('UNKNOWN', $retrievedUsers[2]->getTicketIdString());
     }
 
     /**
@@ -176,26 +163,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
      */
     public function testEmptyUnknownUsers(): void
     {
-        $processingResult = [
-            'unknownUsers' => [],
-            'validTickets' => []
-        ];
-
-        $this->sessionManager->storeUploadResults($processingResult);
-        $retrievedUsers = $this->sessionManager->getUnknownUsers();
-
-        $this->assertEmpty($retrievedUsers);
-    }
-
-    /**
-     * Testet Edge Case: unknownUsers fehlt komplett
-     */
-    public function testMissingUnknownUsersKey(): void
-    {
-        $processingResult = [
-            'validTickets' => []
-            // unknownUsers fehlt
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: []
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -218,10 +188,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
             new TicketName('New Issue')
         );
 
-        $processingResult = [
-            'unknownUsers' => [$unknownUser],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser]
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -243,10 +212,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
             new TicketName('Issue with "quotes" & special chars: äöü €')
         );
 
-        $processingResult = [
-            'unknownUsers' => [$unknownUser],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser]
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -271,10 +239,9 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
             new TicketName($normalTicketName)
         );
 
-        $processingResult = [
-            'unknownUsers' => [$unknownUser],
-            'validTickets' => []
-        ];
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [$unknownUser]
+        );
 
         $this->sessionManager->storeUploadResults($processingResult);
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -289,28 +256,19 @@ class SessionManagerUnknownUserWithTicketTest extends TestCase
      */
     public function testRobustErrorHandling(): void
     {
-        // Simuliere korrupte Session-Daten - aber mit gültigen Teilen
+        // Simuliere korrupte Session-Daten - mit gültigen Teilen
         $this->sessionStore['unknown_users'] = [
-            ['type' => 'string', 'username' => 'valid_string_user'],
             ['type' => 'UnknownUserWithTicket', 'username' => 'valid_user', 'ticketId' => 'T-001', 'ticketName' => 'Valid'],
-            'plain_string_legacy',
+            ['type' => 'UnknownUserWithTicket', 'username' => '', 'ticketId' => 'T-002'], // empty username = skipped
+            ['invalid' => 'data'], // missing type key = skipped
         ];
 
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
 
         // Sollte graceful mit korrupten Daten umgehen
-        $this->assertCount(3, $retrievedUsers);
+        $this->assertCount(1, $retrievedUsers);
         
-        // Erstes Element: String-Fallback
-        $this->assertIsString($retrievedUsers[0]);
-        $this->assertEquals('valid_string_user', $retrievedUsers[0]);
-        
-        // Zweites Element: Rekonstruiertes Objekt
-        $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[1]);
-        $this->assertEquals('valid_user', $retrievedUsers[1]->getUsernameString());
-        
-        // Drittes Element: Legacy String
-        $this->assertIsString($retrievedUsers[2]);
-        $this->assertEquals('plain_string_legacy', $retrievedUsers[2]);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $retrievedUsers[0]);
+        $this->assertEquals('valid_user', $retrievedUsers[0]->getUsernameString());
     }
 }

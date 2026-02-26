@@ -32,7 +32,7 @@ class CsvUploadControllerWebTest extends TestCase
         $controller = new \App\Controller\CsvUploadController(
             $this->createMock(\App\Service\CsvUploadOrchestrator::class),
             $this->createMock(\App\Service\SessionManager::class),
-            $this->createMock(\App\Service\EmailService::class),
+            $this->createMock(\App\Service\EmailServiceInterface::class),
             $this->createMock(\App\Repository\CsvFieldConfigRepository::class),
             $this->createMock(\App\Service\EmailNormalizer::class),
             $this->createMock(\Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface::class)

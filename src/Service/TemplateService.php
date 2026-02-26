@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\TemplateResolutionResult;
 use App\Entity\EmailTemplate;
 use App\Repository\EmailTemplateRepository;
 
@@ -10,11 +11,19 @@ use App\Repository\EmailTemplateRepository;
  *
  * Stellt CRUD-Operationen bereit und wählt beim E-Mail-Versand
  * automatisch das passende Template anhand des Ticket-Erstelldatums.
+ * Bietet außerdem eine zentrale Methode zum Ersetzen von Platzhaltern.
  */
 class TemplateService
 {
+    private const GERMAN_MONTHS = [
+        1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',
+        5 => 'Mai',    6 => 'Juni',     7 => 'Juli',  8 => 'August',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
+    ];
+
     public function __construct(
         private readonly EmailTemplateRepository $repository,
+        private readonly DateParserService $dateParser,
         private readonly string $projectDir
     ) {
     }
@@ -77,163 +86,159 @@ class TemplateService
     /**
      * Findet das passende Template für ein Ticket-Erstelldatum.
      *
-     * Es wird das Template gewählt, dessen validFrom >= dem Ticket-Erstelldatum
-     * ist (das nächste gültige Template ab dem Ticket-Datum).
-     * Beispiel: Templates mit validFrom 03.02. und 13.02., Ticket vom 10.02.
-     * → Template vom 13.02. wird gewählt (nächstes ab Ticket-Datum).
-     *
-     * Wenn kein created-Datum vorhanden ist, wird das neueste Template
-     * verwendet. Wenn gar kein Template existiert, wird das Dateisystem-
-     * Fallback oder ein Inline-Default zurückgegeben.
+     * @deprecated Verwende resolveTemplateForTicketDate() für typisiertes Ergebnis
      */
     public function getTemplateContentForTicketDate(?string $ticketCreated): string
     {
-        return $this->resolveTemplateForTicketDate($ticketCreated)['content'];
+        return $this->resolveTemplateForTicketDate($ticketCreated)->content;
     }
 
     /**
      * Gibt das passende Template inkl. Debug-Informationen zurück.
      *
-     * @return array{content: string, debug: array<string, mixed>}
+     * Es wird das Template gewählt, dessen validFrom <= dem Ticket-Erstelldatum
+     * ist (das Template, das zum Zeitpunkt der Ticket-Erstellung aktiv war).
+     * Wenn kein created-Datum vorhanden ist, wird das neueste Template verwendet.
+     * Wenn gar kein Template existiert, wird das Dateisystem-Fallback oder ein
+     * Inline-Default zurückgegeben.
      */
-    public function resolveTemplateForTicketDate(?string $ticketCreated): array
+    public function resolveTemplateForTicketDate(?string $ticketCreated): TemplateResolutionResult
     {
-        $debug = [
-            'inputCreated' => $ticketCreated,
-            'parsedDate' => null,
-            'selectedTemplateName' => null,
-            'selectedTemplateValidFrom' => null,
-            'selectionMethod' => null,
-            'allTemplates' => [],
+        $allTemplatesDebug = $this->buildTemplateDebugList();
+
+        $parsedDate = null;
+        $selectionMethod = null;
+        $template = null;
+
+        if ($ticketCreated !== null && trim($ticketCreated) !== '') {
+            $parsedDate = $this->dateParser->parse($ticketCreated);
+
+            if ($parsedDate !== null) {
+                $template = $this->repository->findActiveTemplateForDate($parsedDate);
+                if ($template !== null) {
+                    $selectionMethod = 'date_match';
+                }
+            } else {
+                $selectionMethod = 'parse_failed';
+            }
+        } else {
+            $selectionMethod = 'no_created_date';
+        }
+
+        // Fallback: neuestes Template
+        if ($template === null) {
+            $template = $this->repository->findLatestTemplate();
+            if ($template !== null) {
+                $selectionMethod = $selectionMethod === 'parse_failed'
+                    ? 'parse_failed → fallback_latest'
+                    : ($selectionMethod ?? 'no_created_date') . ' → fallback_latest';
+            }
+        }
+
+        // Fallback: Dateisystem-Template
+        if ($template === null) {
+            return new TemplateResolutionResult(
+                content: $this->getFilesystemTemplate(),
+                inputCreated: $ticketCreated,
+                parsedDate: $parsedDate?->format('Y-m-d'),
+                selectionMethod: ($selectionMethod ?? '') . ' → fallback_filesystem',
+                allTemplates: $allTemplatesDebug,
+            );
+        }
+
+        return new TemplateResolutionResult(
+            content: $template->getContent(),
+            inputCreated: $ticketCreated,
+            parsedDate: $parsedDate?->format('Y-m-d'),
+            selectedTemplateName: $template->getName(),
+            selectedTemplateValidFrom: $template->getValidFrom()?->format('Y-m-d'),
+            selectionMethod: $selectionMethod,
+            allTemplates: $allTemplatesDebug,
+        );
+    }
+
+    /**
+     * Ersetzt Platzhalter im Template-Inhalt durch konkrete Werte.
+     *
+     * Zentralisierte Methode für Placeholder-Ersetzung, die sowohl vom
+     * EmailService als auch vom TemplateController verwendet wird.
+     *
+     * @param string $template Der Template-Inhalt mit Platzhaltern
+     * @param array<string, string> $variables Assoziatives Array (Placeholder-Name => Wert)
+     *        Unterstützte Keys: ticketId, ticketName, username, ticketLink, dueDate, created
+     * @return string Der Template-Inhalt mit eingesetzten Werten
+     */
+    public function replacePlaceholders(string $template, array $variables): string
+    {
+        $defaults = [
+            'ticketId'   => 'TICKET-ID',
+            'ticketName' => 'Ticket-Name',
+            'username'   => 'Benutzername',
+            'ticketLink' => 'https://www.ticket.de/ticket-id',
+            'dueDate'    => $this->formatGermanDueDate(),
+            'created'    => '',
         ];
 
-        // Alle Templates für Debug-Übersicht sammeln
-        $allTemplates = $this->repository->findAllOrderedByValidFrom();
-        foreach ($allTemplates as $t) {
-            $debug['allTemplates'][] = [
+        $merged = array_merge($defaults, $variables);
+
+        $placeholders = [];
+        foreach ($merged as $key => $value) {
+            $placeholders['{{' . $key . '}}'] = (string) $value;
+        }
+
+        return str_replace(array_keys($placeholders), array_values($placeholders), $template);
+    }
+
+    /**
+     * Formatiert ein Fälligkeitsdatum (heute + 7 Tage) auf Deutsch.
+     */
+    public function formatGermanDueDate(?\DateTimeInterface $from = null): string
+    {
+        $dueDate = $from !== null
+            ? \DateTime::createFromInterface($from)
+            : new \DateTime();
+        $dueDate->modify('+7 days');
+
+        return $dueDate->format('d') . '. '
+            . self::GERMAN_MONTHS[(int) $dueDate->format('n')]
+            . ' ' . $dueDate->format('Y');
+    }
+
+    /**
+     * Erzeugt Beispieldaten für die Template-Vorschau im Editor.
+     *
+     * @return array<string, string> Platzhalter-Schlüssel => Beispielwerte
+     */
+    public function getPreviewData(): array
+    {
+        return [
+            'ticketId'   => 'TICKET-12345',
+            'ticketName' => 'Beispiel Support-Anfrage',
+            'username'   => 'max.mustermann',
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
+            'dueDate'    => $this->formatGermanDueDate(),
+        ];
+    }
+
+    // ── Private Hilfsmethoden ──────────────────────────────────
+
+    /**
+     * Sammelt Debug-Übersicht aller Templates.
+     *
+     * @return array<int, array{id: int|null, name: string, validFrom: string|null}>
+     */
+    private function buildTemplateDebugList(): array
+    {
+        $list = [];
+        foreach ($this->repository->findAllOrderedByValidFrom() as $t) {
+            $list[] = [
                 'id' => $t->getId(),
                 'name' => $t->getName(),
                 'validFrom' => $t->getValidFrom()?->format('Y-m-d'),
             ];
         }
 
-        $template = null;
-
-        if ($ticketCreated !== null && trim($ticketCreated) !== '') {
-            $date = $this->parseDate($ticketCreated);
-            $debug['parsedDate'] = $date?->format('Y-m-d');
-
-            if ($date !== null) {
-                $template = $this->repository->findActiveTemplateForDate($date);
-                if ($template !== null) {
-                    $debug['selectionMethod'] = 'date_match';
-                }
-            } else {
-                $debug['selectionMethod'] = 'parse_failed';
-            }
-        } else {
-            $debug['selectionMethod'] = 'no_created_date';
-        }
-
-        // Fallback: neuestes Template
-        if ($template === null) {
-            $template = $this->repository->findLatestTemplate();
-            if ($template !== null && $debug['selectionMethod'] !== 'parse_failed') {
-                $debug['selectionMethod'] = ($debug['selectionMethod'] ?? 'no_created_date') . ' → fallback_latest';
-            } elseif ($template !== null) {
-                $debug['selectionMethod'] = 'parse_failed → fallback_latest';
-            }
-        }
-
-        // Fallback: Dateisystem-Template
-        if ($template === null) {
-            $debug['selectionMethod'] = ($debug['selectionMethod'] ?? '') . ' → fallback_filesystem';
-            return [
-                'content' => $this->getFilesystemTemplate(),
-                'debug' => $debug,
-            ];
-        }
-
-        $debug['selectedTemplateName'] = $template->getName();
-        $debug['selectedTemplateValidFrom'] = $template->getValidFrom()?->format('Y-m-d');
-
-        return [
-            'content' => $template->getContent(),
-            'debug' => $debug,
-        ];
-    }
-
-    /**
-     * Versucht ein Datum aus verschiedenen Formaten zu parsen.
-     *
-     * Der '!'-Prefix in den Formaten setzt alle nicht angegebenen Felder
-     * (insb. die Uhrzeit) auf 0, damit die DATE-Vergleiche in der DB
-     * nicht durch die aktuelle Uhrzeit verfälscht werden.
-     */
-    private function parseDate(string $dateString): ?\DateTimeInterface
-    {
-        $input = trim($dateString);
-        if ($input === '') {
-            return null;
-        }
-
-        // Formate mit '!' Prefix: setzt Uhrzeit auf 00:00:00
-        // Reihenfolge: erst vierstellige Jahre, dann zweistellige
-        $formats = [
-            '!Y-m-d H:i:s',
-            '!Y-m-d H:i',
-            '!Y-m-d',
-            '!d.m.Y H:i:s',
-            '!d.m.Y H:i',
-            '!d.m.Y',
-            '!d/m/Y H:i:s',
-            '!d/m/Y H:i',
-            '!d/m/Y',
-            '!m/d/Y',
-            // Zweistellige Jahresangaben (z.B. 18/12/25)
-            '!d/m/y H:i:s',
-            '!d/m/y H:i',
-            '!d/m/y',
-            '!d.m.y H:i:s',
-            '!d.m.y H:i',
-            '!d.m.y',
-            '!y-m-d H:i:s',
-            '!y-m-d H:i',
-            '!y-m-d',
-        ];
-
-        foreach ($formats as $format) {
-            $date = \DateTime::createFromFormat($format, $input);
-            if ($date === false) {
-                continue;
-            }
-
-            // Prüfe auf Parse-Warnungen (z.B. trailing data, overflow)
-            $errors = \DateTime::getLastErrors();
-            if ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) {
-                continue;
-            }
-
-            // Jahreszahl-Plausibilität: PHP akzeptiert z.B. "26" als vierstelliges Jahr 0026
-            // bei Format Y. Nur Jahre zwischen 1970 und 2099 akzeptieren.
-            $year = (int) $date->format('Y');
-            if ($year < 1970 || $year > 2099) {
-                continue;
-            }
-
-            return $date;
-        }
-
-        // Letzter Versuch via strtotime
-        $ts = strtotime($input);
-        if ($ts !== false) {
-            $date = new \DateTime();
-            $date->setTimestamp($ts);
-            $date->setTime(0, 0, 0);
-            return $date;
-        }
-
-        return null;
+        return $list;
     }
 
     /**

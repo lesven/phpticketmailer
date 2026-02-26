@@ -1,0 +1,43 @@
+# Dev-only overrides (not for production)
+# Verwendung: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Oder einfach: make deploy-dev
+
+services:
+  # phpMyAdmin nur in der Dev-Umgebung
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ticketumfrage_phpmyadmin
+    environment:
+      - PMA_HOST=database
+      - PMA_PORT=3306
+      - PMA_USER=ticketuser
+      - PMA_PASSWORD=ticketpassword
+    ports:
+      - "8087:80"
+    depends_on:
+      - database
+    networks:
+      - proxy-tier
+    restart: unless-stopped
+  # MailHog für E-Mail-Testing
+  mailhog:
+    image: mailhog/mailhog
+    container_name: ticketumfrage_mailhog
+    ports:
+      - "1025:1025"  # SMTP Port
+      - "8025:8025"  # Web UI Port
+    networks:
+      - proxy-tier
+    restart: unless-stopped
+
+      # Eigener SMTP-Server für ARM-Kompatibilität (als Backup oder Alternative zu MailHog)
+  mailserver:
+    build:
+      context: ./docker/smtp
+      dockerfile: Dockerfile
+    container_name: ticketumfrage_mailserver
+    ports:
+      - "1026:25"  # SMTP Port (geändert um Konflikt mit MailHog zu vermeiden)
+    networks:
+      - proxy-tier
+    restart: unless-stopped

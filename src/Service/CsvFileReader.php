@@ -13,7 +13,7 @@ namespace App\Service;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-class CsvFileReader
+class CsvFileReader implements CsvFileReaderInterface
 {
     /**
      * @var string Das Standard-Trennzeichen für die CSV-Datei

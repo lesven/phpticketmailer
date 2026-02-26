@@ -35,15 +35,15 @@ class EmailTemplateRepository extends ServiceEntityRepository
 
     /**
      * Findet das passende Template für ein gegebenes Ticket-Erstelldatum.
-     * Das Template mit dem kleinsten validFrom >= $date wird gewählt,
-     * d.h. das nächste Template, das ab dem Ticket-Datum gültig ist.
+     * Das Template mit dem größten validFrom <= $date wird gewählt,
+     * d.h. das Template, das zum Zeitpunkt der Ticket-Erstellung aktiv war.
      */
     public function findActiveTemplateForDate(\DateTimeInterface $date): ?EmailTemplate
     {
         return $this->createQueryBuilder('t')
-            ->where('t.validFrom >= :date')
+            ->where('t.validFrom <= :date')
             ->setParameter('date', $date, Types::DATE_MUTABLE)
-            ->orderBy('t.validFrom', 'ASC')
+            ->orderBy('t.validFrom', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
