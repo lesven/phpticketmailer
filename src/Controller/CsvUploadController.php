@@ -7,11 +7,12 @@ use App\Form\CsvUploadType;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
-use App\Service\UploadResult;
-use App\Service\UnknownUsersResult;
-use App\Service\EmailService;
+use App\Dto\UploadResult;
+use App\Dto\UnknownUsersResult;
+use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
 use App\Exception\TicketMailerException;
+use App\Exception\ValidationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +32,7 @@ class CsvUploadController extends AbstractController
     public function __construct(
         private readonly CsvUploadOrchestrator $csvUploadOrchestrator,
         private readonly SessionManager $sessionManager,
-        private readonly EmailService $emailService,
+        private readonly EmailServiceInterface $emailService,
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly EmailNormalizer $emailNormalizer,
         private readonly ParameterBagInterface $params
@@ -160,7 +161,8 @@ class CsvUploadController extends AbstractController
         
         return $this->render('csv_upload/send_result.html.twig', [
             'sentEmails' => $sentEmails ?? [],
-            'testMode' => $testMode
+            'testMode' => $testMode,
+            'templateDebug' => $this->emailService->getTemplateDebugInfo(),
         ]);
     }    /**
      * Extrahiert E-Mail-Zuordnungen aus dem Request für unbekannte Benutzer
@@ -174,8 +176,7 @@ class CsvUploadController extends AbstractController
         $emailMappings = [];
         
         foreach ($unknownUsers as $unknownUser) {
-            // Handle both old format (strings) and new format (UnknownUserWithTicket objects)
-            $username = is_string($unknownUser) ? $unknownUser : $unknownUser->getUsernameString();
+            $username = $unknownUser->getUsernameString();
             
             // Benutzername für HTML-Attribut konvertieren (gleiche Logik wie im Template)
             $htmlSafeUsername = $this->convertUsernameForHtmlAttribute($username);
@@ -189,10 +190,7 @@ class CsvUploadController extends AbstractController
                 } catch (\InvalidArgumentException $e) {
                     // Fehler wird im Frontend durch JavaScript abgefangen
                     // Falls JavaScript deaktiviert ist, wird hier ein Fallback bereitgestellt
-                    throw new TicketMailerException(
-                        "Ungültige E-Mail-Adresse für Benutzer '{$username}': " . $e->getMessage(),
-                        'validation_error'
-                    );
+                    throw ValidationException::invalidEmailForUser($username, $e->getMessage());
                 }
             }
         }

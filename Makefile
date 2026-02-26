@@ -5,12 +5,17 @@
 # Versucht zuerst "docker-compose", dann "docker compose". Auf Windows kann "docker compose"
 # nur als zwei-token-Aufruf funktionieren, daher bauen wir die Argumente in DC_ARGS.
 COMPOSE_FILE := docker-compose.yml
+COMPOSE_DEV_FILE := docker-compose.dev.yml
 
 # Vereinfachte Verwendung: verwende standardmäßig `docker compose -f docker-compose.yml`.
 # Das vermeidet shell-Aufrufe beim Parsen des Makefiles, die auf Windows Fehlermeldungen
 # wie "Das System kann den angegebenen Pfad nicht finden." auslösen können.
 DC_BASE := docker
 DC_ARGS := compose -f $(COMPOSE_FILE)
+DC_DEV_ARGS := compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE)
+
+# Use bash for advanced shell features (pipefail etc.)
+SHELL := /bin/bash
 
 # Service-Namen wie in docker-compose.yml
 PHP_SERVICE := php
@@ -18,7 +23,14 @@ WEB_SERVICE := webserver
 DB_SERVICE := database
 MAILHOG_SERVICE := mailhog
 
-.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+# Database defaults (matching docker-compose.yml)
+DB_USER := ticketuser
+DB_PASSWORD := ticketpassword
+DB_NAME := ticket_mailer_db
+# Default dump file on host (can be overridden: `make db-dump DUMP_FILE=./backups/my.sql`)
+DUMP_FILE ?= ./db-dump.sql
+
+.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
@@ -34,7 +46,8 @@ help:
 	@echo "  make logs-php        -> Logs des PHP-Service"
 	@echo "  make exec-php        -> Interaktiv in den PHP-Container (bash)"
 	@echo "  make console         -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
-	@echo "  make deploy          -> Vollständiger Deploy-Flow"
+	@echo "  make deploy          -> Vollständiger Deploy-Flow (Production, ohne phpMyAdmin)"
+	@echo "  make deploy-dev      -> Deploy-Flow für Development (mit phpMyAdmin auf Port 8087)"
 	@echo "  make composer-install-> composer install im PHP-Container"
 	@echo "  make composer-update -> composer update im PHP-Container"
 	@echo "  make cache-clear     -> Symfony Cache leeren (dev & prod)"
@@ -148,7 +161,23 @@ migrate-status:
 
 migrate:
 	@echo "==> doctrine:migrations:migrate (no interaction)"
+	@$(MAKE) wait-db
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php bin/console doctrine:migrations:migrate --no-interaction
+
+.PHONY: wait-db
+wait-db:
+	@echo "==> Waiting for database to become reachable from $(PHP_SERVICE)"
+	@i=1; while [ $$i -le 30 ]; do \
+		if $(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) php -r 'new PDO("mysql:host=database;port=3306", "ticketuser", "ticketpassword");' 2>/dev/null; then \
+			echo "Database is ready!"; \
+			exit 0; \
+		fi; \
+		echo "Waiting for database... attempt $$i/30"; \
+		sleep 2; \
+		i=$$((i + 1)); \
+	done; \
+	echo "ERROR: Database did not become ready in time"; \
+	exit 1
 
 ## Tests (PHPUnit)
 
@@ -168,6 +197,33 @@ recreate-db:
 	@$(DC_BASE) $(DC_ARGS) down --volumes --remove-orphans
 	@$(DC_BASE) $(DC_ARGS) up -d $(DB_SERVICE)
 
+
+## Database dump to host file (default: ./db-dump.sql)
+## Usage: make db-dump OR make db-dump DUMP_FILE=./backups/my.sql
+db-dump:
+	@echo "==> Dumping database $(DB_NAME) to $(DUMP_FILE)"
+	@set -o pipefail; \
+	if $(DC_BASE) $(DC_ARGS) exec -T $(DB_SERVICE) mariadb-dump -u$(DB_USER) -p"$(DB_PASSWORD)" --databases $(DB_NAME) --single-transaction --quick --skip-lock-tables > $(DUMP_FILE) 2>/dev/null; then \
+		echo "Dump created using $(DB_SERVICE) container"; \
+	else \
+		echo "mariadb-dump not found via exec, using temporary client container"; \
+		$(DC_BASE) $(DC_ARGS) run --rm --no-deps $(DB_SERVICE) sh -c "mariadb-dump -h database -P 3306 -u$(DB_USER) -p'$(DB_PASSWORD)' --databases $(DB_NAME) --single-transaction --quick --skip-lock-tables" > $(DUMP_FILE); \
+	fi
+
+
+## Restore database from host file
+## Usage: make db-restore DUMP_FILE=./backups/my.sql
+db-restore:
+	@echo "==> Restoring database $(DB_NAME) from $(DUMP_FILE)"
+	@$(MAKE) wait-db
+	@set -o pipefail; \
+	if cat $(DUMP_FILE) | $(DC_BASE) $(DC_ARGS) exec -T $(DB_SERVICE) mariadb -u$(DB_USER) -p"$(DB_PASSWORD)" $(DB_NAME) 2>/dev/null; then \
+		echo "Restore completed using $(DB_SERVICE) container"; \
+	else \
+		echo "mariadb client not found via exec, using temporary client container"; \
+		cat $(DUMP_FILE) | $(DC_BASE) $(DC_ARGS) run --rm --no-deps $(DB_SERVICE) sh -c "mariadb -h database -P 3306 -u$(DB_USER) -p'$(DB_PASSWORD)' $(DB_NAME)"; \
+	fi
+
 deploy:
 	git pull
 	make down
@@ -177,3 +233,15 @@ deploy:
 	make migrate
 	make cache-clear
 	make cache-warmup
+	make up
+
+deploy-dev:
+	@echo "==> Dev-Deploy (mit phpMyAdmin)"
+	git pull
+	$(MAKE) down
+	$(DC_BASE) $(DC_ARGS) build --pull --no-cache --build-arg ENABLE_XDEBUG=true
+	$(DC_BASE) $(DC_DEV_ARGS) up -d
+	$(MAKE) composer-install
+	$(MAKE) migrate
+	$(MAKE) cache-clear
+	$(MAKE) up

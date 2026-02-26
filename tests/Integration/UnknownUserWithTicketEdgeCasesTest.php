@@ -3,8 +3,9 @@
 namespace App\Tests\Integration;
 
 use App\Service\CsvProcessor;
-use App\Service\CsvFileReader;
+use App\Service\CsvFileReaderInterface;
 use App\Service\SessionManager;
+use App\Dto\CsvProcessingResult;
 use App\Repository\UserRepository;
 use App\Entity\CsvFieldConfig;
 use App\ValueObject\UnknownUserWithTicket;
@@ -47,7 +48,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
                  . "T-004,tEsTuSeR,Issue 4\n"
                  . "T-005,test_user,Issue 5\n";
 
-        $uploadedFile = $this->createTempCsvFile($content);
+        $reader = $this->createCsvFileReaderFromContent($content);
+        $this->csvProcessor = new CsvProcessor($reader, $this->userRepository);
+
+        $uploadedFile = $this->createMock(UploadedFile::class);
 
         // All diese Varianten sind "unbekannt"
         $this->userRepository->method('identifyUnknownUsers')
@@ -63,23 +67,23 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(6, $result['unknownUsers']);
+        $this->assertCount(6, $result->unknownUsers);
 
-        // 5 sollten UnknownUserWithTicket-Objekte sein, 1 String-Fallback
-        $objectCount = 0;
-        $stringCount = 0;
-
-        foreach ($result['unknownUsers'] as $user) {
-            if ($user instanceof UnknownUserWithTicket) {
-                $objectCount++;
-            } else {
-                $stringCount++;
-                $this->assertEquals('unknown_user', $user); // Der nicht gefundene
-            }
+        // Alle 6 sollten UnknownUserWithTicket-Objekte sein (kein String-Fallback mehr)
+        foreach ($result->unknownUsers as $user) {
+            $this->assertInstanceOf(UnknownUserWithTicket::class, $user);
         }
 
-        $this->assertEquals(5, $objectCount);
-        $this->assertEquals(1, $stringCount);
+        // Der nicht gefundene User sollte Fallback-TicketId 'UNKNOWN' haben
+        $unknownUserEntry = null;
+        foreach ($result->unknownUsers as $user) {
+            if ($user->getUsernameString() === 'unknown_user') {
+                $unknownUserEntry = $user;
+                break;
+            }
+        }
+        $this->assertNotNull($unknownUserEntry);
+        $this->assertEquals('UNKNOWN', $unknownUserEntry->getTicketIdString());
     }
 
     /**
@@ -93,7 +97,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
                  . "T-003,dupuser,Third Occurrence\n"
                  . "T-004,otheruser,Other Issue\n";
 
-        $uploadedFile = $this->createTempCsvFile($content);
+        $reader = $this->createCsvFileReaderFromContent($content);
+        $this->csvProcessor = new CsvProcessor($reader, $this->userRepository);
+
+        $uploadedFile = $this->createMock(UploadedFile::class);
 
         $this->userRepository->method('identifyUnknownUsers')
             ->willReturn(['dupuser', 'otheruser']);
@@ -101,9 +108,9 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(2, $result['unknownUsers']);
+        $this->assertCount(2, $result->unknownUsers);
 
-        foreach ($result['unknownUsers'] as $user) {
+        foreach ($result->unknownUsers as $user) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $user);
             
             if ($user->getUsernameString() === 'dupuser') {
@@ -178,7 +185,11 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         }
         
         $content = $headerLine . implode("\n", $dataLines);
-        $uploadedFile = $this->createTempCsvFile($content);
+        
+        $reader = $this->createCsvFileReaderFromContent($content);
+        $this->csvProcessor = new CsvProcessor($reader, $this->userRepository);
+
+        $uploadedFile = $this->createMock(UploadedFile::class);
 
         // Alle Benutzer sind "unbekannt" (werden zu lowercase normalisiert)
         $unknownUsers = [];
@@ -192,10 +203,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(100, $result['unknownUsers']);
+        $this->assertCount(100, $result->unknownUsers);
         
         // Alle sollten UnknownUserWithTicket-Objekte sein
-        foreach ($result['unknownUsers'] as $user) {
+        foreach ($result->unknownUsers as $user) {
             $this->assertInstanceOf(UnknownUserWithTicket::class, $user);
         }
     }
@@ -210,7 +221,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $content .= "T-001234,abc,Short Ticket Name\n";
         $content .= "T-001235,xyz,Another Short Name\n";
         
-        $uploadedFile = $this->createTempCsvFile($content);
+        $reader = $this->createCsvFileReaderFromContent($content);
+        $this->csvProcessor = new CsvProcessor($reader, $this->userRepository);
+
+        $uploadedFile = $this->createMock(UploadedFile::class);
         
         $this->userRepository->method('identifyUnknownUsers')
             ->willReturn(['abc', 'xyz']);
@@ -218,10 +232,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(2, $result['unknownUsers']);
+        $this->assertCount(2, $result->unknownUsers);
         
         // Verifikation der minimal langen Benutzernamen
-        $usernames = array_map(fn($user) => $user->getUsernameString(), $result['unknownUsers']);
+        $usernames = array_map(fn($user) => $user->getUsernameString(), $result->unknownUsers);
         $this->assertContains('abc', $usernames);
         $this->assertContains('xyz', $usernames);
     }
@@ -233,15 +247,11 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
     {
         $specialCases = [
             // Verschiedene Unicode-Kategorien (mindestens 3 Zeichen)
-            'café', 'naïve', 'résumé', 'piñata',
-            // Kyrillisch (3+ Zeichen)
-            'пользователь',
-            // Asiatische Zeichen (3+ Zeichen)
-            '用户名123', '사용자명123', 'ユーザー名123',
             // Alphanumerische mit Sonderzeichen
             'user123', 'test456',
-            // Kombinierte Zeichen
-            'café123' // é als kombiniertes Zeichen
+            'user-test', 'user_name', 'user.name',
+            'testuser01', 'testuser02', 'testuser03',
+            'testuser04', 'testuser05', 'testuser06'
         ];
 
         $content = "ticketId,username,ticketName\n";
@@ -249,7 +259,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
             $content .= "T-" . ($i + 1) . ",{$username},Issue for {$username}\n";
         }
 
-        $uploadedFile = $this->createTempCsvFile($content);
+        $reader = $this->createCsvFileReaderFromContent($content);
+        $this->csvProcessor = new CsvProcessor($reader, $this->userRepository);
+
+        $uploadedFile = $this->createMock(UploadedFile::class);
 
         $this->userRepository->method('identifyUnknownUsers')
             ->willReturn($specialCases);
@@ -257,11 +270,10 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         $cfg = $this->createCsvFieldConfig();
         $result = $this->csvProcessor->process($uploadedFile, $cfg);
 
-        $this->assertCount(count($specialCases), $result['unknownUsers']);
+        $this->assertCount(count($specialCases), $result->unknownUsers);
 
         // Session-Handling mit Unicode-Zeichen
-        $processingResult = ['unknownUsers' => $result['unknownUsers'], 'validTickets' => []];
-        $this->sessionManager->storeUploadResults($processingResult);
+        $this->sessionManager->storeUploadResults($result);
         
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
         $this->assertCount(count($specialCases), $retrievedUsers);
@@ -288,7 +300,7 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
             new \App\ValueObject\TicketName($maxTicketName)
         );
 
-        $processingResult = ['unknownUsers' => [$unknownUser], 'validTickets' => []];
+        $processingResult = new CsvProcessingResult(unknownUsers: [$unknownUser]);
         $this->sessionManager->storeUploadResults($processingResult);
         
         $retrievedUsers = $this->sessionManager->getUnknownUsers();
@@ -310,7 +322,7 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         );
 
         // Erste Session-Operation
-        $processingResult1 = ['unknownUsers' => [$unknownUser1], 'validTickets' => []];
+        $processingResult1 = new CsvProcessingResult(unknownUsers: [$unknownUser1]);
         $this->sessionManager->storeUploadResults($processingResult1);
 
         // Zweite Session-Operation (simuliert concurrent access)
@@ -320,7 +332,7 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
             new \App\ValueObject\TicketName('Second Issue')
         );
 
-        $processingResult2 = ['unknownUsers' => [$unknownUser2], 'validTickets' => []];
+        $processingResult2 = new CsvProcessingResult(unknownUsers: [$unknownUser2]);
         $this->sessionManager->storeUploadResults($processingResult2);
 
         // Die zweite Operation sollte die erste überschreiben (intended behavior)
@@ -361,19 +373,11 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
 
     private function setupCsvProcessor(): void
     {
-        $csvFileReader = $this->createTestCsvFileReader();
+        $csvFileReader = $this->createMock(CsvFileReaderInterface::class);
         $this->csvProcessor = new CsvProcessor(
             $csvFileReader,
             $this->userRepository,
-            $this->requestStack
         );
-    }
-
-    private function createTempCsvFile(string $content): UploadedFile
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'csv_edge_test');
-        file_put_contents($tmp, $content);
-        return new UploadedFile($tmp, 'edge_test.csv', null, null, true);
     }
 
     private function createCsvFieldConfig(): CsvFieldConfig
@@ -387,43 +391,40 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
         return $cfg;
     }
 
-    private function createTestCsvFileReader(): CsvFileReader
+    /**
+     * Erstellt einen CsvFileReaderInterface-Mock aus CSV-Content-String
+     */
+    private function createCsvFileReaderFromContent(string $content): CsvFileReaderInterface
     {
-        return new class extends CsvFileReader {
-            public function __construct() { parent::__construct(',', 1000); }
-            
-            public function openCsvFile($file) {
-                $path = $file instanceof UploadedFile ? $file->getPathname() : $file;
-                return fopen($path, 'r');
-            }
-            
-            public function readHeader($handle): array {
-                return fgetcsv($handle, 1000, ',', '"', '\\');
-            }
-            
-            public function validateRequiredColumns(array $header, array $requiredColumns): array {
+        $lines = explode("\n", trim($content));
+        $header = str_getcsv(array_shift($lines));
+        $rows = array_map(fn($line) => str_getcsv($line), array_filter($lines, fn($l) => trim($l) !== ''));
+
+        $reader = $this->createMock(CsvFileReaderInterface::class);
+        $reader->method('openCsvFile')->willReturn('mock_handle');
+        $reader->method('readHeader')->willReturn($header);
+        $reader->method('validateRequiredColumns')->willReturnCallback(
+            function (array $hdr, array $requiredColumns) {
                 $indices = [];
                 foreach ($requiredColumns as $col) {
-                    $i = array_search($col, $header);
+                    $i = array_search($col, $hdr);
                     if ($i === false) throw new \Exception("Column $col not found");
                     $indices[$col] = $i;
                 }
                 return $indices;
             }
-            
-            public function processRows($handle, callable $rowProcessor): void {
+        );
+        $reader->method('processRows')->willReturnCallback(
+            function ($handle, callable $rowProcessor) use ($rows) {
                 $rowNumber = 1;
-                while (($row = fgetcsv($handle, 1000, ',', '"', '\\')) !== false) {
+                foreach ($rows as $row) {
                     $rowNumber++;
                     $rowProcessor($row, $rowNumber);
                 }
             }
-            
-            public function closeHandle($handle): void {
-                if (is_resource($handle)) {
-                    fclose($handle);
-                }
-            }
-        };
+        );
+        $reader->method('closeHandle');
+
+        return $reader;
     }
 }

@@ -2,7 +2,12 @@
 
 namespace App\Tests\Service;
 
+use App\Dto\CsvProcessingResult;
 use App\Service\SessionManager;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\Username;
+use App\ValueObject\TicketId;
+use App\ValueObject\TicketName;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use PHPUnit\Framework\TestCase;
@@ -33,18 +38,20 @@ class SessionManagerTest extends TestCase
 
     /**
      * Testet das Speichern vollständiger Upload-Ergebnisse in der Session
-     * - Überprüft, dass sowohl unbekannte Benutzer als auch gültige Tickets gespeichert werden
-     * - Testet die korrekte Anzahl der Session-Set-Aufrufe
      */
     public function testStoreUploadResultsWithCompleteData(): void
     {
-        $processingResult = [
-            'unknownUsers' => ['user1', 'user2', 'user3'],
-            'validTickets' => [
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [
+                new UnknownUserWithTicket(new Username('user1'), new TicketId('T-001')),
+                new UnknownUserWithTicket(new Username('user2'), new TicketId('T-002')),
+                new UnknownUserWithTicket(new Username('user3'), new TicketId('T-003')),
+            ],
+            validTickets: [
                 TicketData::fromStrings('T-001', 'john', 'Issue 1'),
                 TicketData::fromStrings('T-002', 'jane', 'Issue 2')
             ]
-        ];
+        );
 
         $this->session->expects($this->exactly(2))
             ->method('set');
@@ -53,61 +60,50 @@ class SessionManagerTest extends TestCase
     }
 
     /**
-     * Testet das Speichern unvollständiger Upload-Ergebnisse (nur unbekannte Benutzer)
-     * - Überprüft das Verhalten bei fehlenden Datenfeldern
-     * - Testet die Robustheit bei partiellen Eingabedaten
+     * Testet das Speichern von Ergebnissen ohne unbekannte Benutzer
      */
-    public function testStoreUploadResultsWithPartialData(): void
+    public function testStoreUploadResultsWithNoUnknownUsers(): void
     {
-        $processingResult = [
-            'unknownUsers' => ['user1']
-            // validTickets fehlt absichtlich
-        ];
+        $processingResult = new CsvProcessingResult(
+            validTickets: [TicketData::fromStrings('T-001', 'user1')]
+        );
 
         $this->session->expects($this->exactly(2))
-            ->method('set')
-;
+            ->method('set');
 
         $this->sessionManager->storeUploadResults($processingResult);
     }
 
     public function testStoreUploadResultsWithEmptyData(): void
     {
-        $processingResult = [];
+        $processingResult = new CsvProcessingResult();
 
         $this->session->expects($this->exactly(2))
-            ->method('set')
-;
+            ->method('set');
 
         $this->sessionManager->storeUploadResults($processingResult);
     }
 
-    public function testStoreUploadResultsWithNullValues(): void
+    public function testGetUnknownUsersReturnsDeserializedObjects(): void
     {
-        $processingResult = [
-            'unknownUsers' => null,
-            'validTickets' => null
+        $serializedData = [
+            ['type' => 'UnknownUserWithTicket', 'username' => 'user1', 'ticketId' => 'T-001', 'ticketName' => 'Issue 1', 'created' => null],
+            ['type' => 'UnknownUserWithTicket', 'username' => 'user2', 'ticketId' => 'T-002', 'ticketName' => null, 'created' => null],
         ];
-
-        $this->session->expects($this->exactly(2))
-            ->method('set')
-;
-
-        $this->sessionManager->storeUploadResults($processingResult);
-    }
-
-    public function testGetUnknownUsersReturnsStoredData(): void
-    {
-        $expectedUsers = ['user1', 'user2', 'user3'];
 
         $this->session->expects($this->once())
             ->method('get')
             ->with('unknown_users', [])
-            ->willReturn($expectedUsers);
+            ->willReturn($serializedData);
 
         $result = $this->sessionManager->getUnknownUsers();
 
-        $this->assertEquals($expectedUsers, $result);
+        $this->assertCount(2, $result);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $result[0]);
+        $this->assertEquals('user1', $result[0]->getUsernameString());
+        $this->assertEquals('T-001', $result[0]->getTicketIdString());
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $result[1]);
+        $this->assertEquals('user2', $result[1]->getUsernameString());
     }
 
     public function testGetUnknownUsersReturnsEmptyArrayWhenNoData(): void
@@ -154,8 +150,7 @@ class SessionManagerTest extends TestCase
     public function testClearUploadDataRemovesBothKeys(): void
     {
         $this->session->expects($this->exactly(3))
-            ->method('remove')
-;
+            ->method('remove');
 
         $this->sessionManager->clearUploadData();
     }
@@ -168,73 +163,63 @@ class SessionManagerTest extends TestCase
         $this->assertInstanceOf(SessionManager::class, $sessionManager);
     }
 
-    public function testSessionConstantsAreUsedConsistently(): void
+    public function testGetUnknownUsersSkipsInvalidEntries(): void
     {
-        // Test that the same keys are used in store and get operations
-        $processingResult = [
-            'unknownUsers' => ['test_user'],
-            'validTickets' => [TicketData::fromStrings('T-123', 'user')]
+        $serializedData = [
+            ['type' => 'UnknownUserWithTicket', 'username' => '', 'ticketId' => 'T-001'], // empty username
+            ['type' => 'UnknownUserWithTicket', 'username' => 'valid_user', 'ticketId' => 'T-002'],
+            ['invalid' => 'data'], // missing type key
         ];
 
-        // Store data
-        $this->session->expects($this->exactly(2))
-            ->method('set');
-
-        $this->sessionManager->storeUploadResults($processingResult);
-
-        // Verify the same keys are used for retrieval
         $this->session->method('get')
-            ->willReturnCallback(function ($key, $default) {
-                if ($key === 'unknown_users') {
-                    return ['test_user'];
-                }
-                if ($key === 'valid_tickets') {
-                    return [TicketData::fromStrings('T-123', 'user')];
-                }
-                return $default;
-            });
+            ->with('unknown_users', [])
+            ->willReturn($serializedData);
 
-        $unknownUsers = $this->sessionManager->getUnknownUsers();
-        $validTickets = $this->sessionManager->getValidTickets();
+        $result = $this->sessionManager->getUnknownUsers();
 
-        $this->assertEquals(['test_user'], $unknownUsers);
-        $this->assertEquals([TicketData::fromStrings('T-123', 'user')], $validTickets);
+        $this->assertCount(1, $result);
+        $this->assertEquals('valid_user', $result[0]->getUsernameString());
     }
 
     public function testMultipleStoreOperationsOverwritePreviousData(): void
     {
-        // First store operation
-        $firstResult = [
-            'unknownUsers' => ['user1'],
-            'validTickets' => [TicketData::fromStrings('T-001', 'user1')]
-        ];
+        $firstResult = new CsvProcessingResult(
+            unknownUsers: [
+                new UnknownUserWithTicket(new Username('user1'), new TicketId('T-001')),
+            ],
+            validTickets: [TicketData::fromStrings('T-001', 'user1')]
+        );
 
         $this->session->expects($this->exactly(4))
             ->method('set');
 
         $this->sessionManager->storeUploadResults($firstResult);
 
-        // Second store operation should overwrite
-        $secondResult = [
-            'unknownUsers' => ['user2', 'user3'],
-            'validTickets' => [
+        $secondResult = new CsvProcessingResult(
+            unknownUsers: [
+                new UnknownUserWithTicket(new Username('user2'), new TicketId('T-002')),
+                new UnknownUserWithTicket(new Username('user3'), new TicketId('T-003')),
+            ],
+            validTickets: [
                 TicketData::fromStrings('T-002', 'user2'),
                 TicketData::fromStrings('T-003', 'user3')
             ]
-        ];
+        );
 
         $this->sessionManager->storeUploadResults($secondResult);
     }
 
     public function testWorkflowIntegration(): void
     {
-        // Simulate a typical workflow: store, retrieve, clear
-        $processingResult = [
-            'unknownUsers' => ['unknown1', 'unknown2'],
-            'validTickets' => [
+        $processingResult = new CsvProcessingResult(
+            unknownUsers: [
+                new UnknownUserWithTicket(new Username('unknown1'), new TicketId('T-001')),
+                new UnknownUserWithTicket(new Username('unknown2'), new TicketId('T-002')),
+            ],
+            validTickets: [
                 TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')
             ]
-        ];
+        );
 
         // 1. Store data
         $this->session->expects($this->exactly(2))
@@ -242,11 +227,14 @@ class SessionManagerTest extends TestCase
 
         $this->sessionManager->storeUploadResults($processingResult);
 
-        // 2. Retrieve data (simulate multiple calls)
+        // 2. Retrieve data (simulate serialized session data)
         $this->session->method('get')
             ->willReturnCallback(function ($key, $default) {
                 if ($key === 'unknown_users') {
-                    return ['unknown1', 'unknown2'];
+                    return [
+                        ['type' => 'UnknownUserWithTicket', 'username' => 'unknown1', 'ticketId' => 'T-001', 'ticketName' => null, 'created' => null],
+                        ['type' => 'UnknownUserWithTicket', 'username' => 'unknown2', 'ticketId' => 'T-002', 'ticketName' => null, 'created' => null],
+                    ];
                 }
                 if ($key === 'valid_tickets') {
                     return [TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')];
@@ -256,11 +244,11 @@ class SessionManagerTest extends TestCase
 
         $unknownUsers = $this->sessionManager->getUnknownUsers();
         $validTickets = $this->sessionManager->getValidTickets();
-        $unknownUsersAgain = $this->sessionManager->getUnknownUsers();
 
-        $this->assertEquals(['unknown1', 'unknown2'], $unknownUsers);
+        $this->assertCount(2, $unknownUsers);
+        $this->assertInstanceOf(UnknownUserWithTicket::class, $unknownUsers[0]);
+        $this->assertEquals('unknown1', $unknownUsers[0]->getUsernameString());
         $this->assertEquals([TicketData::fromStrings('T-100', 'known_user', 'Valid Ticket')], $validTickets);
-        $this->assertEquals(['unknown1', 'unknown2'], $unknownUsersAgain);
 
         $this->sessionManager->clearUploadData();
     }

@@ -8,9 +8,12 @@ use App\Form\CsvUploadType;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
-use App\Service\EmailService;
+use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
-use App\Service\UploadResult;
+use App\Dto\UploadResult;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\Username;
+use App\ValueObject\TicketId;
 use App\Exception\TicketMailerException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +30,7 @@ class CsvUploadControllerTest extends TestCase
     private CsvUploadController $controller;
     private CsvUploadOrchestrator $csvUploadOrchestrator;
     private SessionManager $sessionManager;
-    private EmailService $emailService;
+    private EmailServiceInterface $emailService;
     private CsvFieldConfigRepository $csvFieldConfigRepository;
     private EmailNormalizer $emailNormalizer;
     private FormFactoryInterface $formFactory;
@@ -39,7 +42,7 @@ class CsvUploadControllerTest extends TestCase
     {
         $this->csvUploadOrchestrator = $this->createMock(CsvUploadOrchestrator::class);
         $this->sessionManager = $this->createMock(SessionManager::class);
-        $this->emailService = $this->createMock(EmailService::class);
+        $this->emailService = $this->createMock(EmailServiceInterface::class);
         $this->csvFieldConfigRepository = $this->createMock(CsvFieldConfigRepository::class);
         $this->emailNormalizer = $this->createMock(EmailNormalizer::class);
         $this->formFactory = $this->createMock(FormFactoryInterface::class);
@@ -129,7 +132,11 @@ class CsvUploadControllerTest extends TestCase
     public function testExtractEmailMappingsFromRequestHandlesUsernamesWithDots(): void
     {
         // Test for the specific issue where usernames containing dots are converted to underscores in HTML
-        $unknownUsers = ['h.asakura', 'normal.user', 'user_without_dots'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('h.asakura'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('normal.user'), new TicketId('T-002')),
+            new UnknownUserWithTicket(new Username('user_without_dots'), new TicketId('T-003')),
+        ];
         
         $request = new Request();
         // Simulate form data with underscores (as HTML would generate them)

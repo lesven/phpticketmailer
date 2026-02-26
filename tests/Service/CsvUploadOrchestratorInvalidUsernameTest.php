@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Entity\User;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\CsvProcessor;
+use App\Dto\CsvProcessingResult;
 use App\Service\UserCreator;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\SessionManager;
 use App\ValueObject\Username;
+use App\ValueObject\UnknownUserWithTicket;
+use App\ValueObject\TicketId;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\NullLogger;
 
 class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
 {
@@ -34,14 +39,20 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
             $this->csvFieldConfigRepository,
             $this->sessionManager,
             $this->userCreator,
-            $statisticsService
+            $statisticsService,
+            new NullLogger()
         );
     }
 
     public function testCreateUsersFromMappingsHandlesInvalidUsernames(): void
     {
         // Setup: Unbekannte User mit ungültigen Benutzernamen
-        $unknownUsers = ['valid.user', '.invalid.start', 'invalid.end.', 'another.valid'];
+        $unknownUsers = [
+            new UnknownUserWithTicket(new Username('valid.user'), new TicketId('T-001')),
+            new UnknownUserWithTicket(new Username('.invalid.start'), new TicketId('T-002')),
+            new UnknownUserWithTicket(new Username('invalid.end.'), new TicketId('T-003')),
+            new UnknownUserWithTicket(new Username('another.valid'), new TicketId('T-004')),
+        ];
         $emailMappings = [
             'valid.user' => 'valid@example.com',
             '.invalid.start' => 'invalid1@example.com',
@@ -62,13 +73,15 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
                 if (str_starts_with($username, '.') || str_ends_with($username, '.')) {
                     throw new \InvalidArgumentException("Invalid username: {$username}");
                 }
-                return null; // Erfolgreich für gültige Benutzernamen
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
             });
 
-        // Erwarte dass persistUsers aufgerufen wird (auch wenn einige User fehlgeschlagen sind)
+        // Erwarte dass flush aufgerufen wird (auch wenn einige User fehlgeschlagen sind)
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2); // 2 gültige User erstellt
+            ->method('flush');
 
         // Test
         $result = $this->orchestrator->processUnknownUsers($emailMappings);

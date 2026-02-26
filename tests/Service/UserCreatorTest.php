@@ -34,10 +34,11 @@ class UserCreatorTest extends TestCase
         $username = 'testuser';
         $email = 'test@example.com';
 
-        // Sollte keine Exception werfen
-        $this->userCreator->createUser($username, $email);
+        $user = $this->userCreator->createUser($username, $email);
 
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
+        $this->assertInstanceOf(\App\Entity\User::class, $user);
+        $this->assertEquals($username, $user->getUsername()->getValue());
+        $this->assertEquals($email, $user->getEmail()->getValue());
     }
 
     /**
@@ -73,35 +74,35 @@ class UserCreatorTest extends TestCase
      */
     public function testCreateMultipleUsers(): void
     {
-        $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->userCreator->createUser('user2', 'user2@example.com');
-        $this->userCreator->createUser('user3', 'user3@example.com');
+        $user1 = $this->userCreator->createUser('user1', 'user1@example.com');
+        $user2 = $this->userCreator->createUser('user2', 'user2@example.com');
+        $user3 = $this->userCreator->createUser('user3', 'user3@example.com');
 
-        $this->assertEquals(3, $this->userCreator->getPendingUsersCount());
+        $this->assertInstanceOf(\App\Entity\User::class, $user1);
+        $this->assertInstanceOf(\App\Entity\User::class, $user2);
+        $this->assertInstanceOf(\App\Entity\User::class, $user3);
     }
 
     /**
-     * Testet das Persistieren ohne pending Users
+     * Testet flush ohne vorherige Benutzer
      */
-    public function testPersistUsersWithNoPendingUsers(): void
+    public function testFlushWithNoUsers(): void
     {
-        $result = $this->userCreator->persistUsers();
+        $this->entityManager->expects($this->once())->method('flush');
 
-        $this->assertEquals(0, $result);
+        $this->userCreator->flush();
     }
 
     /**
-     * Testet dass der Pending-Users-Zähler korrekt funktioniert
+     * Testet dass createUser den erstellten User zurückgibt
      */
-    public function testGetPendingUsersCountIncrementsWithEachUser(): void
+    public function testCreateUserReturnsUserEntity(): void
     {
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
+        $user1 = $this->userCreator->createUser('user1', 'user1@example.com');
+        $this->assertEquals('user1', $user1->getUsername()->getValue());
 
-        $this->userCreator->createUser('user1', 'user1@example.com');
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
-
-        $this->userCreator->createUser('user2', 'user2@example.com');
-        $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
+        $user2 = $this->userCreator->createUser('user2', 'user2@example.com');
+        $this->assertEquals('user2', $user2->getUsername()->getValue());
     }
 
     /**
@@ -113,7 +114,6 @@ class UserCreatorTest extends TestCase
         $userCreator = new UserCreator($entityManager);
 
         $this->assertInstanceOf(UserCreator::class, $userCreator);
-        $this->assertEquals(0, $userCreator->getPendingUsersCount());
     }
 
     /**
@@ -194,10 +194,9 @@ class UserCreatorTest extends TestCase
         $emailUsername = 'user@company.com'; // E-Mail als Username sollte funktionieren
         $email = 'user@company.com';
 
-        // Sollte keine Exception werfen
-        $this->userCreator->createUser($emailUsername, $email);
+        $user = $this->userCreator->createUser($emailUsername, $email);
 
-        $this->assertEquals(1, $this->userCreator->getPendingUsersCount());
+        $this->assertInstanceOf(\App\Entity\User::class, $user);
     }
 
     /**
@@ -213,26 +212,23 @@ class UserCreatorTest extends TestCase
         ];
 
         foreach ($testCases as [$username, $email]) {
-            $this->userCreator->createUser($username, $email);
+            $user = $this->userCreator->createUser($username, $email);
+            $this->assertInstanceOf(\App\Entity\User::class, $user);
         }
-
-        $this->assertEquals(4, $this->userCreator->getPendingUsersCount());
     }
 
     /**
      * Testet Persistierung mit gültigen Daten
      */
-    public function testPersistUsersWithValidData(): void
+    public function testFlushAfterCreatingUsers(): void
     {
+        $this->entityManager->expects($this->exactly(2))->method('persist');
+        $this->entityManager->expects($this->once())->method('flush');
+
         $this->userCreator->createUser('user1', 'user1@example.com');
         $this->userCreator->createUser('user2', 'user2@example.com');
 
-        $this->assertEquals(2, $this->userCreator->getPendingUsersCount());
-
-        $result = $this->userCreator->persistUsers();
-
-        $this->assertEquals(2, $result);
-        $this->assertEquals(0, $this->userCreator->getPendingUsersCount());
+        $this->userCreator->flush();
     }
 
     /**

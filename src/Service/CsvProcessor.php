@@ -6,69 +6,52 @@
  * mit Ticket-Daten. Sie nutzt spezialisierte Services für die
  * CSV-Dateiverarbeitung und Benutzervalidierung.
  * 
+ * Reine Verarbeitungsklasse ohne Side Effects (kein Session-Zugriff).
+ * 
  * @package App\Service
  */
 
 namespace App\Service;
 
+use App\Dto\CsvProcessingResult;
 use App\Entity\CsvFieldConfig;
 use App\Repository\UserRepository;
 use App\ValueObject\TicketData;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 class CsvProcessor
 {
-    /**
-     * @var CsvFileReader
-     */
-    private CsvFileReader $csvFileReader;
-    
-    /**
-     * @var UserRepository
-     */
-    private UserRepository $userRepository;
-    
-    /**
-     * @var RequestStack
-     */
-    private RequestStack $requestStack;
-    
-    /**
-     * Konstruktor mit Dependency Injection aller benötigten Services
-     */
     public function __construct(
-        CsvFileReader $csvFileReader,
-        UserRepository $userRepository,
-        RequestStack $requestStack
+        private readonly CsvFileReaderInterface $csvFileReader,
+        private readonly UserRepository $userRepository,
     ) {
-        $this->csvFileReader = $csvFileReader;
-        $this->userRepository = $userRepository;
-        $this->requestStack = $requestStack;
     }
-      /**
+
+    /**
      * Verarbeitet eine hochgeladene CSV-Datei mit Ticket-Daten
      * 
-     * Diese Methode koordiniert die CSV-Verarbeitung und gibt strukturierte Ergebnisse zurück.
+     * Diese Methode koordiniert die CSV-Verarbeitung und gibt ein typisiertes Ergebnis zurück.
      * 
      * @param UploadedFile $file Die hochgeladene CSV-Datei
      * @param CsvFieldConfig $csvFieldConfig Konfiguration der CSV-Feldnamen
-     * @return array{validTickets: array, invalidRows: array, unknownUsers: array} Ergebnisse der Verarbeitung
+     * @throws \InvalidArgumentException Wenn das FieldMapping leer oder ungültig ist
      * @throws \Exception Bei Fehlern während der Verarbeitung
      */
-    public function process(UploadedFile $file, CsvFieldConfig $csvFieldConfig): array
+    public function process(UploadedFile $file, CsvFieldConfig $csvFieldConfig): CsvProcessingResult
     {
-        $result = [
-            'validTickets' => [],
-            'invalidRows' => [],
-            'unknownUsers' => []
-        ];
-
         // Konfigurierte Feldnamen holen
         $fieldMapping = $csvFieldConfig->getFieldMapping();
-        $requiredColumns = array_values($fieldMapping);
+        if (!is_array($fieldMapping) || empty($fieldMapping)) {
+            throw new \InvalidArgumentException('CsvFieldConfig liefert ein leeres oder ungültiges FieldMapping.');
+        }
+        // Required columns exclude the optional 'created' field
+        $requiredColumns = [
+            $fieldMapping['ticketId'],
+            $fieldMapping['username'],
+            $fieldMapping['ticketName']
+        ];
         
         $handle = null;
         try {
@@ -76,6 +59,14 @@ class CsvProcessor
             $handle = $this->csvFileReader->openCsvFile($file);
             $header = $this->csvFileReader->readHeader($handle);
             $columnIndices = $this->csvFileReader->validateRequiredColumns($header, $requiredColumns);
+            
+            // Add optional created field index if the column exists in CSV
+            if (isset($fieldMapping['created'])) {
+                $createdIndex = array_search($fieldMapping['created'], $header);
+                if ($createdIndex !== false) {
+                    $columnIndices[$fieldMapping['created']] = $createdIndex;
+                }
+            }
             
             // Daten zur Ticketverarbeitung
             $validTickets = [];
@@ -115,32 +106,26 @@ class CsvProcessor
                 }
             });
             
-            $result['validTickets'] = $validTickets;
-            $result['invalidRows'] = $invalidRows;
-            
-            // Get basic unknown users using the existing method (for backward compatibility)
+            // Get basic unknown users using the existing method
             $basicUnknownUsers = $this->userRepository->identifyUnknownUsers($uniqueUsernames);
             
             // Enhance with ticket information for display purposes
-            $result['unknownUsers'] = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
+            $unknownUsers = $this->enhanceUnknownUsersWithTicketInfo($basicUnknownUsers, $validTickets);
             
-            // Speichere die gültigen Tickets in der Session für späteren Zugriff
-            $this->storeTicketsInSession($validTickets);
+            return new CsvProcessingResult($validTickets, $invalidRows, $unknownUsers);
             
         } finally {
             // Datei-Handle sicher schließen
             $this->csvFileReader->closeHandle($handle);
         }
-        
-        return $result;
     }
 
     /**
      * Erweitert eine Liste von unbekannten Benutzern mit Ticket-Kontext
      * 
      * @param array $unknownUsernames Liste der unbekannten Benutzernamen (Strings)
-     * @param array $validTickets Liste der gültigen Ticket-Daten
-     * @return array Array von UnknownUserWithTicket Objekten oder Strings (für Backward Compatibility)
+     * @param TicketData[] $validTickets Liste der gültigen Ticket-Daten
+     * @return UnknownUserWithTicket[] Array von UnknownUserWithTicket Objekten
      */
     private function enhanceUnknownUsersWithTicketInfo(array $unknownUsernames, array $validTickets): array
     {
@@ -166,8 +151,11 @@ class CsvProcessor
             if (isset($ticketsByUsername[$lowercaseUnknownUser])) {
                 $enhancedUnknownUsers[] = UnknownUserWithTicket::fromTicketData($ticketsByUsername[$lowercaseUnknownUser]);
             } else {
-                // Fallback für den Fall, dass kein Ticket gefunden wird (sollte nicht passieren)
-                $enhancedUnknownUsers[] = $usernameString;
+                // Erstelle UnknownUserWithTicket nur mit Username (ohne Ticket-Kontext)
+                $enhancedUnknownUsers[] = new UnknownUserWithTicket(
+                    Username::fromString($usernameString),
+                    new \App\ValueObject\TicketId('UNKNOWN'),
+                );
             }
         }
         
@@ -199,21 +187,18 @@ class CsvProcessor
     private function createTicketFromRow(array $row, array $columnIndices, array $fieldMapping): TicketData
     {
         $ticketNameRaw = $row[$columnIndices[$fieldMapping['ticketName']]] ?? null;
+        
+        // Extract optional created field if it exists in the CSV and in the mapping
+        $createdRaw = null;
+        if (isset($fieldMapping['created']) && isset($columnIndices[$fieldMapping['created']])) {
+            $createdRaw = $row[$columnIndices[$fieldMapping['created']]] ?? null;
+        }
 
         return TicketData::fromStrings(
             $row[$columnIndices[$fieldMapping['ticketId']]],
             $row[$columnIndices[$fieldMapping['username']]],
-            $ticketNameRaw
+            $ticketNameRaw,
+            $createdRaw
         );
-    }
-    
-    /**
-     * Speichert die gültigen Tickets in der Session
-     * 
-     * @param array $validTickets Die zu speichernden gültigen Tickets
-     */
-    private function storeTicketsInSession(array $validTickets): void
-    {
-        $this->requestStack->getSession()->set('valid_tickets', $validTickets);
     }
 }

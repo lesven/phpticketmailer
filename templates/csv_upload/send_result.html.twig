@@ -80,6 +80,7 @@
                         <tr>
                             <th>Ticket-ID</th>
                             <th>Name</th>
+                            <th>Erstellt</th>
                             <th>Benutzer</th>
                             <th>E-Mail</th>
                             <th>Status</th>
@@ -90,6 +91,7 @@
                             <tr>
                                 <td>{{ email.ticketId }}</td>
                                 <td>{{ email.ticketName }}</td>
+                                <td>{{ email.ticketCreated }}</td>
                                 <td>{{ email.username }}</td>
                                 <td>{{ email.email }}</td>                                <td>
                                     {% if email.status.isError %}
@@ -118,4 +120,63 @@
             <i class="fas fa-upload"></i> Neuen CSV-Upload starten
         </a>
     </div>
+
+    {% if templateDebug is defined and templateDebug is not empty %}
+    <div class="card mt-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0"><i class="fas fa-bug"></i> Template-Debug-Info</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ticket-ID</th>
+                            <th>created (Eingabe)</th>
+                            <th>created (geparst)</th>
+                            <th>Auswahl-Methode</th>
+                            <th>Gewähltes Template</th>
+                            <th>Template gültig ab</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticketId, debug in templateDebug %}
+                            <tr>
+                                <td><code>{{ ticketId }}</code></td>
+                                <td><code>{{ debug.inputCreated ?? '(null)' }}</code></td>
+                                <td><code>{{ debug.parsedDate ?? '(null)' }}</code></td>
+                                <td><span class="badge bg-secondary">{{ debug.selectionMethod ?? '?' }}</span></td>
+                                <td>{{ debug.selectedTemplateName ?? '–' }}</td>
+                                <td>{{ debug.selectedTemplateValidFrom ?? '–' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% set firstDebug = templateDebug|first %}
+            {% if firstDebug is iterable and firstDebug.allTemplates is iterable %}
+            <h6 class="mt-3">Vorhandene Templates in der Datenbank:</h6>
+            <table class="table table-sm table-striped" style="max-width: 500px;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Gültig ab</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in firstDebug.allTemplates %}
+                        <tr>
+                            <td>{{ t.id }}</td>
+                            <td>{{ t.name }}</td>
+                            <td>{{ t.validFrom }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}

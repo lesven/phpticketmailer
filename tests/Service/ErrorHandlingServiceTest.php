@@ -5,6 +5,9 @@ namespace App\Tests\Service;
 use App\Service\ErrorHandlingService;
 use App\Exception\TicketMailerException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
 use PHPUnit\Framework\TestCase;
 use Doctrine\DBAL\Exception as DoctrineException;
@@ -16,12 +19,23 @@ class ErrorHandlingServiceTest extends TestCase
     private ErrorHandlingService $errorHandlingService;
     private LoggerInterface $logger;
     private FlashBagInterface $flashBag;
+    private RequestStack $requestStack;
 
     protected function setUp(): void
     {
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->flashBag = $this->createMock(FlashBagInterface::class);
-        $this->errorHandlingService = new ErrorHandlingService($this->logger, $this->flashBag);
+        $this->requestStack = new RequestStack();
+
+        // Create a session mock that returns our flashBag mock
+        $session = $this->createMock(FlashBagAwareSessionInterface::class);
+        $session->method('getFlashBag')->willReturn($this->flashBag);
+
+        $request = new Request();
+        $request->setSession($session);
+        $this->requestStack->push($request);
+
+        $this->errorHandlingService = new ErrorHandlingService($this->logger, $this->requestStack);
     }
 
     public function testHandleTicketMailerExceptionLogsErrorAndAddsFlashMessage(): void
@@ -293,7 +307,7 @@ class ErrorHandlingServiceTest extends TestCase
 
     public function testConstructorInitializesServices(): void
     {
-        $service = new ErrorHandlingService($this->logger, $this->flashBag);
+        $service = new ErrorHandlingService($this->logger, $this->requestStack);
         
         $this->assertInstanceOf(ErrorHandlingService::class, $service);
     }

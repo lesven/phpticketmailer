@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Dto\UserListingCriteria;
+use App\Dto\UserListingResult;
 use App\Repository\UserRepository;
 use App\Service\PaginationService;
 

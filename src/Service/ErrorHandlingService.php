@@ -4,7 +4,8 @@ namespace App\Service;
 
 use App\Exception\TicketMailerException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 /**
  * Service für einheitliche Fehlerbehandlung in der Anwendung
@@ -16,8 +17,19 @@ class ErrorHandlingService
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly FlashBagInterface $flashBag
+        private readonly RequestStack $requestStack,
     ) {
+    }
+
+    /**
+     * Fügt eine Flash-Nachricht zur aktuellen Session hinzu.
+     */
+    private function addFlash(string $type, string $message): void
+    {
+        $session = $this->requestStack->getSession();
+        if ($session instanceof FlashBagAwareSessionInterface) {
+            $session->getFlashBag()->add($type, $message);
+        }
     }
 
     /**
@@ -36,7 +48,7 @@ class ErrorHandlingService
         ]);
 
         // Benutzer-freundliche Nachricht anzeigen
-        $this->flashBag->add('error', $exception->getUserMessage());
+        $this->addFlash('error', $exception->getUserMessage());
     }
 
     /**
@@ -61,7 +73,7 @@ class ErrorHandlingService
         ]);
 
         // Benutzer-Nachricht anzeigen
-        $this->flashBag->add('error', $userMessage);
+        $this->addFlash('error', $userMessage);
     }
 
     /**
@@ -76,7 +88,7 @@ class ErrorHandlingService
         $this->logger->warning($message, $context);
 
         if ($userMessage !== null) {
-            $this->flashBag->add('warning', $userMessage);
+            $this->addFlash('warning', $userMessage);
         }
     }
 
@@ -92,7 +104,7 @@ class ErrorHandlingService
         $this->logger->info($message, $context);
 
         if ($userMessage !== null) {
-            $this->flashBag->add('info', $userMessage);
+            $this->addFlash('info', $userMessage);
         }
     }
 
@@ -105,7 +117,7 @@ class ErrorHandlingService
     public function logSuccess(string $message, array $context = []): void
     {
         $this->logger->info($message, $context);
-        $this->flashBag->add('success', $message);
+        $this->addFlash('success', $message);
     }
 
     /**

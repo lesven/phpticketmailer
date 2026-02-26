@@ -3,129 +3,196 @@
 namespace App\Tests\Controller;
 
 use App\Controller\TemplateController;
+use App\Entity\EmailTemplate;
+use App\Service\TemplateService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormView;
-use Twig\Environment;
-use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 class TemplateControllerTest extends TestCase
 {
     private TemplateController $controller;
-    private FormFactoryInterface $formFactory;
-    private Environment $twig;
-    private \Symfony\Component\String\Slugger\SluggerInterface $slugger;
+    private TemplateService $templateService;
 
     protected function setUp(): void
     {
-        $this->formFactory = $this->createMock(FormFactoryInterface::class);
-        $this->twig = $this->createMock(Environment::class);
-        $this->slugger = $this->createMock(\Symfony\Component\String\Slugger\SluggerInterface::class);
+        $this->templateService = $this->createMock(TemplateService::class);
+        $this->templateService->method('getPreviewData')->willReturn([
+            'ticketId'   => 'TICKET-12345',
+            'ticketName' => 'Beispiel Support-Anfrage',
+            'username'   => 'max.mustermann',
+            'ticketLink' => 'https://www.ticket.de/TICKET-12345',
+            'dueDate'    => '04. März 2026',
+        ]);
+        $this->templateService->method('replacePlaceholders')
+            ->willReturnCallback(function (string $template, array $variables): string {
+                foreach ($variables as $key => $value) {
+                    $template = str_replace('{{' . $key . '}}', (string) $value, $template);
+                }
+                return $template;
+            });
 
-        $this->controller = new TemplateController('/tmp', $this->slugger);
+        $this->controller = new TemplateController($this->templateService, '/tmp');
 
         // Inject mocked services using reflection
         $reflectionClass = new \ReflectionClass($this->controller);
         $containerProperty = $reflectionClass->getParentClass()->getProperty('container');
         $containerProperty->setAccessible(true);
-        
+
+        $twig = $this->createMock(\Twig\Environment::class);
+        $twig->method('render')->willReturn('<html>Template Management</html>');
+
         $container = $this->createMock(\Psr\Container\ContainerInterface::class);
         $container->method('get')
-            ->willReturnCallback(function($service) {
-                return match($service) {
-                    'form.factory' => $this->formFactory,
-                    'twig' => $this->twig,
+            ->willReturnCallback(function ($service) use ($twig) {
+                return match ($service) {
+                    'twig' => $twig,
                     default => null
                 };
             });
         $container->method('has')->willReturn(true);
-        
+
         $containerProperty->setValue($this->controller, $container);
     }
 
-    public function testManageShowsTemplateManagementForm(): void
+    /**
+     * Erstellt einen Container mit RequestStack, Router und Session für Controller-Aktionen,
+     * die addFlash() und redirectToRoute() nutzen.
+     */
+    private function setUpContainerWithSession(): Session
     {
+        $session = new Session(new MockArraySessionStorage());
+
         $request = new Request();
-        
-        $form = $this->createMock(FormInterface::class);
-        $formView = $this->createMock(FormView::class);
-        
-        $form->method('handleRequest')->with($request);
-        $form->method('isSubmitted')->willReturn(false);
-        $form->method('createView')->willReturn($formView);
+        $request->setSession($session);
 
-        $this->formFactory->method('create')
-            ->willReturn($form);
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
 
-        $this->twig->method('render')
-            ->with('template/manage.html.twig', $this->anything())
-            ->willReturn('<html>Template Management</html>');
+        $router = $this->createMock(\Symfony\Component\Routing\RouterInterface::class);
+        $router->method('generate')->willReturn('/template/');
 
-        $response = $this->controller->manage($request);
+        $twig = $this->createMock(\Twig\Environment::class);
 
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContainsString('<html>', $response->getContent());
-        $this->assertEquals('<html>Template Management</html>', $response->getContent());
+        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $container->method('get')
+            ->willReturnCallback(function ($service) use ($twig, $router, $requestStack) {
+                return match ($service) {
+                    'twig' => $twig,
+                    'router' => $router,
+                    'request_stack' => $requestStack,
+                    default => null,
+                };
+            });
+        $container->method('has')->willReturn(true);
+
+        $reflectionClass = new \ReflectionClass($this->controller);
+        $containerProperty = $reflectionClass->getParentClass()->getProperty('container');
+        $containerProperty->setAccessible(true);
+        $containerProperty->setValue($this->controller, $container);
+
+        return $session;
     }
 
-    public function testManageUpdatesTemplateOnValidSubmission(): void
+    public function testManageShowsTemplateListWithNoSelection(): void
     {
+        $this->templateService->method('getAllTemplates')->willReturn([]);
+
         $request = new Request();
-        $templateContent = 'Hello {{username}}, your ticket {{ticketId}} is ready.';
-        
-        $form = $this->createMock(FormInterface::class);
-        $templateField = $this->createMock(FormInterface::class);
-        
-        $form->method('get')->with('template')->willReturn($templateField);
-        $templateField->method('getData')->willReturn($templateContent);
-        
-        $form->method('handleRequest')->with($request);
-        $form->method('isSubmitted')->willReturn(true);
-        $form->method('isValid')->willReturn(true);
-
-        $this->formFactory->method('create')
-            ->willReturn($form);
-
-        $formView = $this->createMock(FormView::class);
-        $form->method('createView')->willReturn($formView);
-
-        $this->twig->method('render')
-            ->with('template/manage.html.twig', $this->anything())
-            ->willReturn('<html>Template Updated</html>');
-
         $response = $this->controller->manage($request);
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContainsString('<html>', $response->getContent());
-        $this->assertEquals('<html>Template Updated</html>', $response->getContent());
     }
 
-    public function testManageHandlesInvalidTemplateSubmission(): void
+    public function testManageShowsSelectedTemplate(): void
     {
-        $request = new Request();
-        
-        $form = $this->createMock(FormInterface::class);
-        $formView = $this->createMock(FormView::class);
-        
-        $form->method('handleRequest')->with($request);
-        $form->method('isSubmitted')->willReturn(true);
-        $form->method('isValid')->willReturn(false);
-        $form->method('createView')->willReturn($formView);
+        $template = new EmailTemplate();
+        $template->setName('Test Template');
+        $template->setContent('<p>Hello {{username}}</p>');
+        $template->setValidFrom(new \DateTime('2026-01-01'));
 
-        $this->formFactory->method('create')
-            ->willReturn($form);
+        $ref = new \ReflectionClass($template);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($template, 1);
 
-        $this->twig->method('render')
-            ->with('template/manage.html.twig', $this->anything())
-            ->willReturn('<html>Template Form with Errors</html>');
+        $this->templateService->method('getAllTemplates')->willReturn([$template]);
+        $this->templateService->method('getTemplate')->with(1)->willReturn($template);
 
+        $request = new Request(['templateId' => 1]);
         $response = $this->controller->manage($request);
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContainsString('<html>', $response->getContent());
-        $this->assertEquals('<html>Template Form with Errors</html>', $response->getContent());
+    }
+
+    public function testCreateRedirectsOnSuccess(): void
+    {
+        $template = new EmailTemplate();
+        $template->setName('New');
+        $template->setValidFrom(new \DateTime('2026-06-01'));
+
+        $ref = new \ReflectionClass($template);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($template, 5);
+
+        $this->templateService->method('createTemplate')->willReturn($template);
+
+        $session = $this->setUpContainerWithSession();
+
+        $request = new Request([], [
+            'template_name' => 'New',
+            'template_valid_from' => '2026-06-01',
+        ]);
+        $request->setMethod('POST');
+        $request->setSession($session);
+
+        $response = $this->controller->create($request);
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $flashes = $session->getFlashBag()->peek('success');
+        $this->assertNotEmpty($flashes);
+    }
+
+    public function testCreateRejectsEmptyName(): void
+    {
+        $session = $this->setUpContainerWithSession();
+
+        $request = new Request([], [
+            'template_name' => '',
+            'template_valid_from' => '2026-06-01',
+        ]);
+        $request->setMethod('POST');
+        $request->setSession($session);
+
+        $response = $this->controller->create($request);
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $flashes = $session->getFlashBag()->peek('error');
+        $this->assertNotEmpty($flashes);
+    }
+
+    public function testDeleteRemovesTemplate(): void
+    {
+        $template = new EmailTemplate();
+        $template->setName('ToDelete');
+
+        $ref = new \ReflectionClass($template);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($template, 3);
+
+        $this->templateService->method('getTemplate')->with(3)->willReturn($template);
+        $this->templateService->expects($this->once())->method('deleteTemplate')->with($template);
+
+        $session = $this->setUpContainerWithSession();
+
+        $response = $this->controller->delete(3);
+
+        $this->assertEquals(302, $response->getStatusCode());
+        $flashes = $session->getFlashBag()->peek('success');
+        $this->assertNotEmpty($flashes);
     }
 }

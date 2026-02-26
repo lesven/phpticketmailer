@@ -83,6 +83,19 @@ class CsvFieldConfigType extends AbstractType
                 'constraints' => [
                     new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
                 ]
+            ])
+            ->add('createdField', TextType::class, [
+                'label' => 'Erstellungsdatum Spaltenname',
+                'required' => false,
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => 'Erstellt (Standard)',
+                    'maxlength' => 50
+                ],
+                'help' => 'Name der Spalte für das Erstellungsdatum (Standard: Erstellt)',
+                'constraints' => [
+                    new Length(max: 50, maxMessage: 'Der Spaltenname darf maximal 50 Zeichen lang sein')
+                ]
             ]);
     }
 

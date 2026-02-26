@@ -2,7 +2,7 @@
 
 namespace App\Tests\Service;
 
-use App\Service\UserListingCriteria;
+use App\Dto\UserListingCriteria;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 

@@ -1,7 +1,7 @@
 <?php
 namespace App\Tests\Service;
 
-use App\Service\UploadResult;
+use App\Dto\UploadResult;
 use PHPUnit\Framework\TestCase;
 
 class UploadResultTest extends TestCase

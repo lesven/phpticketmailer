@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\UserImportResult;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\ValueObject\EmailAddress;

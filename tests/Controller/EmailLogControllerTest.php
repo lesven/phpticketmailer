@@ -5,7 +5,7 @@ namespace App\Tests\Controller;
 use App\Controller\EmailLogController;
 use App\Repository\EmailSentRepository;
 use App\Service\PaginationService;
-use App\Service\PaginationResult;
+use App\Dto\PaginationResult;
 use App\Entity\EmailSent;
 use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketId;
