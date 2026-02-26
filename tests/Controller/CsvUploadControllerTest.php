@@ -10,7 +10,7 @@ use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
 use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
-use App\Service\UploadResult;
+use App\Dto\UploadResult;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
 use App\ValueObject\TicketId;

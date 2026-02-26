@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Service\UserImportService;
-use App\Service\UserListingCriteria;
+use App\Dto\UserListingCriteria;
 use App\Service\UserListingService;
 
 #[Route('/user')]

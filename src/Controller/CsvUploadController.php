@@ -7,11 +7,12 @@ use App\Form\CsvUploadType;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
-use App\Service\UploadResult;
-use App\Service\UnknownUsersResult;
+use App\Dto\UploadResult;
+use App\Dto\UnknownUsersResult;
 use App\Service\EmailServiceInterface;
 use App\Service\EmailNormalizer;
 use App\Exception\TicketMailerException;
+use App\Exception\ValidationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -189,10 +190,7 @@ class CsvUploadController extends AbstractController
                 } catch (\InvalidArgumentException $e) {
                     // Fehler wird im Frontend durch JavaScript abgefangen
                     // Falls JavaScript deaktiviert ist, wird hier ein Fallback bereitgestellt
-                    throw new TicketMailerException(
-                        "Ungültige E-Mail-Adresse für Benutzer '{$username}': " . $e->getMessage(),
-                        'validation_error'
-                    );
+                    throw ValidationException::invalidEmailForUser($username, $e->getMessage());
                 }
             }
         }

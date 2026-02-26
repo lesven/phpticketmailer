@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\PaginationResult;
 use Doctrine\ORM\QueryBuilder;
 
 /**

@@ -90,4 +90,28 @@ class EmailTransportService
             $this->mailer->send($email);
         }
     }
+
+    /**
+     * Sendet eine Test-E-Mail zur Überprüfung der SMTP-Konfiguration.
+     *
+     * Verwendet den DSN der übergebenen SMTP-Konfiguration direkt,
+     * um die Verbindung zu testen, ohne auf die gespeicherte Config zurückzugreifen.
+     *
+     * @param string $dsn Der SMTP-DSN-String
+     * @param string $senderEmail Absender-E-Mail
+     * @param string $recipientEmail Empfänger der Test-E-Mail
+     */
+    public function sendTestEmail(string $dsn, string $senderEmail, string $recipientEmail): void
+    {
+        $transport = Transport::fromDsn($dsn);
+
+        $email = (new Email())
+            ->from($senderEmail)
+            ->to($recipientEmail)
+            ->subject('SMTP Konfigurationstest')
+            ->text('Dies ist eine Testnachricht zur Überprüfung der SMTP-Konfiguration.')
+            ->html('<p>Dies ist eine Testnachricht zur Überprüfung der SMTP-Konfiguration.</p>');
+
+        $transport->send($email);
+    }
 }

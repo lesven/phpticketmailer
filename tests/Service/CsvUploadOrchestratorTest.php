@@ -2,14 +2,15 @@
 
 namespace App\Tests\Service;
 
+use App\Entity\User;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\CsvProcessor;
 use App\Dto\CsvProcessingResult;
 use App\Repository\CsvFieldConfigRepository;
 use App\Service\SessionManager;
 use App\Service\UserCreator;
-use App\Service\UploadResult;
-use App\Service\UnknownUsersResult;
+use App\Dto\UploadResult;
+use App\Dto\UnknownUsersResult;
 use App\Entity\CsvFieldConfig;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
@@ -17,6 +18,7 @@ use App\ValueObject\TicketId;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use PHPUnit\Framework\TestCase;
 use App\ValueObject\TicketData;
+use Psr\Log\NullLogger;
 
 class CsvUploadOrchestratorTest extends TestCase
 {
@@ -40,7 +42,8 @@ class CsvUploadOrchestratorTest extends TestCase
             $this->csvFieldConfigRepository,
             $this->sessionManager,
             $this->userCreator,
-            $this->statisticsService
+            $this->statisticsService,
+            new NullLogger()
         );
     }
 
@@ -160,11 +163,14 @@ class CsvUploadOrchestratorTest extends TestCase
                 // Verify correct parameters are passed
                 $this->assertContainsEquals($username, ['user1', 'user2', 'user3']);
                 $this->assertStringEndsWith('@example.com', $email);
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
             });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(3);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -193,11 +199,16 @@ class CsvUploadOrchestratorTest extends TestCase
             ->willReturn($unknownUsers);
 
         $this->userCreator->expects($this->exactly(2))
-            ->method('createUser');
+            ->method('createUser')
+            ->willReturnCallback(function ($username, $email) {
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
+            });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -217,7 +228,7 @@ class CsvUploadOrchestratorTest extends TestCase
             ->method('createUser');
 
         $this->userCreator->expects($this->never())
-            ->method('persistUsers');
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -243,9 +254,8 @@ class CsvUploadOrchestratorTest extends TestCase
         $this->userCreator->expects($this->never())
             ->method('createUser');
 
-        $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(0);
+        $this->userCreator->expects($this->never())
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 
@@ -305,7 +315,8 @@ class CsvUploadOrchestratorTest extends TestCase
             $repository,
             $sessionManager,
             $userCreator,
-            $statisticsService
+            $statisticsService,
+            new NullLogger()
         );
 
         $this->assertInstanceOf(CsvUploadOrchestrator::class, $orchestrator);
@@ -328,11 +339,16 @@ class CsvUploadOrchestratorTest extends TestCase
             ->willReturn($unknownUsers);
 
         $this->userCreator->expects($this->exactly(2))
-            ->method('createUser');
+            ->method('createUser')
+            ->willReturnCallback(function ($username, $email) {
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
+            });
 
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2);
+            ->method('flush');
 
         $result = $this->orchestrator->processUnknownUsers($emailMappings);
 

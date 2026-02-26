@@ -12,6 +12,7 @@ use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketData;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class EmailRecordServiceTest extends TestCase
@@ -19,6 +20,7 @@ class EmailRecordServiceTest extends TestCase
     private EntityManagerInterface $entityManager;
     private UserRepository $userRepo;
     private EventDispatcherInterface $eventDispatcher;
+    private LoggerInterface $logger;
     private EmailRecordService $service;
 
     protected function setUp(): void
@@ -26,11 +28,13 @@ class EmailRecordServiceTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->userRepo = $this->createMock(UserRepository::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new EmailRecordService(
             $this->entityManager,
             $this->userRepo,
             $this->eventDispatcher,
+            $this->logger,
         );
     }
 

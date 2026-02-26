@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Entity\User;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\CsvProcessor;
 use App\Dto\CsvProcessingResult;
@@ -15,6 +16,7 @@ use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\TicketId;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\NullLogger;
 
 class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
 {
@@ -37,7 +39,8 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
             $this->csvFieldConfigRepository,
             $this->sessionManager,
             $this->userCreator,
-            $statisticsService
+            $statisticsService,
+            new NullLogger()
         );
     }
 
@@ -70,13 +73,15 @@ class CsvUploadOrchestratorInvalidUsernameTest extends TestCase
                 if (str_starts_with($username, '.') || str_ends_with($username, '.')) {
                     throw new \InvalidArgumentException("Invalid username: {$username}");
                 }
-                return null; // Erfolgreich für gültige Benutzernamen
+                $user = new User();
+                $user->setUsername($username);
+                $user->setEmail($email);
+                return $user;
             });
 
-        // Erwarte dass persistUsers aufgerufen wird (auch wenn einige User fehlgeschlagen sind)
+        // Erwarte dass flush aufgerufen wird (auch wenn einige User fehlgeschlagen sind)
         $this->userCreator->expects($this->once())
-            ->method('persistUsers')
-            ->willReturn(2); // 2 gültige User erstellt
+            ->method('flush');
 
         // Test
         $result = $this->orchestrator->processUnknownUsers($emailMappings);

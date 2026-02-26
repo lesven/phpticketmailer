@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Service;
+namespace App\Dto;
 
 /**
  * Value Object für das Ergebnis eines CSV-Upload-Vorgangs

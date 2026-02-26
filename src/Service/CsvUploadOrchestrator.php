@@ -3,8 +3,11 @@
 namespace App\Service;
 
 use App\Dto\CsvProcessingResult;
+use App\Dto\UnknownUsersResult;
+use App\Dto\UploadResult;
 use App\Entity\CsvFieldConfig;
 use App\Repository\CsvFieldConfigRepository;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
@@ -20,7 +23,8 @@ class CsvUploadOrchestrator
         private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
         private readonly SessionManager $sessionManager,
         private readonly UserCreator $userCreator,
-        private readonly StatisticsService $statisticsService
+        private readonly StatisticsService $statisticsService,
+        private readonly LoggerInterface $logger
     ) {}
 
     /**
@@ -91,19 +95,28 @@ class CsvUploadOrchestrator
      */
     private function createUsersFromMappings(array $emailMappings, array $unknownUsers): int
     {
+        $createdCount = 0;
+
         foreach ($unknownUsers as $unknownUser) {
             $username = $unknownUser->getUsernameString();
             
             if (isset($emailMappings[$username])) {
                 try {
                     $this->userCreator->createUser($username, $emailMappings[$username]);
+                    $createdCount++;
                 } catch (\InvalidArgumentException $e) {
-                    // Ungültige Benutzernamen werden stillschweigend ignoriert
-                    // Sie sollten bereits in der CSV-Verarbeitung gefiltert worden sein
+                    $this->logger->warning('Ungültiger Benutzername beim Erstellen übersprungen: {username}', [
+                        'username' => $username,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
         }
 
-        return $this->userCreator->persistUsers();
+        if ($createdCount > 0) {
+            $this->userCreator->flush();
+        }
+
+        return $createdCount;
     }
 }

@@ -14,15 +14,12 @@ namespace App\Controller;
 use App\Entity\SMTPConfig;
 use App\Form\SMTPConfigType;
 use App\Repository\SMTPConfigRepository;
+use App\Service\EmailTransportService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Mime\Email;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mailer\Transport\Dsn;
-use Symfony\Component\Mailer\Transport;
 
 /**
  * Controller zur Verwaltung der SMTP-Konfiguration
@@ -30,30 +27,11 @@ use Symfony\Component\Mailer\Transport;
 #[Route('/smtp-config')]
 class SMTPConfigController extends AbstractController
 {
-    /**
-     * Der Entity Manager für Datenbankoperationen
-     * 
-     * @var EntityManagerInterface
-     */
-    private $entityManager;
-    
-    /**
-     * Repository für den Zugriff auf die SMTP-Konfiguration
-     * 
-     * @var SMTPConfigRepository
-     */
-    private $smtpConfigRepository;
-    
-    /**
-     * Konstruktor mit Dependency Injection
-     * 
-     * @param EntityManagerInterface $entityManager Entity Manager für Datenbankoperationen
-     * @param SMTPConfigRepository $smtpConfigRepository Repository für SMTP-Konfigurationen
-     */
-    public function __construct(EntityManagerInterface $entityManager, SMTPConfigRepository $smtpConfigRepository)
-    {
-        $this->entityManager = $entityManager;
-        $this->smtpConfigRepository = $smtpConfigRepository;
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly SMTPConfigRepository $smtpConfigRepository,
+        private readonly EmailTransportService $emailTransportService,
+    ) {
     }
     
     /**
@@ -68,7 +46,7 @@ class SMTPConfigController extends AbstractController
      * @return Response Die gerenderte Seite zur Bearbeitung der SMTP-Konfiguration
      */
     #[Route('/', name: 'smtp_config_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, MailerInterface $mailer): Response
+    public function edit(Request $request): Response
     {
         // Aktuelle Konfiguration aus der Datenbank laden
         $config = $this->smtpConfigRepository->getConfig();
@@ -99,24 +77,14 @@ class SMTPConfigController extends AbstractController
             // Wenn eine Test-Email angegeben wurde, senden wir eine Testmail
             if (!empty($testEmail)) {
                 try {
-                    // Transport mit neuer Konfiguration erstellen
-                    $transport = Transport::fromDsn($config->getDSN());
+                    $this->emailTransportService->sendTestEmail(
+                        $config->getDSN(),
+                        (string) $config->getSenderEmail(),
+                        $testEmail
+                    );
                     
-                    // E-Mail erstellen
-                    $email = (new Email())
-                        ->from((string) $config->getSenderEmail())
-                        ->to($testEmail)
-                        ->subject('SMTP Konfigurationstest')
-                        ->text('Dies ist eine Testnachricht zur Überprüfung der SMTP-Konfiguration.')
-                        ->html('<p>Dies ist eine Testnachricht zur Überprüfung der SMTP-Konfiguration.</p>');
-                    
-                    // E-Mail senden
-                    $transport->send($email);
-                    
-                    // Erfolgsbenachrichtigung anzeigen
                     $this->addFlash('success', 'Die SMTP-Konfiguration wurde gespeichert und die Test-E-Mail erfolgreich an ' . $testEmail . ' gesendet.');
                 } catch (\Exception $e) {
-                    // Fehlermeldung anzeigen bei fehlgeschlagenem Versand
                     $this->addFlash('error', 'Die Konfiguration wurde gespeichert, aber die Test-E-Mail konnte nicht gesendet werden: ' . $e->getMessage());
                 }
             } else {

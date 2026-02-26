@@ -10,6 +10,7 @@ use App\ValueObject\EmailAddress;
 use App\ValueObject\EmailStatus;
 use App\ValueObject\TicketData;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -25,6 +26,7 @@ class EmailRecordService
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -119,7 +121,10 @@ class EmailRecordService
             $this->entityManager->flush();
             return $errorRecord;
         } catch (\Exception $innerE) {
-            error_log('Critical: Could not save error record: ' . $innerE->getMessage());
+            $this->logger->critical('Could not save error record', [
+                'error' => $innerE->getMessage(),
+                'ticketId' => (string) $originalRecord->getTicketId(),
+            ]);
             return $errorRecord;
         }
     }
@@ -132,7 +137,9 @@ class EmailRecordService
         try {
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            error_log('Error saving remaining email records: ' . $e->getMessage());
+            $this->logger->error('Error saving remaining email records', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

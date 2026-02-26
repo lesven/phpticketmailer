@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Service;
+namespace App\Dto;
 
-use App\Service\PaginationResult;
+use App\Dto\PaginationResult;
 
 final class UserListingResult
 {

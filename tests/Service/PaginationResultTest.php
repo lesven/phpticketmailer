@@ -2,7 +2,7 @@
 
 namespace App\Tests\Service;
 
-use App\Service\PaginationResult;
+use App\Dto\PaginationResult;
 use PHPUnit\Framework\TestCase;
 
 class PaginationResultTest extends TestCase

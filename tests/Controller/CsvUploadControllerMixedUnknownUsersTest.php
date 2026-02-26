@@ -6,7 +6,7 @@ use App\Controller\CsvUploadController;
 use App\Service\CsvUploadOrchestrator;
 use App\Service\SessionManager;
 use App\Service\EmailNormalizer;
-use App\Service\UnknownUsersResult;
+use App\Dto\UnknownUsersResult;
 use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
 use App\ValueObject\TicketId;

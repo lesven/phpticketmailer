@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 class UserCreator
 {
-    private array $newUsers = [];    public function __construct(
+    public function __construct(
         private readonly EntityManagerInterface $entityManager
     ) {
     }
@@ -27,17 +27,18 @@ class UserCreator
      * 
      * @param string $username Benutzername
      * @param string $email E-Mail-Adresse
+     * @return User Der erstellte Benutzer
      * @throws \InvalidArgumentException Bei ungültigen Daten
      */
-    public function createUser(string $username, string $email): void
+    public function createUser(string $username, string $email): User
     {
         try {
             // 🎯 DDD: Verwende Domain Factory Method statt direkter Konstruktion
             $user = User::create($username, $email);
 
             $this->entityManager->persist($user);
-            $this->newUsers[] = $user;
-            
+
+            return $user;
         } catch (InvalidUsernameException $e) {
             throw new \InvalidArgumentException("Ungültiger Benutzername: {$username} - " . $e->getMessage());
         } catch (InvalidEmailAddressException $e) {
@@ -47,29 +48,9 @@ class UserCreator
 
     /**
      * Persistiert alle erstellten Benutzer in der Datenbank
-     * 
-     * @return int Anzahl der persistierten Benutzer
      */
-    public function persistUsers(): int
+    public function flush(): void
     {
-        if (empty($this->newUsers)) {
-            return 0;
-        }
-
         $this->entityManager->flush();
-        $count = count($this->newUsers);
-        
-        // Array zurücksetzen für wiederholte Verwendung
-        $this->newUsers = [];
-        
-        return $count;
-    }
-
-    /**
-     * Gibt die Anzahl der erstellten, aber noch nicht persistierten Benutzer zurück
-     */
-    public function getPendingUsersCount(): int
-    {
-        return count($this->newUsers);
     }
 }
