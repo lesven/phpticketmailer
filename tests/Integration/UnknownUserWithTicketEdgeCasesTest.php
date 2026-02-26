@@ -397,8 +397,8 @@ class UnknownUserWithTicketEdgeCasesTest extends TestCase
     private function createCsvFileReaderFromContent(string $content): CsvFileReaderInterface
     {
         $lines = explode("\n", trim($content));
-        $header = str_getcsv(array_shift($lines));
-        $rows = array_map(fn($line) => str_getcsv($line), array_filter($lines, fn($l) => trim($l) !== ''));
+        $header = str_getcsv(array_shift($lines), ',', '"', '\\');
+        $rows = array_map(fn($line) => str_getcsv($line, ',', '"', '\\'), array_filter($lines, fn($l) => trim($l) !== ''));
 
         $reader = $this->createMock(CsvFileReaderInterface::class);
         $reader->method('openCsvFile')->willReturn('mock_handle');
