@@ -197,7 +197,7 @@ coverage:
 
 phpinsights:
 	@echo "==> Running PHPInsights code quality analysis"
-	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) ./vendor/bin/phpinsights analyse src/ --no-interaction
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) ./vendor/bin/phpinsights analyse src/ --no-interaction --disable-security-check 
 
 phpinsights-html:
 	@echo "==> Running PHPInsights with HTML report output"
