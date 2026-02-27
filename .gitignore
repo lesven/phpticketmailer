@@ -22,3 +22,12 @@ phpunit-main-events.log
 backup_Sunday.sql
 backup_Sunday.sql:Zone.Identifier
 db-dump.sql
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+###> nunomaduro/phpinsights ###
+/build/phpinsights/
+/phpinsights_report.txt
+###< nunomaduro/phpinsights ###

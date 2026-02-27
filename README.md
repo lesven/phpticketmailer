@@ -122,6 +122,27 @@ Alle Endpunkte liefern JSON-Daten zurück.
 
 Details zur Zabbix-Integration finden Sie in der [Zabbix-Dokumentation](ZABBIX_MONITORING.md).
 
+## Code Quality & Testing
+
+### PHPInsights Analyse
+
+Die Codequalität wird mit [PHPInsights](https://phpinsights.com) überwacht:
+
+```bash
+make phpinsights          # Console-Output
+make phpinsights-html     # HTML-Report in build/phpinsights/
+```
+
+Aktueller Status: **68.7%** Qualitätsscore  
+Details siehe [PHPINSIGHTS_SETUP.md](PHPINSIGHTS_SETUP.md)
+
+### Tests
+
+```bash
+make test          # PHPUnit Tests
+make coverage      # Code Coverage HTML
+```
+
 ## Support
 
 sven.heising@gmail.com

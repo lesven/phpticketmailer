@@ -30,7 +30,7 @@ DB_NAME := ticket_mailer_db
 # Default dump file on host (can be overridden: `make db-dump DUMP_FILE=./backups/my.sql`)
 DUMP_FILE ?= ./db-dump.sql
 
-.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db phpinsights phpinsights-html
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
@@ -55,6 +55,9 @@ help:
 	@echo "  make migrate         -> Doctrine-Migrations ausführen"
 	@echo "  make migrate-status  -> Migration-Status anzeigen"
 	@echo "  make test            -> PHPUnit-Tests im PHP-Container ausführen"
+	@echo "  make coverage        -> Code-Coverage mit PHPUnit (HTML + Text)"
+	@echo "  make phpinsights     -> PHPInsights Code-Quality-Analyse ausführen"
+	@echo "  make phpinsights-html-> PHPInsights in HTML-Format (build/phpinsights/)"
 	@echo "  make fresh           -> full rebuild + composer install + migrate"
 	@echo "  make recreate-db     -> DB-Volume entfernen und DB neu starten"
 
@@ -189,6 +192,17 @@ test:
 coverage:
 	@echo "==> Running PHPUnit coverage inside $(PHP_SERVICE)"
 	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) /bin/sh -lc "echo '=== php -v ===' && php -v && echo '=== php -m (xdebug?) ===' && php -m | grep -i xdebug || true && if [ -f vendor/bin/phpunit ]; then mkdir -p var/coverage && XDEBUG_MODE=coverage XDEBUG_CONFIG='start_with_request=1' vendor/bin/phpunit --colors=always --coverage-html var/coverage --coverage-text; else echo 'phpunit not found, run composer install first'; exit 1; fi"
+
+## PHPInsights Code Quality Analysis
+
+phpinsights:
+	@echo "==> Running PHPInsights code quality analysis"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) ./vendor/bin/phpinsights analyse src/ --no-interaction
+
+phpinsights-html:
+	@echo "==> Running PHPInsights with HTML report output"
+	@$(DC_BASE) $(DC_ARGS) exec -T $(PHP_SERVICE) bash -c 'mkdir -p build/phpinsights && ./vendor/bin/phpinsights analyse --format=html src/ > build/phpinsights/report.html 2>&1 || true'
+	@echo "HTML report generated in build/phpinsights/report.html"
 
 ## Recreate DB: stop, remove volumes and bring up database only
 
