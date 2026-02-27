@@ -46,12 +46,14 @@ class SMTPConfigType extends AbstractType
                     'class' => 'form-control',
                     'placeholder' => 'Optional: SMTP-Passwort'
                 ],
-                'always_empty' => false
-            ])            ->add('useTLS', CheckboxType::class, [
+                'always_empty' => false,
+            ])
+            ->add('useTLS', CheckboxType::class, [
                 'label' => 'TLS-Verschlüsselung verwenden',
                 'required' => false,
                 'attr' => [
-                    'class' => 'form-check-input'                ],
+                    'class' => 'form-check-input',
+                ],
                 'label_attr' => [
                     'class' => 'form-check-label'
                 ]

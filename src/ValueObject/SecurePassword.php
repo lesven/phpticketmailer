@@ -211,18 +211,39 @@ final readonly class SecurePassword
         $score = 0;
 
         // Längen-Bonus
-        if (strlen($password) >= 12) $score++; // +1 für gute Länge
-        if (strlen($password) >= 16) $score++; // +1 für sehr gute Länge
+        if (strlen($password) >= 12) {
+            $score++; // +1 für gute Länge
+        }
+
+        if (strlen($password) >= 16) {
+            $score++; // +1 für sehr gute Länge
+        }
 
         // Zeichenvielfalt (mit Unicode-Unterstützung)
-        if (preg_match('/[a-z\p{Ll}]/u', $password)) $score++; // Kleinbuchstaben (inkl. Unicode)
-        if (preg_match('/[A-Z\p{Lu}]/u', $password)) $score++; // Großbuchstaben (inkl. Unicode)
-        if (preg_match('/[0-9]/', $password)) $score++; // Zahlen
-        if (preg_match('/[^A-Za-z0-9\p{L}]/u', $password)) $score++; // Sonderzeichen
+        if (preg_match('/[a-z\p{Ll}]/u', $password)) {
+            $score++; // Kleinbuchstaben (inkl. Unicode)
+        }
+
+        if (preg_match('/[A-Z\p{Lu}]/u', $password)) {
+            $score++; // Großbuchstaben (inkl. Unicode)
+        }
+
+        if (preg_match('/[0-9]/', $password)) {
+            $score++; // Zahlen
+        }
+
+        if (preg_match('/[^A-Za-z0-9\p{L}]/u', $password)) {
+            $score++; // Sonderzeichen
+        }
 
         // Malus für schlechte Patterns
-        if (preg_match('/(.)\1{2,}/', $password)) $score--; // 3+ wiederholte Zeichen
-        if (preg_match('/123|abc|qwe|asd/i', $password)) $score--; // Sequenzielle Muster
+        if (preg_match('/(.)\1{2,}/', $password)) {
+            $score--; // 3+ wiederholte Zeichen
+        }
+
+        if (preg_match('/123|abc|qwe|asd/i', $password)) {
+            $score--; // Sequenzielle Muster
+        }
 
         return max(0, $score); // Mindestens 0
     }

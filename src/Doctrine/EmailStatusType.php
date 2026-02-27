@@ -52,7 +52,7 @@ class EmailStatusType extends Type
         }
 
         if (!$value instanceof EmailStatus) {
-            throw new \InvalidArgumentException('Expected EmailStatus, got ' . get_class($value));
+            throw new \InvalidArgumentException('Expected EmailStatus, got ' . $value::class);
         }
 
         return $value->getValue();

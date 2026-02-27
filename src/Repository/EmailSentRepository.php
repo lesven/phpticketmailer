@@ -235,7 +235,7 @@ class EmailSentRepository extends ServiceEntityRepository
         $currentDate = new \DateTime();
         for ($i = 5; $i >= 0; $i--) {
             $monthDate = clone $currentDate;
-            $monthDate->modify("-$i months");
+            $monthDate->modify("-{$i} months");
             $monthKey = $monthDate->format('Y-m');
 
             $domains = $map[$monthKey] ?? [];
@@ -580,7 +580,7 @@ SQL;
         $currentDate = new \DateTime();
         for ($i = 5; $i >= 0; $i--) {
             $monthDate = clone $currentDate;
-            $monthDate->modify("-$i months");
+            $monthDate->modify("-{$i} months");
             $monthKey = $monthDate->format('Y-m');
 
             $monthlyStats[] = [
@@ -676,7 +676,7 @@ SQL;
 
             // Count new users per month (only those whose first email is after $since)
             $newUsersByMonth = [];
-            foreach ($firstEmailByUser as $username => $firstTimestamp) {
+            foreach ($firstEmailByUser as $firstTimestamp) {
                 // Convert to DateTimeImmutable for type-consistent comparison
                 $firstTimestampImmutable = $firstTimestamp instanceof \DateTimeImmutable ? $firstTimestamp : \DateTimeImmutable::createFromMutable($firstTimestamp);
                 

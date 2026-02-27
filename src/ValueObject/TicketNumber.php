@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * TicketNumber.php
  *
@@ -131,7 +132,7 @@ final readonly class TicketNumber
      */
     private function validate(string $value): void
     {
-        if (empty($value)) {
+        if ($value === '') {
             throw new InvalidTicketNumberException('Ticket number cannot be empty');
         }
 

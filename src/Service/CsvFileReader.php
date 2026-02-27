@@ -46,8 +46,13 @@ class CsvFileReader implements CsvFileReaderInterface
     public function openCsvFile($file)
     {
         $path = $file instanceof UploadedFile ? $file->getPathname() : $file;
-        $handle = @fopen($path, 'r');
-        
+
+        if (!is_readable($path)) {
+            throw new \Exception('CSV-Datei konnte nicht geöffnet werden');
+        }
+
+        $handle = fopen($path, 'r');
+
         if ($handle === false) {
             throw new \Exception('CSV-Datei konnte nicht geöffnet werden');
         }

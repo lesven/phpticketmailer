@@ -41,9 +41,7 @@ class LoadDataFixturesCommand extends Command
         );
         
         $this->setHelp(
-            'Dieser Befehl lädt Testdaten in die Datenbank, um die Anwendung einfach testen zu können. ' .
-            'Die Fixtures enthalten Beispielbenutzer, E-Mail-Konfiguration, CSV-Feldkonfiguration und ' .
-            'Beispiel-E-Mail-Protokolle mit verschiedenen Status.'
+            'Dieser Befehl lädt Testdaten in die Datenbank, um die Anwendung einfach testen zu können. Die Fixtures enthalten Beispielbenutzer, E-Mail-Konfiguration, CSV-Feldkonfiguration und Beispiel-E-Mail-Protokolle mit verschiedenen Status.'
         );
     }
 

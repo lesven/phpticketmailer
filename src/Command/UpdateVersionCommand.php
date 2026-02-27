@@ -91,9 +91,9 @@ class UpdateVersionCommand extends Command
                 [[$this->versionService->getVersion(), $this->versionService->getUpdateTimestamp()]]
             );
             return Command::SUCCESS;
-        } else {
-            $io->error('Fehler beim Aktualisieren der Versionsinformationen.');
-            return Command::FAILURE;
         }
+
+        $io->error('Fehler beim Aktualisieren der Versionsinformationen.');
+        return Command::FAILURE;
     }
 }

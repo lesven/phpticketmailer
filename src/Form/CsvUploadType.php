@@ -12,7 +12,6 @@
 namespace App\Form;
 
 use App\Entity\CsvFieldConfig;
-use App\Form\CsvFieldConfigType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;

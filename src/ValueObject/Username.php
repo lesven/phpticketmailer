@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\ValueObject;
 
@@ -53,7 +54,7 @@ final readonly class Username
      */
     public function __construct(private string $value)
     {
-        if (empty($value)) {
+        if ($value === '') {
             throw new InvalidUsernameException('Username cannot be empty');
         }
     }
@@ -123,10 +124,10 @@ final readonly class Username
         if ($isEmail) {
             // E-Mail-Adressen: case-sensitive Vergleich
             return $this->value === $other->value;
-        } else {
-            // Normale Usernames: case-insensitive Vergleich
-            return strtolower($this->value) === strtolower($other->value);
         }
+
+        // Normale Usernames: case-insensitive Vergleich
+        return strtolower($this->value) === strtolower($other->value);
     }
 
     /**
@@ -191,15 +192,15 @@ final readonly class Username
         if ($isEmail) {
             // Bei E-Mail-Adressen: Groß-/Kleinschreibung beibehalten
             return $normalized;
-        } else {
-            // Bei normalen Usernames: Konvertierung zu Kleinbuchstaben für Konsistenz
-            $normalized = strtolower($normalized);
-
-            // Entferne aufeinanderfolgende Punkte oder Unterstriche
-            $normalized = preg_replace('/[._-]{2,}/', '.', $normalized);
-
-            return $normalized;
         }
+
+        // Bei normalen Usernames: Konvertierung zu Kleinbuchstaben für Konsistenz
+        $normalized = strtolower($normalized);
+
+        // Entferne aufeinanderfolgende Punkte oder Unterstriche
+        $normalized = preg_replace('/[._-]{2,}/', '.', $normalized);
+
+        return $normalized;
     }
 
     /**
@@ -219,7 +220,7 @@ final readonly class Username
     private static function validate(string $username): void
     {
         // Leere String Prüfung zuerst
-        if (empty($username)) {
+        if ($username === '') {
             throw new InvalidUsernameException('Username cannot be empty');
         }
 

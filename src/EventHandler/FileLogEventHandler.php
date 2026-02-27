@@ -128,9 +128,8 @@ class FileLogEventHandler
     #[AsEventListener]
     public function onBulkEmailCompleted(BulkEmailCompletedEvent $event): void
     {
-        $logLevel = $event->wasSuccessful() ? 'INFO' : 'WARNING';
-        
         $this->writeLog('audit.log', 'Bulk email completed', [
+            'log_level' => $event->wasSuccessful() ? 'INFO' : 'WARNING',
             'event' => 'bulk_email_completed',
             'total_emails' => $event->totalEmails,
             'sent_count' => $event->sentCount,

@@ -2,8 +2,6 @@
 
 namespace App\Dto;
 
-use App\Dto\PaginationResult;
-
 final class UserListingResult
 {
     public function __construct(

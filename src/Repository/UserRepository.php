@@ -94,7 +94,7 @@ class UserRepository extends ServiceEntityRepository
         // Validieren und Standardwerte für Sortierparameter setzen
         $validSortFields = ['id', 'username', 'email'];
         $sortField = in_array($sortField, $validSortFields) ? $sortField : 'id';
-        $sortDirection = ($sortDirection === 'DESC') ? 'DESC' : 'ASC';
+        $sortDirection = $sortDirection === 'DESC' ? 'DESC' : 'ASC';
         
         $queryBuilder = $this->createQueryBuilder('u');
         
@@ -128,7 +128,7 @@ class UserRepository extends ServiceEntityRepository
         // Validieren und Standardwerte für Sortierparameter setzen
         $validSortFields = ['id', 'username', 'email'];
         $sortField = in_array($sortField, $validSortFields) ? $sortField : 'id';
-        $sortDirection = ($sortDirection === 'DESC') ? 'DESC' : 'ASC';
+        $sortDirection = $sortDirection === 'DESC' ? 'DESC' : 'ASC';
         
         return $this->createQueryBuilder('u')
             ->orderBy('u.' . $sortField, $sortDirection)
@@ -202,9 +202,9 @@ class UserRepository extends ServiceEntityRepository
                 if (!$isKnown) {
                     $unknownUsers[] = $csvUsername;
                 }
-            } catch (\App\Exception\InvalidUsernameException $e) {
-                // Ungültige Benutzernamen werden stillschweigend ignoriert
-                // Sie sollten bereits in der CSV-Verarbeitung als ungültig markiert worden sein
+            } catch (\App\Exception\InvalidUsernameException) {
+                // intentional: invalid usernames are silently skipped,
+                // they are already flagged during CSV processing
             }
         }
         

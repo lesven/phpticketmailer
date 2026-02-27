@@ -132,13 +132,10 @@ final readonly class TicketId
      */
     private static function normalize(string $ticketId): string
     {
-        $normalized = trim($ticketId);
-        
         // Optional: Konvertierung zu Großbuchstaben für Konsistenz
         // Auskommentiert, da manche Systeme case-sensitive sein könnten
-        // $normalized = strtoupper($normalized);
-        
-        return $normalized;
+        // return strtoupper(trim($ticketId));
+        return trim($ticketId);
     }
 
     /**
