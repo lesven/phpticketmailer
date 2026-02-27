@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -6,12 +7,13 @@ use App\Dto\UserListingCriteria;
 use App\Dto\UserListingResult;
 use App\Repository\UserRepository;
 
-class UserListingService
+final class UserListingService
 {
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly PaginationService $paginationService
-    ) {}
+    ) {
+    }
 
     /**
      * Gibt Suchergebnisse oder paginierte Treffer basierend auf dem übergebenen Kriterium zurück.

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -11,7 +12,7 @@ use Doctrine\ORM\QueryBuilder;
  * Stellt eine zentrale Implementierung für Paginierung zur Verfügung
  * und sorgt für einheitliche Parameter und Berechnungen.
  */
-class PaginationService
+final class PaginationService
 {
     private const DEFAULT_LIMIT = 15;
 

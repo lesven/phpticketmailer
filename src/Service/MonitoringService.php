@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MonitoringService.php
  * 
@@ -19,57 +20,22 @@ use Doctrine\DBAL\Exception as DBALException;
 /**
  * Service für die Überprüfung der Systemgesundheit
  */
-class MonitoringService
+final class MonitoringService
 {
-    /**
-     * @var Connection
-     */
-    private $connection;
-    
-    /**
-     * @var UserRepository
-     */
-    private $userRepository;
-    
-    /**
-     * @var EmailSentRepository
-     */
-    private $emailSentRepository;
-    
-    /**
-     * @var CsvFieldConfigRepository
-     */
-    private $csvFieldConfigRepository;
+    private readonly string $baseUrl;
 
-    /**
-     * @var string|null
-     */
-    private $baseUrl;
-
-    /**
-     * Konstruktor
-     * 
-     * @param Connection $connection
-     * @param UserRepository $userRepository
-     * @param EmailSentRepository $emailSentRepository
-     * @param CsvFieldConfigRepository $csvFieldConfigRepository
-     * @param string $baseUrl
-     */
     public function __construct(
-        Connection $connection, 
-        UserRepository $userRepository,
-        EmailSentRepository $emailSentRepository,
-        CsvFieldConfigRepository $csvFieldConfigRepository,
-    ?string $baseUrl = null
+        private readonly Connection $connection,
+        private readonly UserRepository $userRepository,
+        private readonly EmailSentRepository $emailSentRepository,
+        private readonly CsvFieldConfigRepository $csvFieldConfigRepository,
+        ?string $baseUrl = null
     ) {
-        $this->connection = $connection;
-        $this->userRepository = $userRepository;
-        $this->emailSentRepository = $emailSentRepository;
-        $this->csvFieldConfigRepository = $csvFieldConfigRepository;
-        
         // Standardmäßig die aktuelle Host-Umgebung verwenden, falls keine URL angegeben ist
         $this->baseUrl = $baseUrl ?? 'http://localhost:8090';
-    }    /**
+    }
+
+    /**
      * Führt einen vollständigen Systemgesundheitscheck durch
      * Der Health-Check prüft nur die Datenbank, da dies die einzige
      * relevante Überprüfung gemäß den aktualisierten Anforderungen ist

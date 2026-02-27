@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\EventHandler;
 
@@ -16,7 +17,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  * Schreibt Domain Events strukturiert in Log-Dateien im var/log Verzeichnis.
  * Funktioniert ohne Monolog-Bundle.
  */
-class FileLogEventHandler
+final class FileLogEventHandler
 {
     private readonly string $logDir;
 

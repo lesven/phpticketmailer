@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Repository;
 
@@ -10,7 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<EmailTemplate>
  */
-class EmailTemplateRepository extends ServiceEntityRepository
+final class EmailTemplateRepository extends ServiceEntityRepository
 {
     /**
      * @param ManagerRegistry $registry Die Doctrine-Registry

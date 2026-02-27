@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\EventHandler;
 
@@ -14,7 +15,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  * Sendet Benachrichtigungen an Administratoren bei wichtigen Ereignissen,
  * besonders bei Fehlern oder abgeschlossenen Batch-Operationen.
  */
-class AdminNotificationEventHandler
+final class AdminNotificationEventHandler
 {
     public function __construct(
         private readonly LoggerInterface $logger

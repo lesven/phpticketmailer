@@ -1,10 +1,11 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
 /**
  * Exception für schwache oder ungültige Passwörter
  */
-class WeakPasswordException extends \DomainException
+final class WeakPasswordException extends \DomainException
 {
 }

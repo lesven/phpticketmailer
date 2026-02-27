@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * CsvUploadType.php
  * 
@@ -24,7 +25,7 @@ use Symfony\Component\Validator\Constraints\Email;
 /**
  * Formular für den Upload von CSV-Dateien mit Ticket-Informationen
  */
-class CsvUploadType extends AbstractType
+final class CsvUploadType extends AbstractType
 {    /**
      * Baut das Formular mit seinen Feldern und Validierungsregeln auf
      *

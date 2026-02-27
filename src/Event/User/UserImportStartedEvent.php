@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\User;
 
@@ -11,7 +12,7 @@ use App\Event\AbstractDomainEvent;
  * Ermöglicht es anderen Komponenten, auf den Import-Start zu reagieren
  * (z.B. Logging, Progress Tracking, Notifications).
  */
-class UserImportStartedEvent extends AbstractDomainEvent
+final class UserImportStartedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly int $totalRows,

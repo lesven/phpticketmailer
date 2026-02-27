@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Controller;
 
@@ -16,7 +17,7 @@ use App\Dto\UserListingCriteria;
 use App\Service\UserListingService;
 
 #[Route('/user')]
-class UserController extends AbstractController
+final class UserController extends AbstractController
 {
     /**
      * Zeigt die Benutzerliste mit Paginierung, Suche und Sortierung.

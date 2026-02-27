@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * SMTPConfigController.php
  * 
@@ -25,7 +26,7 @@ use Symfony\Component\Routing\Annotation\Route;
  * Controller zur Verwaltung der SMTP-Konfiguration
  */
 #[Route('/smtp-config')]
-class SMTPConfigController extends AbstractController
+final class SMTPConfigController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

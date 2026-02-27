@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Command;
 
@@ -19,7 +20,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
     name: 'app:test-events',
     description: 'Test Domain Events - dispatcht Events und zeigt Logging',
 )]
-class TestEventsCommand extends Command
+final class TestEventsCommand extends Command
 {
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,

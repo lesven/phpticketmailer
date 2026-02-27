@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -8,14 +9,14 @@ use App\Repository\EmailSentRepository;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
-class StatisticsService
+final class StatisticsService
 {
     private const CACHE_KEY_USER_STATS = 'statistics.monthly_user_by_domain';
     private const CACHE_KEY_TICKET_STATS = 'statistics.monthly_ticket_by_domain';
     private const CACHE_TTL = 172800; // 48 hours
 
     public function __construct(
-        private readonly EmailSentRepository $emailSentRepository, 
+        private readonly EmailSentRepository $emailSentRepository,
         private readonly \App\Service\ClockInterface $clock,
         private readonly CacheInterface $cache
     ) {

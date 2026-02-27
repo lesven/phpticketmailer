@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -20,7 +21,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * Kapselt die gesamte Record-Lifecycle-Logik und das Dispatching
  * von Skip-Events.
  */
-class EmailRecordService
+final class EmailRecordService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

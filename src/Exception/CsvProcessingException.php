@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
@@ -8,7 +9,7 @@ namespace App\Exception;
  * Wird geworfen, wenn beim Lesen, Parsen oder Validieren
  * von CSV-Dateien Probleme auftreten.
  */
-class CsvProcessingException extends TicketMailerException
+final class CsvProcessingException extends TicketMailerException
 {
     /**
      * Erstellt eine Exception für ungültige CSV-Strukturen

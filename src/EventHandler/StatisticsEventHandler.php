@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\EventHandler;
 
@@ -16,7 +17,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  * Sammelt und persistiert Statistiken basierend auf Domain Events.
  * Ermöglicht Reporting und Analytics ohne die Haupt-Services zu koppeln.
  */
-class StatisticsEventHandler
+final class StatisticsEventHandler
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

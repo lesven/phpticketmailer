@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -13,7 +14,7 @@ namespace App\Service;
  * (insb. die Uhrzeit) auf 0, damit DATE-Vergleiche in der DB
  * nicht durch die aktuelle Uhrzeit verfälscht werden.
  */
-class DateParserService
+final class DateParserService
 {
     /**
      * Unterstützte Datumsformate.

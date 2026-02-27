@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * Zentralisiert den Zugriff auf Session-Daten und sorgt für einheitliche
  * Schlüsselnamen und Datenformate.
  */
-class SessionManager
+final class SessionManager
 {
     private const UNKNOWN_USERS_KEY = 'unknown_users';
     private const VALID_TICKETS_KEY = 'valid_tickets';

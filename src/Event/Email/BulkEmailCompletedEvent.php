@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\Email;
 
@@ -10,7 +11,7 @@ use App\Event\AbstractDomainEvent;
  * Wird ausgelöst, wenn ein gesamter Batch von Ticket-E-Mails
  * verarbeitet wurde. Enthält Statistiken über den gesamten Vorgang.
  */
-class BulkEmailCompletedEvent extends AbstractDomainEvent
+final class BulkEmailCompletedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly int $totalEmails,

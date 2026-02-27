@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * DashboardController.php
  *
@@ -20,7 +21,7 @@ use App\Repository\EmailSentRepository;
 /**
  * Controller für das Dashboard (Startseite) der Anwendung
  */
-class DashboardController extends AbstractController
+final class DashboardController extends AbstractController
 {
     /**
      * Repository für den Zugriff auf gesendete E-Mails

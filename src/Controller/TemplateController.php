@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Controller;
 
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/template')]
-class TemplateController extends AbstractController
+final class TemplateController extends AbstractController
 {
     /**
      * @param TemplateService $templateService Service für Template-CRUD und -Auswahl

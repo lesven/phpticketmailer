@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * UpdateVersionCommand.php
  *
@@ -30,7 +31,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:update-version',
     description: 'Aktualisiert die Versionsinformationen der Anwendung',
 )]
-class UpdateVersionCommand extends Command
+final class UpdateVersionCommand extends Command
 {
     /**
      * Service für Versionsverwaltung

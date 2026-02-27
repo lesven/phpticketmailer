@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * Koordiniert alle Schritte von der Datei-Validierung bis zum E-Mail-Versand
  * und sorgt für eine klare Trennung der Verantwortlichkeiten.
  */
-class CsvUploadOrchestrator
+final class CsvUploadOrchestrator
 {
     public function __construct(
         private readonly CsvProcessor $csvProcessor,
@@ -25,7 +26,8 @@ class CsvUploadOrchestrator
         private readonly UserCreator $userCreator,
         private readonly StatisticsService $statisticsService,
         private readonly LoggerInterface $logger
-    ) {}
+    ) {
+    }
 
     /**
      * Verarbeitet einen kompletten CSV-Upload-Vorgang

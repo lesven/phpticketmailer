@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\EventHandler;
 
@@ -17,7 +18,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  * Reagiert auf Domain Events und erstellt detaillierte Audit Logs
  * für Compliance und Nachverfolgbarkeit aller wichtigen Geschäftsereignisse.
  */
-class AuditLogEventHandler
+final class AuditLogEventHandler
 {
     public function __construct(
         private readonly LoggerInterface $auditLogger

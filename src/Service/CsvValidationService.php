@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -14,7 +15,7 @@ use App\ValueObject\TicketId;
  * Zentralisiert alle Validierungslogik für CSV-Dateien und sorgt für
  * einheitliche Fehlerbehandlung und Datenqualitätsprüfungen.
  */
-class CsvValidationService
+final class CsvValidationService
 {
     private const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     private const ALLOWED_MIME_TYPES = [

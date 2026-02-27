@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Command;
 
@@ -21,7 +22,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:load-data-fixtures',
     description: 'Lädt Testdaten in die Datenbank für einfache Anwendungstests',
 )]
-class LoadDataFixturesCommand extends Command
+final class LoadDataFixturesCommand extends Command
 {
     private EntityManagerInterface $entityManager;
 

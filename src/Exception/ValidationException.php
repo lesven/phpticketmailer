@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
@@ -8,7 +9,7 @@ namespace App\Exception;
  * Wird geworfen, wenn Formulardaten oder andere Benutzereingaben
  * die Validierung nicht bestehen (z.B. ungültige E-Mail-Adressen).
  */
-class ValidationException extends TicketMailerException
+final class ValidationException extends TicketMailerException
 {
     /**
      * Erstellt eine Exception für eine ungültige E-Mail-Adresse eines Benutzers

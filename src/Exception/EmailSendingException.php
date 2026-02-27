@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
@@ -8,7 +9,7 @@ namespace App\Exception;
  * Wird geworfen, wenn beim Versenden von E-Mails Probleme auftreten,
  * sei es durch SMTP-Konfiguration, Netzwerkprobleme oder andere Ursachen.
  */
-class EmailSendingException extends TicketMailerException
+final class EmailSendingException extends TicketMailerException
 {
     /**
      * Erstellt eine Exception für SMTP-Konfigurationsfehler

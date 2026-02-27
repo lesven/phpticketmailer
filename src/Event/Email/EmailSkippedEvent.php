@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\Email;
 
@@ -18,7 +19,7 @@ use App\ValueObject\EmailStatus;
  * 
  * Ermöglicht Audit-Logging, Statistiken und Follow-up-Aktionen.
  */
-class EmailSkippedEvent extends AbstractDomainEvent
+final class EmailSkippedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly TicketData $ticketData,

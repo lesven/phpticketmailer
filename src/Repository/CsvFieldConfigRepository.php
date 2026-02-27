@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * CsvFieldConfigRepository.php
  *
@@ -23,7 +24,7 @@ use Doctrine\Persistence\ManagerRegistry;
  *
  * @extends ServiceEntityRepository<CsvFieldConfig>
  */
-class CsvFieldConfigRepository extends ServiceEntityRepository
+final class CsvFieldConfigRepository extends ServiceEntityRepository
 {
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency

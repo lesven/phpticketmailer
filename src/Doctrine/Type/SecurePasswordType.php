@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Doctrine\Type;
 
@@ -6,7 +7,7 @@ use App\ValueObject\SecurePassword;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 
-class SecurePasswordType extends Type
+final class SecurePasswordType extends Type
 {
     public const NAME = 'secure_password';
 

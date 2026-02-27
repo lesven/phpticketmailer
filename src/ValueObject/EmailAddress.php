@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\ValueObject;
 
@@ -144,11 +145,9 @@ final readonly class EmailAddress
     {
         $email = trim($email);
         $email = strtolower($email);
-        
+
         // Mehrfache Punkte entfernen
-        $email = preg_replace('/\.{2,}/', '.', $email);
-        
-        return $email;
+        return preg_replace('/\.{2,}/', '.', $email);
     }
 
     /**

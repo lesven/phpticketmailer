@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MonitoringController.php
  * 
@@ -19,7 +20,7 @@ use Symfony\Component\Routing\Annotation\Route;
  * Controller für das Zabbix-Monitoring
  */
 #[Route('/monitoring')]
-class MonitoringController extends AbstractController
+final class MonitoringController extends AbstractController
 {
     /**
      * Service für die Monitoring-Funktionalitäten

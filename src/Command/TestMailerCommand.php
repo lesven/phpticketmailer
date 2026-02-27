@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Command;
 
@@ -15,7 +16,7 @@ use Symfony\Component\Mime\Address;
     name: 'app:test-mailer',
     description: 'Sendet eine Test-E-Mail, um die Mailer-Konfiguration zu prüfen',
 )]
-class TestMailerCommand extends Command
+final class TestMailerCommand extends Command
 {
     private MailerInterface $mailer;
 

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
@@ -7,6 +8,6 @@ namespace App\Exception;
  * 
  * Wird geworfen wenn eine Ticket-ID nicht den Validierungsregeln entspricht.
  */
-class InvalidTicketIdException extends \InvalidArgumentException
+final class InvalidTicketIdException extends \InvalidArgumentException
 {
 }

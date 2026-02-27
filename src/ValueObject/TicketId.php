@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\ValueObject;
 
@@ -147,16 +148,20 @@ final readonly class TicketId
      * - Keine aufeinanderfolgenden Trennzeichen
      * 
      * @param string $ticketId Die zu validierende Ticket-ID
-     * @throws InvalidTicketIdException Wenn die Ticket-ID ungültig ist
-     */
+    /** @throws InvalidTicketIdException */
     private static function validate(string $ticketId): void
     {
-        // Leere String Prüfung zuerst
-        if (empty($ticketId)) {
+        if ($ticketId === '') {
             throw new InvalidTicketIdException('Ticket ID cannot be empty');
         }
 
-        // Längen-Validierung
+        self::validateTicketIdLength($ticketId);
+        self::validateTicketIdPattern($ticketId);
+    }
+
+    /** @throws InvalidTicketIdException */
+    private static function validateTicketIdLength(string $ticketId): void
+    {
         $length = strlen($ticketId);
         if ($length < self::MIN_LENGTH) {
             throw new InvalidTicketIdException(
@@ -169,26 +174,23 @@ final readonly class TicketId
                 "Ticket ID must not exceed " . self::MAX_LENGTH . " characters, got {$length}"
             );
         }
+    }
 
-        // Zeichen-Validierung
-        if (!preg_match(self::VALID_PATTERN, $ticketId)) {
+    /** @throws InvalidTicketIdException */
+    private static function validateTicketIdPattern(string $ticketId): void
+    {
+        if (! preg_match(self::VALID_PATTERN, $ticketId)) {
             throw new InvalidTicketIdException(
-                "Ticket ID contains invalid characters. Only letters, numbers, dots, hyphens and underscores are allowed"
+                'Ticket ID contains invalid characters. Only letters, numbers, dots, hyphens and underscores are allowed'
             );
         }
 
-        // Verhindere aufeinanderfolgende Trennzeichen
         if (preg_match('/[-_.]{2,}/', $ticketId)) {
-            throw new InvalidTicketIdException(
-                'Ticket ID cannot contain consecutive separators (-, _, .)'
-            );
+            throw new InvalidTicketIdException('Ticket ID cannot contain consecutive separators (-, _, .)');
         }
 
-        // Verhindere Trennzeichen am Anfang oder Ende
         if (preg_match('/^[-_.]|[-_.]$/', $ticketId)) {
-            throw new InvalidTicketIdException(
-                'Ticket ID cannot start or end with separators (-, _, .)'
-            );
+            throw new InvalidTicketIdException('Ticket ID cannot start or end with separators (-, _, .)');
         }
     }
 }

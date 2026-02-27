@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * CsvFieldConfigType.php
  *
@@ -25,7 +26,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  * Definiert ein Formular mit drei Textfeldern zur Konfiguration der
  * CSV-Spalten-Namen für Ticket-ID, Benutzername und Ticket-Namen.
  */
-class CsvFieldConfigType extends AbstractType
+final class CsvFieldConfigType extends AbstractType
 {
     /**
      * Erstellt das Formular mit den benötigten Feldern

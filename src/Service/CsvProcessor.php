@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * CsvProcessor.php
  * 
@@ -21,7 +22,7 @@ use App\ValueObject\UnknownUserWithTicket;
 use App\ValueObject\Username;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-class CsvProcessor
+final class CsvProcessor
 {
     public function __construct(
         private readonly CsvFileReaderInterface $csvFileReader,
@@ -80,7 +81,7 @@ class CsvProcessor
                 &$uniqueUsernames,
                 $columnIndices,
                 $fieldMapping
-            ) {
+            ): void {
                 if (!$this->isRowValid($row, $columnIndices, $fieldMapping)) {
                     $invalidRows[] = [
                         'rowNumber' => $rowNumber,

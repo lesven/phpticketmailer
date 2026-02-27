@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -22,7 +23,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * Kapselt die komplette Logik für das Importieren, Validieren und 
  * Deduplizieren von Benutzerdaten aus CSV-Dateien.
  */
-class UserImportService
+final class UserImportService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

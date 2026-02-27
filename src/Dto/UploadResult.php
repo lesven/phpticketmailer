@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Dto;
 
@@ -22,8 +23,8 @@ readonly class UploadResult
      * Erstellt ein Ergebnis für die Weiterleitung zu unbekannten Benutzern
      */
     public static function redirectToUnknownUsers(
-        bool $testMode, 
-        bool $forceResend, 
+        bool $testMode,
+        bool $forceResend,
         int $unknownUsersCount
     ): self {
         return new self(

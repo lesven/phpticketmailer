@@ -29,6 +29,7 @@
         "twig/twig": "^3.5"
     },
     "require-dev": {
+        "dg/bypass-finals": "^1.9",
         "nunomaduro/phpinsights": "^2.13",
         "phpunit/phpunit": "^10.0",
         "symfony/debug-bundle": "7.4.*",

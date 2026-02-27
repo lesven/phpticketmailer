@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * SMTPConfigRepository.php
  * 
@@ -20,7 +21,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * 
  * @extends ServiceEntityRepository<SMTPConfig>
  */
-class SMTPConfigRepository extends ServiceEntityRepository
+final class SMTPConfigRepository extends ServiceEntityRepository
 {
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency

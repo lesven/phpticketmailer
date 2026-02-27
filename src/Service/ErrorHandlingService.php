@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -13,7 +14,7 @@ use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
  * Stellt zentrale Methoden für die Behandlung und Protokollierung 
  * von Fehlern zur Verfügung und sorgt für konsistente Benutzer-Feedback.
  */
-class ErrorHandlingService
+final class ErrorHandlingService
 {
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -59,8 +60,8 @@ class ErrorHandlingService
      * @param string $userMessage Benutzerdefinierte Nachricht für den Benutzer
      */
     public function handleGeneralException(
-        \Throwable $exception, 
-        string $context = '', 
+        \Throwable $exception,
+        string $context = '',
         string $userMessage = 'Ein unerwarteter Fehler ist aufgetreten.'
     ): void {
         // Detaillierte Informationen loggen

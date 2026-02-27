@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -12,7 +13,7 @@ use App\ValueObject\TicketData;
  *
  * Kapselt die gesamte Content-Composition-Logik für E-Mails.
  */
-class EmailComposer
+final class EmailComposer
 {
     /** @var array<string, array<string, mixed>> */
     private array $templateDebugInfo = [];

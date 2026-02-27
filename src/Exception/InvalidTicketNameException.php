@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
@@ -7,6 +8,6 @@ namespace App\Exception;
  *
  * Wird geworfen, wenn ein Ticket-Name die Validierungsregeln verletzt.
  */
-class InvalidTicketNameException extends \InvalidArgumentException
+final class InvalidTicketNameException extends \InvalidArgumentException
 {
 }

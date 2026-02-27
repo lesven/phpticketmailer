@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * UserRepository.php
  * 
@@ -21,7 +22,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * 
  * @extends ServiceEntityRepository<User>
  */
-class UserRepository extends ServiceEntityRepository
+final class UserRepository extends ServiceEntityRepository
 {
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency

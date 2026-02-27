@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\User;
 
@@ -13,7 +14,7 @@ use App\ValueObject\EmailAddress;
  * Ermöglicht granulare Reaktionen auf einzelne Import-Erfolge
  * (z.B. individuelle Benachrichtigungen, detaillierte Audit-Logs).
  */
-class UserImportedEvent extends AbstractDomainEvent
+final class UserImportedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly Username $username,

@@ -1,10 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
 use App\Entity\User;
-use App\ValueObject\EmailAddress;
-use App\ValueObject\Username;
 use App\Exception\InvalidEmailAddressException;
 use App\Exception\InvalidUsernameException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Kapselt die Logik für das Erstellen und Persistieren von Benutzern
  * und sorgt für einheitliche Validierung und Behandlung.
  */
-class UserCreator
+final class UserCreator
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager

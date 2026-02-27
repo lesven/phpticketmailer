@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * EmailSentRepository.php
  * 
@@ -20,7 +21,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * 
  * @extends ServiceEntityRepository<EmailSent>
  */
-class EmailSentRepository extends ServiceEntityRepository
+final class EmailSentRepository extends ServiceEntityRepository
 {
     private const COUNT_SELECT = 'COUNT(e.id)';
     

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * EmailService.php
  *
@@ -22,9 +23,8 @@ use App\Event\Email\EmailSentEvent;
 use App\Event\Email\EmailFailedEvent;
 use App\Event\Email\BulkEmailCompletedEvent;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use App\ValueObject\EmailAddress;
 
-class EmailService implements EmailServiceInterface
+final class EmailService implements EmailServiceInterface
 {
     public function __construct(
         private readonly EmailTransportService $transportService,
@@ -230,7 +230,7 @@ class EmailService implements EmailServiceInterface
      */
     private function loadExistingTickets(array $ticketData): array
     {
-        $ticketIds = array_map(function ($ticket) {
+        $ticketIds = array_map(static function ($ticket) {
             return is_array($ticket) ? $ticket['ticketId'] : (string) $ticket->ticketId;
         }, $ticketData);
 

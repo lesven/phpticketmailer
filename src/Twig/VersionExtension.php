@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Twig;
 
@@ -9,18 +10,10 @@ use Twig\TwigFunction;
 /**
  * Twig-Erweiterung für Versionsinformationen
  */
-class VersionExtension extends AbstractExtension
+final class VersionExtension extends AbstractExtension
 {
-    private $versionService;
-    
-    /**
-     * Konstruktor
-     *
-     * @param VersionService $versionService
-     */
-    public function __construct(VersionService $versionService)
+    public function __construct(private readonly VersionService $versionService)
     {
-        $this->versionService = $versionService;
     }
     
     /**

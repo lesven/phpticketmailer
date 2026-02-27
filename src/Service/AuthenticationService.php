@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -12,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Kapselt die gesamte Logik für Login, Passwortprüfung und -änderung.
  * Der SecurityController delegiert alle Geschäftsoperationen hierher.
  */
-class AuthenticationService
+final class AuthenticationService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\EventSubscriber;
 
@@ -8,7 +9,7 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class SecuritySubscriber implements EventSubscriberInterface
+final class SecuritySubscriber implements EventSubscriberInterface
 {
     private $urlGenerator;
 

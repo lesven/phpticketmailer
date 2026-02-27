@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * EmailStatusType.php
  * 
@@ -17,7 +18,7 @@ use Doctrine\DBAL\Types\Type;
 /**
  * Doctrine Type für EmailStatus Value Object
  */
-class EmailStatusType extends Type
+final class EmailStatusType extends Type
 {
     public const EMAIL_STATUS = 'email_status';
 

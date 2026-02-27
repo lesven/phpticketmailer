@@ -1,10 +1,11 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Exception;
 
 /**
  * Exception für ungültige E-Mail-Adressen
  */
-class InvalidEmailAddressException extends \DomainException
+final class InvalidEmailAddressException extends \DomainException
 {
 }

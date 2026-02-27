@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\User;
 
@@ -11,7 +12,7 @@ use App\Event\AbstractDomainEvent;
  * Enthält zusammenfassende Statistiken über den Import-Vorgang.
  * Ermöglicht finale Aktionen wie Berichte, Cleanup oder Admin-Benachrichtigungen.
  */
-class UserImportCompletedEvent extends AbstractDomainEvent
+final class UserImportCompletedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly int $successCount,

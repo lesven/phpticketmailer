@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -10,7 +11,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
  * Diese Klasse verwaltet die Versionsinformationen der Anwendung durch
  * Lesen und Schreiben einer VERSION-Datei im Projekt-Root-Verzeichnis.
  */
-class VersionService
+final class VersionService
 {
     /**
      * Das Projektverzeichnis

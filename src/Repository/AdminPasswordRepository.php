@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * AdminPasswordRepository.php
  *
@@ -23,7 +24,7 @@ use Doctrine\Persistence\ManagerRegistry;
  *
  * @extends ServiceEntityRepository<AdminPassword>
  */
-class AdminPasswordRepository extends ServiceEntityRepository
+final class AdminPasswordRepository extends ServiceEntityRepository
 {
     /**
      * Konstruktor mit Doctrine ManagerRegistry als Dependency

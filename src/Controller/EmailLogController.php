@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * EmailLogController.php
  * 
@@ -15,7 +16,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\EmailSentRepository;
 use App\Service\PaginationService;
 
-class EmailLogController extends AbstractController
+final class EmailLogController extends AbstractController
 {
     private $emailSentRepository;
 

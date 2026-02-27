@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Doctrine\Type;
 
@@ -6,7 +7,7 @@ use App\ValueObject\TicketName;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 
-class TicketNameType extends Type
+final class TicketNameType extends Type
 {
     public const NAME = 'ticket_name';
 

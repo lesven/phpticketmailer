@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Controller;
 
@@ -25,7 +26,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
  * Dieser Controller verwaltet den Prozess vom Hochladen der CSV-Datei,
  * über die Bearbeitung unbekannter Benutzer bis zum Versand der Ticket-E-Mails.
  */
-class CsvUploadController extends AbstractController
+final class CsvUploadController extends AbstractController
 {    /**
      * Konstruktor zum Injection der benötigten Abhängigkeiten
      */
@@ -68,9 +69,9 @@ class CsvUploadController extends AbstractController
             
             try {
                 $result = $this->csvUploadOrchestrator->processUpload(
-                    $csvFile, 
-                    $testMode, 
-                    $forceResend, 
+                    $csvFile,
+                    $testMode,
+                    $forceResend,
                     $updatedConfig
                 );
                 
@@ -146,8 +147,8 @@ class CsvUploadController extends AbstractController
             $sentEmails = $this->emailService->sendTicketEmailsWithDuplicateCheck($ticketData, $testMode, $forceResend, $testEmail);
             
             $this->addFlash('success', sprintf(
-                'Es wurden %d E-Mails %sversandt', 
-                count($sentEmails), 
+                'Es wurden %d E-Mails %sversandt',
+                count($sentEmails),
                 $testMode ? 'im Testmodus ' : ''
             ));
             

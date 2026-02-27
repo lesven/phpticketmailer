@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -10,7 +11,7 @@ use App\Entity\User;
  * Verantwortlich für das Mapping von CSV-Zeilen auf interne Strukturen
  * sowie das Formatieren von User-Entitäten in CSV-Zeilen.
  */
-class UserCsvHelper
+final class UserCsvHelper
 {
     /**
      * Mappt eine CSV-Zeile auf das interne Benutzer-Daten-Array.

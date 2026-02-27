@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * CsvFileReader.php
  * 
@@ -13,7 +14,7 @@ namespace App\Service;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-class CsvFileReader implements CsvFileReaderInterface
+final class CsvFileReader implements CsvFileReaderInterface
 {
     /**
      * @var string Das Standard-Trennzeichen für die CSV-Datei

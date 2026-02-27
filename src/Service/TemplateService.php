@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -13,7 +14,7 @@ use App\Repository\EmailTemplateRepository;
  * automatisch das passende Template anhand des Ticket-Erstelldatums.
  * Bietet außerdem eine zentrale Methode zum Ersetzen von Platzhaltern.
  */
-class TemplateService
+final class TemplateService
 {
     private const GERMAN_MONTHS = [
         1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April',

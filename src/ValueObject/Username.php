@@ -204,27 +204,31 @@ final readonly class Username
     }
 
     /**
-     * Validiert einen normalisierten Benutzernamen
-     *
-     * Prüft:
-     * - Länge (MIN_LENGTH bis MAX_LENGTH)
-     * - Erlaubte Zeichen (Alphanumerisch + ._-@)
-     * - Bei E-Mail-Adressen: Gültiges E-Mail-Format
-     * - Keine Punkte/Unterstriche am Anfang oder Ende (außer bei E-Mails)
-     * - Nicht in reservierten Namen
-     * - Sicherheitsvalidierung gegen Injection-Angriffe
-     *
-     * @param string $username Der zu validierende Benutzername
-     * @throws InvalidUsernameException Wenn der Benutzername ungültig ist
+     * @throws InvalidUsernameException
      */
     private static function validate(string $username): void
     {
-        // Leere String Prüfung zuerst
         if ($username === '') {
             throw new InvalidUsernameException('Username cannot be empty');
         }
 
-        // Längen-Validierung
+        self::validateLength($username);
+
+        $isEmail = str_contains($username, '@');
+        self::validateFormat($username, $isEmail);
+
+        if (!$isEmail && in_array(strtolower($username), self::RESERVED_NAMES, true)) {
+            throw new InvalidUsernameException(
+                "Username '{$username}' is reserved and cannot be used"
+            );
+        }
+
+        self::validateSecurity($username, $isEmail);
+    }
+
+    /** @throws InvalidUsernameException */
+    private static function validateLength(string $username): void
+    {
         $length = strlen($username);
         if ($length < self::MIN_LENGTH) {
             throw new InvalidUsernameException(
@@ -237,72 +241,64 @@ final readonly class Username
                 "Username must not exceed " . self::MAX_LENGTH . " characters, got {$length}"
             );
         }
-
-        // Prüfe ob es eine E-Mail-Adresse ist
-        $isEmail = str_contains($username, '@');
-
-        if ($isEmail) {
-            // E-Mail-Validierung
-            if (!preg_match(self::EMAIL_PATTERN, $username)) {
-                throw new InvalidUsernameException(
-                    'Invalid email address format'
-                );
-            }
-        } else {
-            // Zeichen-Validierung für normale Usernames
-            if (!preg_match(self::VALID_PATTERN, $username)) {
-                throw new InvalidUsernameException(
-                    'Username contains invalid characters. Only letters, numbers, dots, hyphens and underscores are allowed'
-                );
-            }
-
-            // Verhindere Punkte/Unterstriche am Anfang oder Ende für normale Usernames
-            if (preg_match('/(^[._-])|([._-]$)/', $username)) {
-                throw new InvalidUsernameException(
-                    'Username cannot start or end with dots, hyphens or underscores'
-                );
-            }
-        }
-
-        // Prüfe gegen reservierte Namen (nur für normale Usernames)
-        if (!$isEmail && in_array(strtolower($username), self::RESERVED_NAMES, true)) {
-            throw new InvalidUsernameException(
-                "Username '{$username}' is reserved and cannot be used"
-            );
-        }
-
-        // Sicherheitsvalidierung
-        self::validateSecurity($username, $isEmail);
     }
 
-    /**
-     * Sicherheitsvalidierung gegen Injection-Angriffe
-     *
-     * Prüft auf häufige Injection-Patterns und verdächtige Zeichen.
-     * Bei E-Mail-Adressen ist die Validierung weniger streng.
-     *
-     * @param string $username Der zu prüfende Benutzername
-     * @param bool $isEmail Ob es sich um eine E-Mail-Adresse handelt
-     * @throws InvalidUsernameException Bei Sicherheitsproblemen
-     */
-    private static function validateSecurity(string $username, bool $isEmail = false): void
+    /** @throws InvalidUsernameException */
+    private static function validateFormat(string $username, bool $isEmail): void
     {
-        // Für E-Mail-Adressen: Weniger strenge Validierung
         if ($isEmail) {
-            // Bei E-Mails nur grundlegende Sicherheitsprüfungen
-            if (preg_match('/<[^>]*>/', $username) || str_contains($username, 'javascript:') || str_contains($username, 'data:')) {
-                throw new InvalidUsernameException(
-                    'Email address cannot contain HTML tags or javascript'
-                );
+            if (! preg_match(self::EMAIL_PATTERN, $username)) {
+                throw new InvalidUsernameException('Invalid email address format');
             }
+
             return;
         }
 
-        // SQL Injection Patterns für normale Usernames
+        if (! preg_match(self::VALID_PATTERN, $username)) {
+            throw new InvalidUsernameException(
+                'Username contains invalid characters. Only letters, numbers, dots, hyphens and underscores are allowed'
+            );
+        }
+
+        if (preg_match('/(^[._-])|([._-]$)/', $username)) {
+            throw new InvalidUsernameException(
+                'Username cannot start or end with dots, hyphens or underscores'
+            );
+        }
+    }
+
+    /**
+     * @throws InvalidUsernameException
+     */
+    private static function validateSecurity(string $username, bool $isEmail = false): void
+    {
+        if ($isEmail) {
+            self::validateEmailSecurity($username);
+
+            return;
+        }
+
+        self::validateSqlInjection($username);
+        self::validatePathAndXss($username);
+    }
+
+    /** @throws InvalidUsernameException */
+    private static function validateEmailSecurity(string $username): void
+    {
+        if (preg_match('/<[^>]*>/', $username) || str_contains($username, 'javascript:') || str_contains($username, 'data:')) {
+            throw new InvalidUsernameException(
+                'Email address cannot contain HTML tags or javascript'
+            );
+        }
+    }
+
+    /** @throws InvalidUsernameException */
+    private static function validateSqlInjection(string $username): void
+    {
         $sqlPatterns = [
             '/\bselect\b/i', '/\binsert\b/i', '/\bupdate\b/i', '/\bdelete\b/i',
             '/\bdrop\b/i', '/\bunion\b/i', '/\bor\b.*=.*\b/i', '/\band\b.*=.*\b/i',
-            '/[\'";]/', '/--/', '/\/\*/', '/\*\//'
+            '/[\'";]/', '/--/', '/\/\*/', '/\*\//',
         ];
 
         foreach ($sqlPatterns as $pattern) {
@@ -312,22 +308,19 @@ final readonly class Username
                 );
             }
         }
+    }
 
-        // Path Traversal
+    /** @throws InvalidUsernameException */
+    private static function validatePathAndXss(string $username): void
+    {
         if (str_contains($username, '..') || str_contains($username, '/') || str_contains($username, '\\')) {
-            throw new InvalidUsernameException(
-                'Username cannot contain path traversal characters'
-            );
+            throw new InvalidUsernameException('Username cannot contain path traversal characters');
         }
 
-        // XSS Patterns
         if (preg_match('/<[^>]*>/', $username) || str_contains($username, 'javascript:') || str_contains($username, 'data:')) {
-            throw new InvalidUsernameException(
-                'Username cannot contain HTML tags or javascript'
-            );
+            throw new InvalidUsernameException('Username cannot contain HTML tags or javascript');
         }
 
-        // Command Injection
         if (preg_match('/[|&;`$(){}[\]<>]/', $username)) {
             throw new InvalidUsernameException(
                 'Username contains characters that could be used for command injection'

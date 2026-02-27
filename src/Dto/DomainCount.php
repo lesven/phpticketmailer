@@ -1,6 +1,8 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Dto;
+
 /**
  * Data transfer object representing counts grouped by email domain.
  *

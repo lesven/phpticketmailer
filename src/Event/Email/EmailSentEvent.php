@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\Email;
 
@@ -12,7 +13,7 @@ use App\ValueObject\EmailAddress;
  * Wird ausgelöst, wenn eine Ticket-E-Mail erfolgreich an einen Benutzer
  * versendet wurde. Ermöglicht Audit-Logging, Statistiken und Follow-up-Aktionen.
  */
-class EmailSentEvent extends AbstractDomainEvent
+final class EmailSentEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly TicketData $ticketData,

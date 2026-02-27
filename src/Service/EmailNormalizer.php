@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -11,7 +12,7 @@ use App\ValueObject\EmailAddress;
  * Unterstützt die Konvertierung von Outlook-Format "Nachname, Vorname <email@domain.de>"
  * zu normalen E-Mail-Adressen "email@domain.de"
  */
-class EmailNormalizer
+final class EmailNormalizer
 {
     /**
      * Normalisiert eine E-Mail-Adresse von verschiedenen Formaten zu einer Standard-E-Mail

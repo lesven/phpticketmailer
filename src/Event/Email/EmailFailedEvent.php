@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Event\Email;
 
@@ -13,7 +14,7 @@ use App\ValueObject\EmailAddress;
  * aufgetreten ist. Ermöglicht Fehlerbehandlung, Retry-Mechanismen
  * und Admin-Benachrichtigungen.
  */
-class EmailFailedEvent extends AbstractDomainEvent
+final class EmailFailedEvent extends AbstractDomainEvent
 {
     public function __construct(
         public readonly TicketData $ticketData,

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -17,7 +18,7 @@ use Symfony\Component\Mime\Email;
  * Kapselt Transport-Logik (Standard-Mailer vs. Custom-SMTP) und
  * baut die typisierte EmailConfig aus DB oder App-Parametern.
  */
-class EmailTransportService
+final class EmailTransportService
 {
     public function __construct(
         private readonly MailerInterface $mailer,
