@@ -265,17 +265,17 @@ test-e2e-install:
 ## E2E-Tests headless ausführen (Chrome ohne Benutzeroberfläche)
 ## Die App muss laufen: make up && make migrate && make fixtures-force
 test-e2e:
-	@echo "==> Starte TestCafe E2E-Tests (headless Chrome) – App muss auf Port 8090 laufen"
+	@echo "==> Starte TestCafe E2E-Tests (headless Chromium) – App muss auf Port 8090 laufen"
 	@command -v npx >/dev/null 2>&1 || { echo "FEHLER: npx nicht gefunden. Bitte Node.js installieren."; exit 1; }
 	@[ -d node_modules/testcafe ] || { echo "==> Installiere TestCafe..."; npm install; }
-	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe 'chrome:headless' e2e/tests/ --reporter spec
+	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe 'chromium:headless' e2e/tests/ --reporter spec
 
 ## E2E-Tests mit sichtbarem Browser ausführen (für Debugging)
 test-e2e-headed:
-	@echo "==> Starte TestCafe E2E-Tests (Chrome mit Benutzeroberfläche)"
+	@echo "==> Starte TestCafe E2E-Tests (Chromium mit Benutzeroberfläche)"
 	@command -v npx >/dev/null 2>&1 || { echo "FEHLER: npx nicht gefunden. Bitte Node.js installieren."; exit 1; }
 	@[ -d node_modules/testcafe ] || { echo "==> Installiere TestCafe..."; npm install; }
-	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe chrome e2e/tests/ --reporter spec
+	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe chromium e2e/tests/ --reporter spec
 
 ## Fixtures laden und danach E2E-Tests ausführen (All-in-one für CI)
 test-e2e-with-fixtures:

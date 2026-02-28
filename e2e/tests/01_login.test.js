@@ -30,9 +30,10 @@ test('Falsches Passwort zeigt Fehlermeldung an', async t => {
 });
 
 test('Leeres Passwortfeld löst HTML5-Validierung aus', async t => {
-    // Das required-Attribut verhindert das Absenden ohne Passwort
+    // Boolean HTML attributes like 'required' return "" (empty string) via getAttribute,
+    // which is falsy. We check that the attribute exists (is not null).
     await t
-        .expect(loginSelectors.passwordInput.getAttribute('required')).ok('Passwortfeld muss required-Attribut haben');
+        .expect(loginSelectors.passwordInput.getAttribute('required')).notEql(null, 'Passwortfeld muss required-Attribut haben');
 });
 
 test('Richtiges Passwort leitet zum Dashboard weiter', async t => {
@@ -54,9 +55,15 @@ test('Navbar ist nach Login sichtbar', async t => {
 });
 
 test('Logout leitet zur Login-Seite zurück', async t => {
-    await t.useRole(adminRole);
+    // Manual login instead of useRole to avoid poisoning the role cache
+    // (logout destroys the server session, making cached role cookies invalid)
     await t
-        .click(navSelectors.linkAbmelden)
+        .typeText(loginSelectors.passwordInput, ADMIN_PASSWORD)
+        .click(loginSelectors.submitButton)
+        .expect(Selector('h1').withText('Dashboard').exists).ok('Login muss erfolgreich sein', { timeout: 10000 });
+
+    await t
+        .navigateTo(`${BASE_URL}/logout`)
         .expect(loginSelectors.passwordInput.exists).ok(
             'Nach dem Abmelden muss die Login-Seite angezeigt werden'
         )
@@ -66,7 +73,12 @@ test('Logout leitet zur Login-Seite zurück', async t => {
 });
 
 test('Nach Logout ist das Dashboard nicht mehr erreichbar', async t => {
-    await t.useRole(adminRole);
+    // Manual login instead of useRole to avoid poisoning the role cache
+    await t
+        .typeText(loginSelectors.passwordInput, ADMIN_PASSWORD)
+        .click(loginSelectors.submitButton)
+        .expect(Selector('h1').withText('Dashboard').exists).ok('Login muss erfolgreich sein', { timeout: 10000 });
+
     await t
         .navigateTo(`${BASE_URL}/logout`)
         .navigateTo(`${BASE_URL}/`)

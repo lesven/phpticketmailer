@@ -6,6 +6,7 @@ fixture('06 – SMTP-Konfiguration')
     .page(`${BASE_URL}/smtp-config/`)
     .beforeEach(async t => {
         await t.useRole(adminRole);
+        await t.navigateTo(`${BASE_URL}/smtp-config/`);
     });
 
 test('SMTP-Konfigurationsseite ist erreichbar', async t => {

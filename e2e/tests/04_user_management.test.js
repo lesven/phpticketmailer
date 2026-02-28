@@ -9,6 +9,7 @@ fixture('04 – Benutzerverwaltung')
     .page(`${BASE_URL}/user/`)
     .beforeEach(async t => {
         await t.useRole(adminRole);
+        await t.navigateTo(`${BASE_URL}/user/`);
     });
 
 test('Benutzerliste wird angezeigt', async t => {

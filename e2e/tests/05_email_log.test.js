@@ -6,6 +6,7 @@ fixture('05 – Versandprotokoll')
     .page(`${BASE_URL}/versandprotokoll`)
     .beforeEach(async t => {
         await t.useRole(adminRole);
+        await t.navigateTo(`${BASE_URL}/versandprotokoll`);
     });
 
 test('Versandprotokoll-Seite wird angezeigt', async t => {

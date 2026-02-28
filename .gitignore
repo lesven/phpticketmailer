@@ -22,3 +22,8 @@ phpunit-main-events.log
 backup_Sunday.sql
 backup_Sunday.sql:Zone.Identifier
 db-dump.sql
+node_modules/
+phpinsights_report.txt
+e2e/screenshots/
+build/phpinsights/report.html
+cookies.txt

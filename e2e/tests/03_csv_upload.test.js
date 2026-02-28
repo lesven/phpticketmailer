@@ -10,6 +10,7 @@ fixture('03 – CSV-Upload')
     .page(`${BASE_URL}/upload`)
     .beforeEach(async t => {
         await t.useRole(adminRole);
+        await t.navigateTo(`${BASE_URL}/upload`);
     });
 
 test('Upload-Seite wird korrekt angezeigt', async t => {
