@@ -1,0 +1,6 @@
+Vorgangsschlüssel,Autor,Zusammenfassung
+TC-2024-001,fixtures_user1,Anmeldeproblem mit SSO gelöst
+TC-2024-002,fixtures_user2,Performance-Problem in der Datenbank behoben
+TC-2024-004,fixtures_user4,Fehler beim Dateiupload korrigiert
+TC-2024-005,fixtures_user5,API-Verbindungsfehler behoben
+TC-2024-007,fixtures_user7,E-Mail-Benachrichtigungen funktionieren nicht

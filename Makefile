@@ -30,33 +30,39 @@ DB_NAME := ticket_mailer_db
 # Default dump file on host (can be overridden: `make db-dump DUMP_FILE=./backups/my.sql`)
 DUMP_FILE ?= ./db-dump.sql
 
-.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db
+.PHONY: help build build-dev up up-d down down-remove restart ps logs logs-php exec-php console deploy deploy-dev composer-install composer-update cache-clear cache-warmup migrate migrate-status test coverage fresh recreate-db test-e2e test-e2e-headed test-e2e-install test-e2e-with-fixtures
 
 help:
 	@echo "Makefile - gängige Targets für Docker und Symfony/Scripts"
-	@echo "  make build           -> Docker-Images bauen (no-cache, pull) - PRODUCTION (ohne Xdebug)"
-	@echo "  make build-dev       -> Docker-Images bauen (no-cache, pull) - DEVELOPMENT (mit Xdebug)"
-	@echo "  make up              -> Docker-Compose up (foreground)"
-	@echo "  make up-d            -> Docker-Compose up -d (detached)"
-	@echo "  make down            -> Stoppt alle Compose-Container (sicher, löscht keine Volumes)"
-	@echo "  make down-remove     -> Docker-Compose down (entfernt volumes & orphans)"
-	@echo "  make restart         -> Restart aller Services"
-	@echo "  make ps              -> Anzeigen laufender Compose-Services"
-	@echo "  make logs            -> Logs aller Services (folgen)"
-	@echo "  make logs-php        -> Logs des PHP-Service"
-	@echo "  make exec-php        -> Interaktiv in den PHP-Container (bash)"
-	@echo "  make console         -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
-	@echo "  make deploy          -> Vollständiger Deploy-Flow (Production, ohne phpMyAdmin)"
-	@echo "  make deploy-dev      -> Deploy-Flow für Development (mit phpMyAdmin auf Port 8087)"
-	@echo "  make composer-install-> composer install im PHP-Container"
-	@echo "  make composer-update -> composer update im PHP-Container"
-	@echo "  make cache-clear     -> Symfony Cache leeren (dev & prod)"
-	@echo "  make cache-warmup    -> Symfony Cache vorerwärmen"
-	@echo "  make migrate         -> Doctrine-Migrations ausführen"
-	@echo "  make migrate-status  -> Migration-Status anzeigen"
-	@echo "  make test            -> PHPUnit-Tests im PHP-Container ausführen"
-	@echo "  make fresh           -> full rebuild + composer install + migrate"
-	@echo "  make recreate-db     -> DB-Volume entfernen und DB neu starten"
+	@echo "  make build                  -> Docker-Images bauen (no-cache, pull) - PRODUCTION (ohne Xdebug)"
+	@echo "  make build-dev              -> Docker-Images bauen (no-cache, pull) - DEVELOPMENT (mit Xdebug)"
+	@echo "  make up                     -> Docker-Compose up (foreground)"
+	@echo "  make up-d                   -> Docker-Compose up -d (detached)"
+	@echo "  make down                   -> Stoppt alle Compose-Container (sicher, löscht keine Volumes)"
+	@echo "  make down-remove            -> Docker-Compose down (entfernt volumes & orphans)"
+	@echo "  make restart                -> Restart aller Services"
+	@echo "  make ps                     -> Anzeigen laufender Compose-Services"
+	@echo "  make logs                   -> Logs aller Services (folgen)"
+	@echo "  make logs-php               -> Logs des PHP-Service"
+	@echo "  make exec-php               -> Interaktiv in den PHP-Container (bash)"
+	@echo "  make console                -> Symfony Console ausführen im PHP-Container (nutze ARGS='...')"
+	@echo "  make deploy                 -> Vollständiger Deploy-Flow (Production, ohne phpMyAdmin)"
+	@echo "  make deploy-dev             -> Deploy-Flow für Development (mit phpMyAdmin auf Port 8087)"
+	@echo "  make composer-install       -> composer install im PHP-Container"
+	@echo "  make composer-update        -> composer update im PHP-Container"
+	@echo "  make cache-clear            -> Symfony Cache leeren (dev & prod)"
+	@echo "  make cache-warmup           -> Symfony Cache vorerwärmen"
+	@echo "  make migrate                -> Doctrine-Migrations ausführen"
+	@echo "  make migrate-status         -> Migration-Status anzeigen"
+	@echo "  make test                   -> PHPUnit-Tests im PHP-Container ausführen"
+	@echo "  make fresh                  -> full rebuild + composer install + migrate"
+	@echo "  make recreate-db            -> DB-Volume entfernen und DB neu starten"
+	@echo ""
+	@echo "E2E-Tests (TestCafe - erfordert Node.js und laufende App auf Port 8090):"
+	@echo "  make test-e2e-install       -> Node.js-Abhängigkeiten (TestCafe) installieren"
+	@echo "  make test-e2e               -> E2E-Tests headless ausführen (Chrome)"
+	@echo "  make test-e2e-headed        -> E2E-Tests mit sichtbarem Browser ausführen"
+	@echo "  make test-e2e-with-fixtures -> Fixtures laden und E2E-Tests ausführen"
 
 ## Build Docker images (no-cache, pull latest base images) - PRODUCTION (ohne Xdebug)
 build:
@@ -245,3 +251,34 @@ deploy-dev:
 	$(MAKE) migrate
 	$(MAKE) cache-clear
 	$(MAKE) up
+
+## E2E-Tests mit TestCafe
+## Voraussetzungen: Node.js installiert, App läuft auf Port 8090 (make up)
+
+## Node.js-Abhängigkeiten für E2E-Tests installieren
+test-e2e-install:
+	@echo "==> Installiere Node.js-Abhängigkeiten für E2E-Tests (TestCafe)"
+	@command -v npm >/dev/null 2>&1 || { echo "FEHLER: npm nicht gefunden. Bitte Node.js installieren."; exit 1; }
+	@npm install
+	@echo "==> TestCafe erfolgreich installiert"
+
+## E2E-Tests headless ausführen (Chrome ohne Benutzeroberfläche)
+## Die App muss laufen: make up && make migrate && make fixtures-force
+test-e2e:
+	@echo "==> Starte TestCafe E2E-Tests (headless Chrome) – App muss auf Port 8090 laufen"
+	@command -v npx >/dev/null 2>&1 || { echo "FEHLER: npx nicht gefunden. Bitte Node.js installieren."; exit 1; }
+	@[ -d node_modules/testcafe ] || { echo "==> Installiere TestCafe..."; npm install; }
+	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe 'chrome:headless' e2e/tests/ --reporter spec
+
+## E2E-Tests mit sichtbarem Browser ausführen (für Debugging)
+test-e2e-headed:
+	@echo "==> Starte TestCafe E2E-Tests (Chrome mit Benutzeroberfläche)"
+	@command -v npx >/dev/null 2>&1 || { echo "FEHLER: npx nicht gefunden. Bitte Node.js installieren."; exit 1; }
+	@[ -d node_modules/testcafe ] || { echo "==> Installiere TestCafe..."; npm install; }
+	@APP_URL=$${APP_URL:-http://localhost:8090} npx testcafe chrome e2e/tests/ --reporter spec
+
+## Fixtures laden und danach E2E-Tests ausführen (All-in-one für CI)
+test-e2e-with-fixtures:
+	@echo "==> Lade Fixtures und führe E2E-Tests aus"
+	@$(MAKE) fixtures-force
+	@$(MAKE) test-e2e

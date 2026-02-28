@@ -1,0 +1,13 @@
+{
+  "name": "phpticketmailer-e2e",
+  "version": "1.0.0",
+  "description": "End-to-end Browsertests für phpticketmailer mit TestCafe",
+  "scripts": {
+    "test:e2e": "testcafe 'chrome:headless' e2e/tests/ --reporter spec",
+    "test:e2e:headed": "testcafe chrome e2e/tests/ --reporter spec",
+    "test:e2e:firefox": "testcafe 'firefox:headless' e2e/tests/ --reporter spec"
+  },
+  "devDependencies": {
+    "testcafe": "^3.6.0"
+  }
+}
