@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-bookworm
+FROM php:8.4-fpm-bookworm
 
 # Build argument to control Xdebug installation
 ARG ENABLE_XDEBUG=false

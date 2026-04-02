@@ -137,6 +137,13 @@ class LoadDataFixturesCommand extends Command
             // Only remove if it's the default fixture config
             $this->entityManager->remove($csvConfig);
         }
+
+        // Delete ALL admin passwords so the fixture password becomes the only/first one
+        $adminPasswords = $this->entityManager->getRepository(AdminPassword::class)->findAll();
+        foreach ($adminPasswords as $adminPassword) {
+            $this->entityManager->remove($adminPassword);
+        }
+        $this->entityManager->flush();
     }
 
     private function loadUserFixtures(SymfonyStyle $io): void

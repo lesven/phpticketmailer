@@ -1,0 +1,16 @@
+{
+  "src": "e2e/tests/**/*.test.js",
+  "browsers": ["chrome:headless"],
+  "baseUrl": "http://localhost:8090",
+  "screenshots": {
+    "path": "e2e/screenshots",
+    "takeOnFails": true,
+    "fullPage": true
+  },
+  "reporter": "spec",
+  "stopOnFirstFail": false,
+  "skipJsErrors": true,
+  "assertionTimeout": 8000,
+  "pageLoadTimeout": 15000,
+  "selectorTimeout": 8000
+}
