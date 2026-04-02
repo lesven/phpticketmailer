@@ -41,7 +41,7 @@ jobs:
     env:
       APP_ENV: test
       APP_SECRET: ${{ secrets.CI_APP_SECRET }}
-      DATABASE_URL: "mysql://ticketuser:${{ secrets.DB_PASSWORD }}@127.0.0.1:3306/ticket_mailer_db?serverVersion=10.11.2&charset=utf8mb4"
+      DATABASE_URL: "mysql://ticketuser:ci_password@127.0.0.1:3306/ticket_mailer_db?serverVersion=10.11.2&charset=utf8mb4"
       MAILER_DSN: "null://null"
     services:
       mariadb:
@@ -50,7 +50,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: rootpassword
           MYSQL_DATABASE: ticket_mailer_db
           MYSQL_USER: ticketuser
-          MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_PASSWORD: ci_password
         ports:
           - 3306:3306
         options: >-
