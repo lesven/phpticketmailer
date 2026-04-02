@@ -20,6 +20,12 @@
     </php>
 
     <testsuites>
+        <testsuite name="Unit Tests">
+            <directory>tests/Service</directory>
+            <directory>tests/Entity</directory>
+            <directory>tests/ValueObject</directory>
+            <directory>tests/Exception</directory>
+        </testsuite>
         <testsuite name="Unit and Integration Tests">
             <directory>tests</directory>
             <exclude>tests/E2E</exclude>

@@ -1,0 +1,117 @@
+name: CI E2E
+
+on:
+  push:
+    branches:
+      - 'release/**'
+      - 'hotfix/**'
+      - main
+  pull_request:
+    branches:
+      - 'release/**'
+      - 'hotfix/**'
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image (smoke test)
+        run: docker build --build-arg ENABLE_XDEBUG=0 -t ticketmailer-ci-check -f docker/php/Dockerfile .
+
+  e2e-browser:
+    name: E2E Browser Tests (TestCafe)
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      APP_SECRET: ${{ secrets.CI_APP_SECRET }}
+      DATABASE_URL: "mysql://ticketuser:${{ secrets.DB_PASSWORD }}@127.0.0.1:3306/ticket_mailer_db?serverVersion=10.11.2&charset=utf8mb4"
+      MAILER_DSN: "null://null"
+      APP_URL: "http://127.0.0.1:8090"
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: ticket_mailer_db
+          MYSQL_USER: ticketuser
+          MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, intl, zip, gd
+          coverage: none
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: sudo apt-get update && sudo apt-get install -y chromium-browser
+
+      - name: Run Doctrine migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Warm up Symfony cache
+        run: php bin/console cache:warmup
+
+      - name: Create screenshots directory
+        run: mkdir -p e2e/screenshots
+
+      - name: Start PHP built-in server
+        run: php -S 127.0.0.1:8090 -t public/ &
+
+      - name: Wait for server to be ready
+        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:8090/; do sleep 1; done'
+
+      - name: Run TestCafe E2E Tests
+        run: npx testcafe 'chromium-browser:headless' e2e/tests/ --screenshots path=e2e/screenshots,takeOnFails=true
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: testcafe-screenshots
+          path: e2e/screenshots/
+          retention-days: 30
