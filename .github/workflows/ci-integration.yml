@@ -48,7 +48,7 @@ jobs:
         image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: ticket_mailer_db
+          MYSQL_DATABASE: ticket_mailer_db_test
           MYSQL_USER: ticketuser
           MYSQL_PASSWORD: ci_password
         ports:
