@@ -94,6 +94,9 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -u root -prootpassword -e "
             CREATE DATABASE IF NOT EXISTS ticket_mailer_db_test;
+            CREATE USER IF NOT EXISTS 'ticketuser'@'%' IDENTIFIED BY 'ci_password';
+            ALTER USER 'ticketuser'@'%' IDENTIFIED BY 'ci_password';
+            GRANT ALL PRIVILEGES ON ticket_mailer_db.* TO 'ticketuser'@'%';
             GRANT ALL PRIVILEGES ON ticket_mailer_db_test.* TO 'ticketuser'@'%';
             FLUSH PRIVILEGES;
           "
