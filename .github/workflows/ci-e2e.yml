@@ -90,6 +90,14 @@ jobs:
       - name: Install Chromium
         run: sudo apt-get update && sudo apt-get install -y chromium-browser
 
+      - name: Create test database
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword -e "
+            CREATE DATABASE IF NOT EXISTS ticket_mailer_db_test;
+            GRANT ALL PRIVILEGES ON ticket_mailer_db_test.* TO 'ticketuser'@'%';
+            FLUSH PRIVILEGES;
+          "
+
       - name: Run Doctrine migrations
         run: php bin/console doctrine:migrations:migrate --no-interaction
 
