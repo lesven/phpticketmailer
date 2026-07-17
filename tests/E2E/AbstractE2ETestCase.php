@@ -54,9 +54,10 @@ abstract class AbstractE2ETestCase extends KernelTestCase
     {
         // Setup CSV field configuration
         $csvConfig = new CsvFieldConfig();
-        $csvConfig->setEmailField('email');
-        $csvConfig->setTicketNumberField('ticket_number');
-        $csvConfig->setCustomField('custom_field');
+        $csvConfig->setTicketIdField('ticket_id');
+        $csvConfig->setUsernameField('username');
+        $csvConfig->setTicketNameField('ticket_name');
+        $csvConfig->setCreatedField('created');
         $this->entityManager->persist($csvConfig);
 
         // Setup SMTP configuration for testing
