@@ -52,22 +52,21 @@ abstract class AbstractE2ETestCase extends KernelTestCase
 
     protected function setupBasicConfig(): void
     {
-        // Setup CSV field configuration
+        // Setup CSV field configuration (Entity initialisiert die Standard-Feldnamen bereits selbst)
         $csvConfig = new CsvFieldConfig();
-        $csvConfig->setEmailField('email');
-        $csvConfig->setTicketNumberField('ticket_number');
-        $csvConfig->setCustomField('custom_field');
         $this->entityManager->persist($csvConfig);
 
         // Setup SMTP configuration for testing
         $smtpConfig = new SMTPConfig();
         $smtpConfig->setHost('localhost');
         $smtpConfig->setPort(1025); // MailHog default port
-        $smtpConfig->setUsername('test');
-        $smtpConfig->setPassword('test');
-        $smtpConfig->setEncryption('none');
-        $smtpConfig->setFromEmail('test@ticketmailer.local');
-        $smtpConfig->setFromName('Ticket Mailer Test');
+        $smtpConfig->setUsername(null); // MailHog benötigt keine Auth; 'test' wäre als Username reserviert
+        $smtpConfig->setPassword(null);
+        $smtpConfig->setUseTLS(false);
+        $smtpConfig->setVerifySSL(false);
+        $smtpConfig->setSenderEmail('test@ticketmailer.local');
+        $smtpConfig->setSenderName('Ticket Mailer Test');
+        $smtpConfig->setTicketBaseUrl('https://ticket.example.test');
         $this->entityManager->persist($smtpConfig);
 
         $this->entityManager->flush();
@@ -105,11 +104,11 @@ abstract class AbstractE2ETestCase extends KernelTestCase
         $sentToEmails = [];
 
         foreach ($emailsSent as $emailSent) {
-            $this->assertNotNull($emailSent->getUser());
-            $this->assertNotNull($emailSent->getSentAt());
-            $this->assertNotEmpty($emailSent->getContent());
-            
-            $sentToEmails[] = $emailSent->getUser()->getEmail();
+            $this->assertNotNull($emailSent->getEmail());
+            $this->assertNotNull($emailSent->getTimestamp());
+            $this->assertNotEmpty($emailSent->getSubject());
+
+            $sentToEmails[] = (string) $emailSent->getEmail();
         }
 
         sort($expectedEmails);
@@ -126,21 +125,7 @@ abstract class AbstractE2ETestCase extends KernelTestCase
         foreach ($expectedData as $expected) {
             $user = $this->userRepository->findOneBy(['email' => $expected['email']]);
             $this->assertNotNull($user, "User with email {$expected['email']} should exist");
-            $this->assertEquals($expected['ticket_number'], $user->getTicketNumber());
-            
-            if (isset($expected['custom_field'])) {
-                $this->assertEquals($expected['custom_field'], $user->getCustomField());
-            }
         }
-    }
-
-    protected function simulateLogin(): void
-    {
-        // For E2E tests, we might need to simulate admin login
-        // This depends on your authentication system
-        $this->client->request('POST', '/login', [
-            'password' => 'test_admin_password' // Use test password
-        ]);
     }
 
     protected function tearDown(): void

@@ -32,7 +32,7 @@ class UserManagementE2ETest extends AbstractE2ETestCase
         $user = $this->userCreator->createUser('test_e2e_user', 'test_e2e@example.com');
         $this->userCreator->flush();
 
-        $savedUser = $this->userRepository->findOneBy(['username' => 'test_e2e_user']);
+        $savedUser = $this->userRepository->findByUsername('test_e2e_user');
 
         $this->assertNotNull($savedUser);
         $this->assertSame('test_e2e_user', (string) $savedUser->getUsername());
@@ -54,7 +54,7 @@ class UserManagementE2ETest extends AbstractE2ETestCase
         $user->excludeFromSurveys();
         $this->userCreator->flush();
 
-        $savedUser = $this->userRepository->findOneBy(['username' => 'exclude_user']);
+        $savedUser = $this->userRepository->findByUsername('exclude_user');
 
         $this->assertNotNull($savedUser);
         $this->assertTrue($savedUser->isExcludedFromSurveys());
@@ -69,7 +69,7 @@ class UserManagementE2ETest extends AbstractE2ETestCase
         $this->userCreator->flush();
 
         // Now include again
-        $savedUser = $this->userRepository->findOneBy(['username' => 'toggle_user']);
+        $savedUser = $this->userRepository->findByUsername('toggle_user');
         $this->assertNotNull($savedUser);
         $savedUser->includeInSurveys();
         $this->entityManager->flush();

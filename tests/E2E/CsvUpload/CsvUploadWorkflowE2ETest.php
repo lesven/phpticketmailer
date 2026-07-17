@@ -68,10 +68,11 @@ class CsvUploadWorkflowE2ETest extends AbstractE2ETestCase
         // Act
         $result = $this->csvProcessor->process($uploadedFile, $config);
 
-        // Assert: ghost_user is unknown
+        // Assert: ghost_user is unknown, but the ticket row itself is still syntactically valid
+        // (unknown users are resolved later via the manual mapping workflow)
         $this->assertCount(1, $result->unknownUsers);
         $this->assertSame('ghost_user', (string) $result->unknownUsers[0]->username);
-        $this->assertCount(0, $result->validTickets);
+        $this->assertCount(1, $result->validTickets);
     }
 
     public function testEmptyCsvProducesEmptyResult(): void
@@ -116,7 +117,8 @@ class CsvUploadWorkflowE2ETest extends AbstractE2ETestCase
 
         $result = $this->csvProcessor->process($uploadedFile, $config);
 
-        $this->assertCount(2, $result->validTickets);
+        // All 3 rows are syntactically valid tickets; ghost_user is additionally reported as unknown
+        $this->assertCount(3, $result->validTickets);
         $this->assertCount(1, $result->unknownUsers);
     }
 

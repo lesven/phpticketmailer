@@ -1,6 +1,6 @@
-email,ticket_number,custom_field
-test@example.com,TICKET-001,Projekt Alpha
-user@domain.org,TICKET-002,Projekt Beta
-admin@company.de,TICKET-003,Projekt Gamma
-support@helpdesk.net,TICKET-004,Projekt Delta
-info@business.com,TICKET-005,Projekt Epsilon
+Vorgangsschlüssel,Autor,Zusammenfassung
+TICKET-001,fixture_user_1,Projekt Alpha
+TICKET-002,fixture_user_2,Projekt Beta
+TICKET-003,fixture_user_3,Projekt Gamma
+TICKET-004,fixture_user_4,Projekt Delta
+TICKET-005,fixture_user_5,Projekt Epsilon
